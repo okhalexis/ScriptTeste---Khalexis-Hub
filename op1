@@ -1,97 +1,120 @@
--- [[ MEGA PROMPT – KHALEXIS HUB V2.0 (SISTEMA DE CATEGORIAS COM PESQUISA DINÂMICA) ]]
-
--- 1. Booting the Library
 local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/jensonhirst/Orion/main/source')))()
 
--- 2. Creating a Window
+--------------------------------------------------------------------------------
+-- CONFIGURAÇÃO DA JANELA
+--------------------------------------------------------------------------------
 local Window = OrionLib:MakeWindow({
-	Name = "Khalexis Hub V2.0", -- Nome do HUB
-	HidePremium = false, 
-	SaveConfig = true, 
-	ConfigFolder = "KhalexisV2"
+    Name = "Khalexis Hub V2.0", 
+    HidePremium = false, 
+    SaveConfig = true, 
+    ConfigFolder = "KhalexisConfig",
+    IntroEnabled = true,
+    IntroText = "Khalexis Hub V2.0"
 })
 
--- Estrutura para armazenar as categorias para o filtro.
--- No Orion, a maneira mais próxima de simular uma categoria 'filtrável'
--- que contém scripts é através de uma Tab. Como o prompt pede um sistema de
--- categorias filtráveis, vamos simular que cada Tab/Section é uma categoria.
--- Como o prompt pede APENAS UMA categoria, vamos criar um Tab para ela, e o filtro
--- será implementado de forma conceitual.
-
--- Usaremos uma Tab genérica para conter o sistema, e dentro dela,
--- a TextBox e as Seções que representam as categorias.
-local Tab = Window:MakeTab({
-	Name = "Scripts/Categorias",
-	Icon = "rbxassetid://4483345998" -- Ícone de script
+--------------------------------------------------------------------------------
+-- TAB 1: PESQUISA (SISTEMA DE FILTRO)
+--------------------------------------------------------------------------------
+-- Esta aba serve como a "Home" onde fica a barra de pesquisa.
+local SearchTab = Window:MakeTab({
+    Name = "Pesquisa",
+    Icon = "rbxassetid://4483345998", -- Icone de Lupa/Home
+    PremiumOnly = false
 })
 
--- Tabela para armazenar as referências das categorias (Seções) para manipulação de visibilidade.
-local FilterableCategories = {}
-
--- 3. TEXTBOX DE PESQUISA (Não é categoria, mas fica no topo da lista/conteúdo para filtragem)
--- Embora a TextBox não possa ser colocada *acima* da lista de Tabs do Orion, ela será
--- o primeiro elemento da Tab principal, simulando a função de pesquisa.
-
-local SearchTextBox = Tab:AddTextbox({
-	Name = "Pesquisar categoria…", -- Placeholder (Nome do Textbox no Orion)
-	Default = "",
-	TextDisappear = false, -- O texto (placeholder) não desaparece se não houver foco (melhor para placeholders)
-	Callback = function(searchText)
-		local search = searchText:lower():gsub("^%s+", "") -- Remove espaços em branco iniciais
-
-		-- LÓGICA OBRIGATÓRIA: Filtro de categorias
-		for categoryName, categoryElement in pairs(FilterableCategories) do
-			local nameLower = categoryName:lower()
-
-			if search == "" or nameLower:sub(1, #search) == search then
-				-- Se a pesquisa estiver vazia OU o nome da categoria COMEÇA com o texto digitado
-				-- NOTA: Assumindo que o elemento (Section/Custom UI) tem um método SetVisible().
-				-- **Isto é conceitual**, pois a documentação da Orion não expõe 'SetVisible'
-				-- para elementos AddSection(), mas é fundamental para a lógica solicitada.
-				-- categoryElement:SetVisible(true) 
-			else
-				-- categoryElement:SetVisible(false)
-			end
-		end
-
-        -- Devido à limitação da Orion em expor SetVisible(), a lógica acima apenas demonstra
-        -- o conceito de como a filtragem deve funcionar ('COMEÇA COM').
-        -- O usuário precisaria de uma versão modificada/premium da Orion ou de uma UI customizada
-        -- para que 'AddSection' seja realmente ocultável.
-	end
+SearchTab:AddSection({
+    Name = "Filtro de Categorias"
 })
 
--- 4. CATEGORIA ÚNICA: Steal a Brainrot
--- Criando a seção (Categoria)
-local CATEGORY_NAME = "Steal a Brainrot"
-local StealBrainrotCategory = Tab:AddSection({
-	Name = CATEGORY_NAME -- Nome da categoria
+-- Função para atualizar a visibilidade das abas (Categorias) na Sidebar
+local function UpdateSidebarFilter(text)
+    local query = text:lower()
+    
+    -- Tenta encontrar a UI do Orion na CoreGui
+    local coreGui = game:GetService("CoreGui")
+    local orionUI = coreGui:FindFirstChild("Orion")
+    
+    if orionUI then
+        -- O caminho exato pode variar levemente dependendo da versão do Orion, 
+        -- mas geralmente os botões das abas ficam em um Container -> Frame de rolagem.
+        -- Vamos procurar recursivamente por botões que tenham o nome das nossas abas.
+        
+        for _, obj in pairs(orionUI:GetDescendants()) do
+            -- Identifica se é um botão de aba (geralmente tem um TabLabel ou nome específico)
+            if obj:IsA("TextButton") and obj:FindFirstChild("TabLabel") then
+                local categoryName = obj.TabLabel.Text:lower()
+                
+                -- Regra: Sempre manter a aba 'Pesquisa' visível
+                if categoryName == "pesquisa" then
+                    obj.Visible = true
+                else
+                    -- Lógica de filtro: Se começa com o texto digitado, mostra. Senão, esconde.
+                    if categoryName:sub(1, #query) == query then
+                        obj.Visible = true
+                    else
+                        obj.Visible = false
+                    end
+                end
+            end
+        end
+    end
+end
+
+SearchTab:AddTextbox({
+    Name = "Pesquisar categoria...",
+    Default = "",
+    TextDisappear = false,
+    Callback = function(Value)
+        UpdateSidebarFilter(Value)
+    end
 })
 
--- Adicionando a referência para a tabela de filtro
-FilterableCategories[CATEGORY_NAME] = StealBrainrotCategory
+SearchTab:AddParagraph("Informação", "Digite acima para filtrar as categorias na barra lateral esquerda.")
 
--- Conteúdo da Categoria (Scripts)
+--------------------------------------------------------------------------------
+-- TAB 2: CATEGORIA - STEAL A BRAINROT
+--------------------------------------------------------------------------------
+local BrainrotTab = Window:MakeTab({
+    Name = "Steal a Brainrot",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+BrainrotTab:AddSection({
+    Name = "Scripts Principais"
+})
+
 -- Script 1
-StealBrainrotCategory:AddButton({
-	Name = "</> Steal A Brainrot MC",
-	Callback = function()
-		print("Executando Steal A Brainrot MC")
-	end
-})
--- ID Mascarado (Usando AddParagraph para simular o texto "Usuário" abaixo do nome do script)
-StealBrainrotCategory:AddParagraph("ID Mascarado:", "Usuário")
-
--- Script 2
-StealBrainrotCategory:AddButton({
-	Name = "</> Steal A Brainrot SCRIPT",
-	Callback = function()
-		print("Executando Steal A Brainrot SCRIPT")
-	end
+BrainrotTab:AddButton({
+    Name = "Auto Farm (Exemplo)",
+    Callback = function()
+        print("Script executado!")
+    end    
 })
 -- ID Mascarado
-StealBrainrotCategory:AddParagraph("ID Mascarado:", "Usuário")
+BrainrotTab:AddLabel("Usuário") 
 
+-- Script 2
+BrainrotTab:AddButton({
+    Name = "ESP Player / Items",
+    Callback = function()
+        print("ESP Ativado")
+    end    
+})
+-- ID Mascarado
+BrainrotTab:AddLabel("Usuário") 
 
--- 5. Finishing your script (REQUIRED)
+-- Script 3
+BrainrotTab:AddButton({
+    Name = "Infinite Cash (Visual)",
+    Callback = function()
+        print("Cash infinito")
+    end    
+})
+-- ID Mascarado
+BrainrotTab:AddLabel("Usuário") 
+
+--------------------------------------------------------------------------------
+-- FINALIZAÇÃO
+--------------------------------------------------------------------------------
 OrionLib:Init()
