@@ -22,7 +22,6 @@ local Tab1 = Window:MakeTab({
     Icon = "rbxassetid://4483345998",
     PremiumOnly = false
 })
--- Não adicionei Section nem Buttons aqui. Está vazia.
 
 -- Categoria 2: 99 Nights in the Florest
 local Tab2 = Window:MakeTab({
@@ -30,96 +29,76 @@ local Tab2 = Window:MakeTab({
     Icon = "rbxassetid://4483345998",
     PremiumOnly = false
 })
--- Também totalmente vazia.
 
 --------------------------------------------------------------------------------
--- 3. INJEÇÃO AVANÇADA DA TEXTBOX (NO TOPO)
+-- 3. INJEÇÃO DA TEXTBOX (FUNDO PRETO ABSOLUTO)
 --------------------------------------------------------------------------------
--- Esta função cria a Textbox manualmente e a joga para o topo da lista
-
 local function InjectSearchBar()
-    task.wait(0.5) -- Espera um momento para a UI do Orion ser criada
+    task.wait(0.5) 
     
     local CoreGui = game:GetService("CoreGui")
     local OrionUI = CoreGui:FindFirstChild("Orion")
     
     if not OrionUI then return end
 
-    -- Localiza o container (Frame) onde ficam os botões das abas
     local TabContainer = nil
     
-    -- Varremos a UI para encontrar o botão da nossa aba criada
+    -- Procura o container das abas
     for _, v in pairs(OrionUI:GetDescendants()) do
         if v:IsA("TextButton") and v:FindFirstChild("TabLabel") then
-            -- Encontramos um botão de aba, então o PAI dele é o container que queremos
             TabContainer = v.Parent
             break
         end
     end
 
     if TabContainer then
-        -------------------------------------------------------------
-        -- CRIAÇÃO DO CONTAINER DA PESQUISA
-        -------------------------------------------------------------
         local SearchContainer = Instance.new("Frame")
         SearchContainer.Name = "SearchContainer"
-        SearchContainer.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Transparente
         SearchContainer.BackgroundTransparency = 1
-        SearchContainer.Size = UDim2.new(1, -24, 0, 35) -- Altura da caixa
+        SearchContainer.Size = UDim2.new(1, -24, 0, 35)
         SearchContainer.Parent = TabContainer
-        
-        -- MÁGICA: O LayoutOrder negativo joga esse elemento para CIMA de tudo na lista
-        SearchContainer.LayoutOrder = -5 
+        SearchContainer.LayoutOrder = -5 -- Força a ficar no topo
 
-        -- Espaçamento para não grudar nos lados
         local Padding = Instance.new("UIPadding")
         Padding.PaddingTop = UDim.new(0, 5)
         Padding.PaddingBottom = UDim.new(0, 5)
         Padding.PaddingLeft = UDim.new(0, 5)
         Padding.Parent = SearchContainer
 
-        -------------------------------------------------------------
-        -- CRIAÇÃO DA TEXTBOX (PRETA COM ARREDONDAMENTO)
-        -------------------------------------------------------------
+        -- TEXTBOX
         local RealTextBox = Instance.new("TextBox")
         RealTextBox.Name = "SearchBoxInput"
         RealTextBox.Parent = SearchContainer
-        RealTextBox.Size = UDim2.new(1, 0, 1, 0) -- Ocupa todo o espaço do container
+        RealTextBox.Size = UDim2.new(1, 0, 1, 0)
         
-        -- Design
-        RealTextBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20) -- Fundo PRETO/CINZA MUITO ESCURO
+        -- >>> MUDANÇA AQUI: PRETO ABSOLUTO <<<
+        RealTextBox.BackgroundColor3 = Color3.fromRGB(0, 0, 0) 
+        
         RealTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
         RealTextBox.PlaceholderText = "Pesquisa"
-        RealTextBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
+        RealTextBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
         RealTextBox.Text = ""
         RealTextBox.Font = Enum.Font.GothamBold
         RealTextBox.TextSize = 14
         
-        -- Borda Arredondada (Pílula)
+        -- Arredondamento
         local UICorner = Instance.new("UICorner")
-        UICorner.CornerRadius = UDim.new(0, 16) -- Arredondamento
+        UICorner.CornerRadius = UDim.new(0, 16)
         UICorner.Parent = RealTextBox
         
-        -- Borda Fina
+        -- Borda Cinza Escura para destacar o preto
         local UIStroke = Instance.new("UIStroke")
         UIStroke.Parent = RealTextBox
-        UIStroke.Color = Color3.fromRGB(50, 50, 50)
+        UIStroke.Color = Color3.fromRGB(45, 45, 45) 
         UIStroke.Thickness = 1
         UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-        -------------------------------------------------------------
-        -- LÓGICA DE FILTRAGEM
-        -------------------------------------------------------------
+        -- Lógica de Pesquisa
         RealTextBox:GetPropertyChangedSignal("Text"):Connect(function()
             local input = RealTextBox.Text:lower()
-            
-            -- Pega todos os itens que estão junto com a search bar (os botões das abas)
             for _, child in pairs(TabContainer:GetChildren()) do
-                -- Checa se é um botão de Aba (ignora UIListLayout e nossa SearchBar)
                 if child:IsA("TextButton") and child:FindFirstChild("TabLabel") then
                     local tabName = child.TabLabel.Text:lower()
-                    
-                    -- Se o input estiver vazio OU o nome da aba começar com o input
                     if input == "" or string.sub(tabName, 1, #input) == input then
                         child.Visible = true
                     else
@@ -131,8 +110,5 @@ local function InjectSearchBar()
     end
 end
 
--- Inicializa o Hub
 OrionLib:Init()
-
--- Executa a criação da barra de pesquisa logo após carregar
 coroutine.wrap(InjectSearchBar)()
