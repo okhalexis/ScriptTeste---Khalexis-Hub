@@ -1,4 +1,4 @@
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/jensonhirst/Orion/main/source')))()
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/okhalexis/source/refs/heads/main/trse1')))()
 
 --------------------------------------------------------------------------------
 -- 1. CONFIGURAÇÃO DA JANELA (HUB)
