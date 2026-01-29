@@ -1,235 +1,259 @@
 --[[
-    KLS HUB - UFO EVENT & PHYSICS TESTER
-    Author: KLS Senior Dev
-    Target: Security Audit / Event Farm Testing
+    KLS HUB - BRAINROT TYCOON AUDIT
+    Alvo: Teste de Física e Interação de Eventos
+    Criado com base no Dump do Jogo fornecido.
 ]]
 
--- 1. Carregar Library
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
-
--- 2. Serviços Essenciais
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
-local Camera = Workspace.CurrentCamera
 
--- 3. Variáveis de Controle
-local Config = {
-    Speed = {
-        Enabled = false,
-        Value = 16, -- Velocidade padrão
-    },
-    Event = {
-        TargetName = "NomeDoItemAqui", -- Nome do item do OVNI
-        MagnetEnabled = false,
-        TeleportEnabled = false,
-        Distance = 500, -- Raio de busca
-    }
+-- ==========================================
+-- VARIÁVEIS E FUNÇÕES AUXILIARES
+-- ==========================================
+local Flags = {
+    Speed = 16,
+    SpeedEnabled = false,
+    MagnetDrops = false,
+    AutoLuckyBlock = false,
+    AutoCollectCash = false,
+    RemoveLava = false,
+    MyTycoon = nil -- Vai detectar automaticamente
 }
 
-local Connections = {} -- Gerenciador de memória
+local Connections = {}
 
--- 4. Criação da Janela
+-- Função Segura para Tocar em Partes (Simula TouchInterest)
+local function FireTouch(part)
+    if not part then return end
+    local Char = LocalPlayer.Character
+    if Char and Char:FindFirstChild("HumanoidRootPart") then
+        firetouchinterest(Char.HumanoidRootPart, part, 0) -- Toca
+        task.wait()
+        firetouchinterest(Char.HumanoidRootPart, part, 1) -- Solta
+    end
+end
+
+-- Tenta encontrar o Tycoon do jogador
+local function GetMyTycoon()
+    for _, base in pairs(Workspace.Bases:GetChildren()) do
+        -- Geralmente o nome do dono fica numa StringValue ou no Texto da Placa
+        -- Vou procurar pelo nome do jogador na placa da base
+        local sign = base:FindFirstChild("Title") or base:FindFirstChild("Sign")
+        if sign then
+            local textLabel = sign:FindFirstChild("TextLabel", true) or sign:FindFirstChild("PlayerName", true)
+            if textLabel and string.find(textLabel.Text, LocalPlayer.Name) then
+                return base
+            end
+        end
+    end
+    return nil
+end
+
+-- ==========================================
+-- UI SETUP
+-- ==========================================
 WindUI:SetNotificationLower(true)
 local Window = WindUI:CreateWindow({
-    Title = "KLS: Event Security Test",
-    Icon = "gamepad-2",
-    Author = "Dev Admin",
-    Folder = "KLSEventTest",
+    Title = "KLS: Brainrot Tycoon Test",
+    Icon = "brain-circuit",
+    Author = "KLS Team",
+    Folder = "KLSTycoon",
     Size = UDim2.fromOffset(600, 450),
     Transparent = true,
     Theme = "Dark",
 })
 
-local TabMovement = Window:Tab({ Title = "Física (Speed)", Icon = "wind" })
-local TabEvent = Window:Tab({ Title = "Evento OVNI", Icon = "ufo" }) -- Ícone ilustrativo
-local TabSettings = Window:Tab({ Title = "Config", Icon = "settings" })
+local TabFarm = Window:Tab({ Title = "Tycoon & Farm", Icon = "coins" })
+local TabEvent = Window:Tab({ Title = "Eventos & Drops", Icon = "zap" })
+local TabPlayer = Window:Tab({ Title = "Player (Física)", Icon = "user" })
 
 -- ==========================================
--- LÓGICA: SPEED BYPASS (VELOCITY)
+-- ABA: TYCOON FARM
 -- ==========================================
--- Este método engana Anti-Cheats que olham apenas para Humanoid.WalkSpeed
-local function UpdateSpeed()
-    if not Config.Speed.Enabled then return end
-    
-    local Char = LocalPlayer.Character
-    if Char and Char:FindFirstChild("Humanoid") and Char:FindFirstChild("HumanoidRootPart") then
-        local Hum = Char.Humanoid
-        local Root = Char.HumanoidRootPart
-        
-        -- Só aplica se o jogador estiver tentando andar
-        if Hum.MoveDirection.Magnitude > 0 then
-            -- Sobrescreve a velocidade linear mantendo a gravidade (Y)
-            Root.AssemblyLinearVelocity = Vector3.new(
-                Hum.MoveDirection.X * Config.Speed.Value,
-                Root.AssemblyLinearVelocity.Y,
-                Hum.MoveDirection.Z * Config.Speed.Value
-            )
-        end
-    end
-end
+TabFarm:Section({ Title = "Automação da Base" })
 
-TabMovement:Section({ Title = "Velocity Manipulation" })
-
-TabMovement:Slider({
-    Title = "Velocidade Real (Bypass)",
-    Desc = "Define a velocidade física, ignorando a propriedade WalkSpeed.",
-    Step = 1,
-    Value = { Min = 16, Max = 300, Default = 16 },
-    Callback = function(v)
-        Config.Speed.Value = v
-    end
-})
-
-TabMovement:Toggle({
-    Title = "Ativar Speed",
-    Desc = "Habilita o override de física.",
-    Value = false,
-    Callback = function(state)
-        Config.Speed.Enabled = state
-        if state then
-            -- Heartbeat roda após a física, garantindo que nosso valor prevaleça
-            Connections["SpeedLoop"] = RunService.Heartbeat:Connect(UpdateSpeed)
+TabFarm:Button({
+    Title = "Detectar Minha Base",
+    Desc = "Clica aqui se o Auto Farm não funcionar",
+    Callback = function()
+        Flags.MyTycoon = GetMyTycoon()
+        if Flags.MyTycoon then
+            WindUI:Notify({ Title = "Sucesso", Content = "Base encontrada: " .. Flags.MyTycoon.Name, Icon = "check" })
         else
-            if Connections["SpeedLoop"] then Connections["SpeedLoop"]:Disconnect() end
+            WindUI:Notify({ Title = "Erro", Content = "Não encontrei sua base. Reivindique uma primeiro!", Icon = "alert-triangle" })
+        end
+    end
+})
+
+TabFarm:Toggle({
+    Title = "Auto Collect Cash",
+    Desc = "Coleta dinheiro dos coletores automaticamente (TouchInterest)",
+    Callback = function(state)
+        Flags.AutoCollectCash = state
+        if state then
+            task.spawn(function()
+                while Flags.AutoCollectCash do
+                    if not Flags.MyTycoon then Flags.MyTycoon = GetMyTycoon() end
+                    
+                    if Flags.MyTycoon then
+                        -- Vasculha os Slots da base por 'CollectMoneyGui' ou pads de coleta
+                        local slots = Flags.MyTycoon:FindFirstChild("Slots")
+                        if slots then
+                            for _, slot in pairs(slots:GetChildren()) do
+                                local collectPart = slot:FindFirstChild("Collect")
+                                if collectPart then
+                                    FireTouch(collectPart)
+                                end
+                            end
+                        end
+                    end
+                    task.wait(1) -- Coleta a cada 1 segundo
+                end
+            end)
         end
     end
 })
 
 -- ==========================================
--- LÓGICA: EVENTO OVNI (MAGNET & TP)
+-- ABA: EVENTOS & DROPS (O PEDIDO PRINCIPAL)
 -- ==========================================
--- Função para puxar objetos (Magnet) ou ir até eles
-local function ProcessEventItems()
-    local Char = LocalPlayer.Character
-    if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
-    
-    local Root = Char.HumanoidRootPart
-    
-    -- Busca global no Workspace ou numa pasta específica de drops
-    for _, item in pairs(Workspace:GetDescendants()) do
-        -- Verifica se o nome bate com o configurado (insensível a maiúsculas/minúsculas)
-        if item:IsA("BasePart") and string.find(string.lower(item.Name), string.lower(Config.Event.TargetName)) then
-            
-            -- Verifica distância para não quebrar o jogo puxando o mapa todo
-            local dist = (item.Position - Root.Position).Magnitude
-            if dist <= Config.Event.Distance then
-                
-                -- MODO 1: MAGNET (Traz o item até você)
-                -- Nota técnica: Isso só funciona se o item não estiver ANCHORED ou se você tiver NetworkOwnership
-                if Config.Event.MagnetEnabled then
-                    if item.Anchored == false then
-                        item.CFrame = Root.CFrame * CFrame.new(0, 0, -3) -- Traz para frente do player
-                        item.AssemblyLinearVelocity = Vector3.zero -- Para o item não sair voando
-                    else
-                        -- Se for ancorado, tentamos simular o toque (FireTouchInterest) se o executor suportar
-                        firetouchinterest(Root, item, 0) -- Touch
-                        task.wait()
-                        firetouchinterest(Root, item, 1) -- Untouch
+TabEvent:Section({ Title = "Chuva de Itens (Tsunami/UFO)" })
+
+TabEvent:Toggle({
+    Title = "Magnet Event Drops",
+    Desc = "Puxa as moedas do Tsunami/UFO (WaveCoinDrops)",
+    Callback = function(state)
+        Flags.MagnetDrops = state
+        if state then
+            Connections["MagnetLoop"] = RunService.Heartbeat:Connect(function()
+                local Char = LocalPlayer.Character
+                if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
+                local Root = Char.HumanoidRootPart
+
+                -- Puxa da pasta WaveCoinDrops (baseado no seu dump)
+                if Workspace:FindFirstChild("WaveCoinDrops") then
+                    for _, drop in pairs(Workspace.WaveCoinDrops:GetChildren()) do
+                        if drop:IsA("BasePart") and drop.Anchored == false then
+                            -- Traz fisicamente para o jogador
+                            drop.CFrame = Root.CFrame
+                            drop.AssemblyLinearVelocity = Vector3.new(0,0,0)
+                        end
                     end
                 end
-
-                -- MODO 2: TELEPORT FARM (Vai até o item)
-                -- Mais agressivo, detectável se o AC verificar distância/tempo
-                if Config.Event.TeleportEnabled then
-                    Root.CFrame = item.CFrame * CFrame.new(0, 2, 0) -- Vai para cima do item
+                
+                -- Puxa moedas de bomba se houver
+                if Workspace:FindFirstChild("CoinBombs") then
+                     for _, bomb in pairs(Workspace.CoinBombs:GetChildren()) do
+                        if bomb:IsA("BasePart") then
+                             bomb.CFrame = Root.CFrame
+                        end
+                     end
                 end
-            end
-        elseif item:IsA("Model") and string.find(string.lower(item.Name), string.lower(Config.Event.TargetName)) then
-            -- Suporte caso o drop seja um Model e não uma Part solta (pega a PrimaryPart)
-            if item.PrimaryPart then
-                local part = item.PrimaryPart
-                 if Config.Event.TeleportEnabled then
-                    Root.CFrame = part.CFrame
-                end
-            end
+            end)
+        else
+            if Connections["MagnetLoop"] then Connections["MagnetLoop"]:Disconnect() end
         end
-    end
-end
-
-TabEvent:Section({ Title = "Configuração do Coletor" })
-
-TabEvent:Input({
-    Title = "Nome do Item (Target)",
-    Desc = "Digite parte do nome do drop do OVNI (ex: Coin, Ore, Gift)",
-    Default = "Coin",
-    Placeholder = "Nome do objeto...",
-    Callback = function(text)
-        Config.Event.TargetName = text
-        WindUI:Notify({ Title = "Alvo Definido", Content = "Buscando por: " .. text, Icon = "search" })
     end
 })
 
-TabEvent:Slider({
-    Title = "Raio de Busca",
-    Desc = "Distância máxima para interagir",
-    Step = 10,
-    Value = { Min = 50, Max = 2000, Default = 500 },
+TabEvent:Section({ Title = "Lucky Blocks & Brainrots" })
+
+TabEvent:Toggle({
+    Title = "Auto Break Lucky Blocks",
+    Desc = "Teleporta e interage com Lucky Blocks ativos (Celestial, Cosmic, etc)",
+    Callback = function(state)
+        Flags.AutoLuckyBlock = state
+        if state then
+            task.spawn(function()
+                while Flags.AutoLuckyBlock do
+                    local Char = LocalPlayer.Character
+                    if Char and Char:FindFirstChild("HumanoidRootPart") and Workspace:FindFirstChild("ActiveLuckyBlocks") then
+                        for _, block in pairs(Workspace.ActiveLuckyBlocks:GetChildren()) do
+                            local root = block:FindFirstChild("RootPart")
+                            if root then
+                                -- Teleporta perto (teste de AC: Teleporte curto)
+                                Char.HumanoidRootPart.CFrame = root.CFrame * CFrame.new(0, 3, 0)
+                                task.wait(0.1)
+                                
+                                -- Tenta acionar o ProximityPrompt
+                                local prompt = root:FindFirstChild("ProximityPrompt")
+                                if prompt then
+                                    fireproximityprompt(prompt)
+                                end
+                            end
+                        end
+                    end
+                    task.wait(0.5)
+                end
+            end)
+        end
+    end
+})
+
+-- ==========================================
+-- ABA: PLAYER (BYPASS REAL)
+-- ==========================================
+TabPlayer:Section({ Title = "Movimentação Bypass" })
+
+TabPlayer:Slider({
+    Title = "Velocity Speed",
+    Desc = "Velocidade que ignora Humanoid.WalkSpeed",
+    Step = 1,
+    Value = { Min = 16, Max = 200, Default = 16 },
     Callback = function(v)
-        Config.Event.Distance = v
+        Flags.Speed = v
     end
 })
 
-TabEvent:Section({ Title = "Métodos de Coleta" })
-
-TabEvent:Toggle({
-    Title = "Magnet Mode (Puxar Itens)",
-    Desc = "Traz os itens até você (Requer item solto/unanchored)",
-    Value = false,
+TabPlayer:Toggle({
+    Title = "Ativar Speed",
     Callback = function(state)
-        Config.Event.MagnetEnabled = state
-        Config.Event.TeleportEnabled = false -- Segurança: desativa o outro modo
-        
+        Flags.SpeedEnabled = state
         if state then
-            Connections["EventLoop"] = RunService.RenderStepped:Connect(ProcessEventItems)
+            Connections["SpeedBypass"] = RunService.Heartbeat:Connect(function()
+                local Char = LocalPlayer.Character
+                if Char and Char:FindFirstChild("Humanoid") and Char:FindFirstChild("HumanoidRootPart") then
+                    local Hum = Char.Humanoid
+                    local Root = Char.HumanoidRootPart
+                    if Hum.MoveDirection.Magnitude > 0 then
+                        Root.AssemblyLinearVelocity = Vector3.new(
+                            Hum.MoveDirection.X * Flags.Speed,
+                            Root.AssemblyLinearVelocity.Y,
+                            Hum.MoveDirection.Z * Flags.Speed
+                        )
+                    end
+                end
+            end)
         else
-            if not Config.Event.TeleportEnabled and Connections["EventLoop"] then 
-                Connections["EventLoop"]:Disconnect() 
-            end
+            if Connections["SpeedBypass"] then Connections["SpeedBypass"]:Disconnect() end
         end
     end
 })
 
-TabEvent:Toggle({
-    Title = "Teleport Mode (Ir até Item)",
-    Desc = "Teleporta você para cada item encontrado",
-    Value = false,
-    Callback = function(state)
-        Config.Event.TeleportEnabled = state
-        Config.Event.MagnetEnabled = false -- Segurança: desativa o outro modo
-        
-        if state then
-            Connections["EventLoop"] = RunService.RenderStepped:Connect(ProcessEventItems)
-        else
-            if not Config.Event.MagnetEnabled and Connections["EventLoop"] then 
-                Connections["EventLoop"]:Disconnect() 
-            end
-        end
-    end
-})
+TabPlayer:Section({ Title = "Segurança / Visual" })
 
--- ==========================================
--- CONFIG E CLEANUP
--- ==========================================
-TabSettings:Section({ Title = "UI" })
-TabSettings:Button({
-    Title = "Destruir Script",
-    Desc = "Limpa conexões e fecha a UI",
+TabPlayer:Button({
+    Title = "Remover Lava",
+    Desc = "Deleta a pasta Workspace.Lava para não morrer",
+    Icon = "trash",
     Callback = function()
-        for _, conn in pairs(Connections) do
-            if conn then conn:Disconnect() end
+        if Workspace:FindFirstChild("Lava") then
+            Workspace.Lava:Destroy()
+            WindUI:Notify({ Title = "Lava Removida", Content = "Você não toma mais dano de lava.", Icon = "flame" })
+        else
+            WindUI:Notify({ Title = "Aviso", Content = "Lava não encontrada ou já removida.", Icon = "info" })
         end
-        Window:Close()
     end
 })
 
--- Inicialização
+-- Notificação Inicial
 WindUI:Notify({
-    Title = "KLS Event Tester",
-    Content = "Script injetado. Configure o nome do item na aba Evento.",
-    Duration = 6,
-    Icon = "shield-alert",
+    Title = "Script Carregado",
+    Content = "KLS Brainrot Edition Ativado. Use a aba Farm para configurar sua base.",
+    Duration = 5,
+    Icon = "check",
 })
