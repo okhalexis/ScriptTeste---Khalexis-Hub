@@ -1,233 +1,235 @@
 --[[
-    KLS HUB - Developer Build (Anti-Cheat Testing)
-    Author: KLS Team
-    System: WindUI Latest
+    KLS HUB - UFO EVENT & PHYSICS TESTER
+    Author: KLS Senior Dev
+    Target: Security Audit / Event Farm Testing
 ]]
 
+-- 1. Carregar Library
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
--- 1. Configurações de Notificação
+-- 2. Serviços Essenciais
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+-- 3. Variáveis de Controle
+local Config = {
+    Speed = {
+        Enabled = false,
+        Value = 16, -- Velocidade padrão
+    },
+    Event = {
+        TargetName = "NomeDoItemAqui", -- Nome do item do OVNI
+        MagnetEnabled = false,
+        TeleportEnabled = false,
+        Distance = 500, -- Raio de busca
+    }
+}
+
+local Connections = {} -- Gerenciador de memória
+
+-- 4. Criação da Janela
 WindUI:SetNotificationLower(true)
-
--- =================================================================
--- TEMA CUSTOMIZADO (KLS DARK - Com Gradiente)
--- =================================================================
-
--- Criando o objeto de Gradiente baseado no seu exemplo
-local KLSGradient = WindUI:Gradient({                                                      
-    ["0"] = { Color = Color3.fromHex("#1f1f23"), Transparency = 0 },            
-    ["100"] = { Color = Color3.fromHex("#18181b"), Transparency = 0 },      
-}, {                                                                            
-    Rotation = 45, -- Rotacionei um pouco para ficar mais elegante
-})
-
-WindUI:AddTheme({
-    Name = "KLS Dark",
-    
-    -- Cores Principais
-    Accent = KLSGradient, -- Aplicando o gradiente no destaque
-    Background = Color3.fromHex("#101010"),
-    BackgroundTransparency = 0,
-    Outline = Color3.fromHex("#333333"), -- Suavizei o outline (branco puro fica muito forte)
-    Text = Color3.fromHex("#FFFFFF"),
-    Placeholder = Color3.fromHex("#7a7a7a"),
-    Button = Color3.fromHex("#27272a"), -- Ajuste leve para contraste
-    Icon = Color3.fromHex("#a1a1aa"),
-    
-    Hover = Color3.fromHex("#3f3f46"),
-    
-    -- Janela Principal
-    WindowBackground = Color3.fromHex("#101010"),
-    WindowShadow = Color3.fromHex("#000000"),
-    
-    -- Topbar (Barra superior)
-    WindowTopbarButtonIcon = Color3.fromHex("#a1a1aa"),
-    WindowTopbarTitle = Color3.fromHex("#FFFFFF"),
-    WindowTopbarAuthor = Color3.fromHex("#a1a1aa"),
-    WindowTopbarIcon = Color3.fromHex("#FFFFFF"),
-    
-    -- Abas (Tabs)
-    TabBackground = Color3.fromHex("#101010"), -- Ajustado para combinar com o fundo
-    TabTitle = Color3.fromHex("#FFFFFF"),
-    TabIcon = Color3.fromHex("#a1a1aa"),
-    
-    -- Elementos (Botões, Sections)
-    ElementBackground = Color3.fromHex("#18181b"),
-    ElementTitle = Color3.fromHex("#FFFFFF"),
-    ElementDesc = Color3.fromHex("#a1a1aa"),
-    ElementIcon = Color3.fromHex("#a1a1aa"),
-    
-    -- Popups
-    PopupBackground = Color3.fromHex("#101010"),
-    PopupBackgroundTransparency = 0,
-    PopupTitle = Color3.fromHex("#FFFFFF"),
-    PopupContent = Color3.fromHex("#FFFFFF"),
-    PopupIcon = Color3.fromHex("#a1a1aa"),
-    
-    -- Dialogs
-    DialogBackground = Color3.fromHex("#101010"),
-    DialogBackgroundTransparency = 0,
-    DialogTitle = Color3.fromHex("#FFFFFF"),
-    DialogContent = Color3.fromHex("#FFFFFF"),
-    DialogIcon = Color3.fromHex("#a1a1aa"),
-    
-    -- Inputs Específicos
-    Toggle = Color3.fromHex("#52525b"),
-    ToggleBar = Color3.fromHex("#FFFFFF"),
-    
-    Checkbox = Color3.fromHex("#52525b"),
-    CheckboxIcon = Color3.fromHex("#FFFFFF"),
-    
-    Slider = Color3.fromHex("#52525b"),
-    SliderThumb = Color3.fromHex("#FFFFFF"),
-})
-
--- Aplicar o tema imediatamente antes de criar a janela
-WindUI:SetTheme("KLS Dark")
-
--- =================================================================
--- CRIAÇÃO DA JANELA
--- =================================================================
-
 local Window = WindUI:CreateWindow({
-    Title = "KLS HUB // ADMIN PANEL",
-    Icon = "shield-check", -- Ícone de segurança/admin
-    Author = "Dev Team",
-    Folder = "KLS_Admin",
+    Title = "KLS: Event Security Test",
+    Icon = "gamepad-2",
+    Author = "Dev Admin",
+    Folder = "KLSEventTest",
     Size = UDim2.fromOffset(600, 450),
-    Transparent = true, 
-    Theme = "KLS Dark", -- Garante que inicie com o tema
-    Resizable = true,
-    SideBarWidth = 180,
-    HideSearchBar = false
+    Transparent = true,
+    Theme = "Dark",
 })
 
--- =================================================================
--- ABAS E FUNÇÕES (TESTE DE ANTI-CHEAT)
--- =================================================================
+local TabMovement = Window:Tab({ Title = "Física (Speed)", Icon = "wind" })
+local TabEvent = Window:Tab({ Title = "Evento OVNI", Icon = "ufo" }) -- Ícone ilustrativo
+local TabSettings = Window:Tab({ Title = "Config", Icon = "settings" })
 
-local PhysicsTab = Window:Tab({ Title = "Physics Test", Icon = "zap" })
-local VisualsTab = Window:Tab({ Title = "Render Test", Icon = "eye" })
-local SettingsTab = Window:Tab({ Title = "Settings", Icon = "settings" })
-
--- >> ABA: PHYSICS (Testar WalkSpeed/JumpPower Check)
-PhysicsTab:Section({ Title = "Humanoid Manipulation" })
-
-PhysicsTab:Slider({
-    Title = "WalkSpeed Override",
-    Desc = "Teste se o servidor detecta velocidade > 16",
-    Step = 1,
-    Value = { Min = 16, Max = 100, Default = 16 },
-    Callback = function(v)
-        if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
-            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = v
+-- ==========================================
+-- LÓGICA: SPEED BYPASS (VELOCITY)
+-- ==========================================
+-- Este método engana Anti-Cheats que olham apenas para Humanoid.WalkSpeed
+local function UpdateSpeed()
+    if not Config.Speed.Enabled then return end
+    
+    local Char = LocalPlayer.Character
+    if Char and Char:FindFirstChild("Humanoid") and Char:FindFirstChild("HumanoidRootPart") then
+        local Hum = Char.Humanoid
+        local Root = Char.HumanoidRootPart
+        
+        -- Só aplica se o jogador estiver tentando andar
+        if Hum.MoveDirection.Magnitude > 0 then
+            -- Sobrescreve a velocidade linear mantendo a gravidade (Y)
+            Root.AssemblyLinearVelocity = Vector3.new(
+                Hum.MoveDirection.X * Config.Speed.Value,
+                Root.AssemblyLinearVelocity.Y,
+                Hum.MoveDirection.Z * Config.Speed.Value
+            )
         end
+    end
+end
+
+TabMovement:Section({ Title = "Velocity Manipulation" })
+
+TabMovement:Slider({
+    Title = "Velocidade Real (Bypass)",
+    Desc = "Define a velocidade física, ignorando a propriedade WalkSpeed.",
+    Step = 1,
+    Value = { Min = 16, Max = 300, Default = 16 },
+    Callback = function(v)
+        Config.Speed.Value = v
     end
 })
 
-PhysicsTab:Slider({
-    Title = "JumpPower Override",
-    Desc = "Teste se o servidor detecta pulo > 50",
-    Step = 1,
-    Value = { Min = 50, Max = 200, Default = 50 },
-    Callback = function(v)
-        if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
-            game.Players.LocalPlayer.Character.Humanoid.UseJumpPower = true
-            game.Players.LocalPlayer.Character.Humanoid.JumpPower = v
-        end
-    end
-})
-
-PhysicsTab:Section({ Title = "Collision" })
-
-PhysicsTab:Toggle({
-    Title = "Noclip State",
-    Desc = "Teste a detecção de colisão de paredes",
-    Icon = "ghost",
+TabMovement:Toggle({
+    Title = "Ativar Speed",
+    Desc = "Habilita o override de física.",
     Value = false,
     Callback = function(state)
-        -- Simples noclip loop
-        _G.Noclip = state
-        game:GetService("RunService").Stepped:Connect(function()
-            if _G.Noclip and game.Players.LocalPlayer.Character then
-                for _, part in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
-                    if part:IsA("BasePart") and part.CanCollide then
-                        part.CanCollide = false
+        Config.Speed.Enabled = state
+        if state then
+            -- Heartbeat roda após a física, garantindo que nosso valor prevaleça
+            Connections["SpeedLoop"] = RunService.Heartbeat:Connect(UpdateSpeed)
+        else
+            if Connections["SpeedLoop"] then Connections["SpeedLoop"]:Disconnect() end
+        end
+    end
+})
+
+-- ==========================================
+-- LÓGICA: EVENTO OVNI (MAGNET & TP)
+-- ==========================================
+-- Função para puxar objetos (Magnet) ou ir até eles
+local function ProcessEventItems()
+    local Char = LocalPlayer.Character
+    if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
+    
+    local Root = Char.HumanoidRootPart
+    
+    -- Busca global no Workspace ou numa pasta específica de drops
+    for _, item in pairs(Workspace:GetDescendants()) do
+        -- Verifica se o nome bate com o configurado (insensível a maiúsculas/minúsculas)
+        if item:IsA("BasePart") and string.find(string.lower(item.Name), string.lower(Config.Event.TargetName)) then
+            
+            -- Verifica distância para não quebrar o jogo puxando o mapa todo
+            local dist = (item.Position - Root.Position).Magnitude
+            if dist <= Config.Event.Distance then
+                
+                -- MODO 1: MAGNET (Traz o item até você)
+                -- Nota técnica: Isso só funciona se o item não estiver ANCHORED ou se você tiver NetworkOwnership
+                if Config.Event.MagnetEnabled then
+                    if item.Anchored == false then
+                        item.CFrame = Root.CFrame * CFrame.new(0, 0, -3) -- Traz para frente do player
+                        item.AssemblyLinearVelocity = Vector3.zero -- Para o item não sair voando
+                    else
+                        -- Se for ancorado, tentamos simular o toque (FireTouchInterest) se o executor suportar
+                        firetouchinterest(Root, item, 0) -- Touch
+                        task.wait()
+                        firetouchinterest(Root, item, 1) -- Untouch
                     end
                 end
+
+                -- MODO 2: TELEPORT FARM (Vai até o item)
+                -- Mais agressivo, detectável se o AC verificar distância/tempo
+                if Config.Event.TeleportEnabled then
+                    Root.CFrame = item.CFrame * CFrame.new(0, 2, 0) -- Vai para cima do item
+                end
             end
-        end)
-        
-        local status = state and "Ativado" or "Desativado"
-        WindUI:Notify({ Title = "Physics", Content = "Noclip: " .. status, Icon = "info" })
-    end
-})
-
--- >> ABA: VISUALS (Testar ESP/Renderização)
-VisualsTab:Section({ Title = "Render Core" })
-
-VisualsTab:Button({
-    Title = "Force Lag (Stress Test)",
-    Desc = "Gera partículas para testar queda de FPS",
-    Icon = "activity",
-    Callback = function()
-        for i = 1, 10 do
-            local p = Instance.new("Explosion", game.Workspace)
-            p.Position = game.Players.LocalPlayer.Character.HumanoidRootPart.Position
+        elseif item:IsA("Model") and string.find(string.lower(item.Name), string.lower(Config.Event.TargetName)) then
+            -- Suporte caso o drop seja um Model e não uma Part solta (pega a PrimaryPart)
+            if item.PrimaryPart then
+                local part = item.PrimaryPart
+                 if Config.Event.TeleportEnabled then
+                    Root.CFrame = part.CFrame
+                end
+            end
         end
     end
+end
+
+TabEvent:Section({ Title = "Configuração do Coletor" })
+
+TabEvent:Input({
+    Title = "Nome do Item (Target)",
+    Desc = "Digite parte do nome do drop do OVNI (ex: Coin, Ore, Gift)",
+    Default = "Coin",
+    Placeholder = "Nome do objeto...",
+    Callback = function(text)
+        Config.Event.TargetName = text
+        WindUI:Notify({ Title = "Alvo Definido", Content = "Buscando por: " .. text, Icon = "search" })
+    end
 })
 
-VisualsTab:Toggle({
-    Title = "Highlight ESP",
-    Desc = "Simula ESP para testar proteções de CoreGui",
+TabEvent:Slider({
+    Title = "Raio de Busca",
+    Desc = "Distância máxima para interagir",
+    Step = 10,
+    Value = { Min = 50, Max = 2000, Default = 500 },
+    Callback = function(v)
+        Config.Event.Distance = v
+    end
+})
+
+TabEvent:Section({ Title = "Métodos de Coleta" })
+
+TabEvent:Toggle({
+    Title = "Magnet Mode (Puxar Itens)",
+    Desc = "Traz os itens até você (Requer item solto/unanchored)",
     Value = false,
     Callback = function(state)
-        -- Lógica de highlight simples para dev
+        Config.Event.MagnetEnabled = state
+        Config.Event.TeleportEnabled = false -- Segurança: desativa o outro modo
+        
         if state then
-            for _, plr in pairs(game.Players:GetPlayers()) do
-                if plr ~= game.Players.LocalPlayer and plr.Character then
-                    local hl = Instance.new("Highlight")
-                    hl.Name = "DevESP"
-                    hl.FillColor = Color3.fromRGB(255, 0, 0)
-                    hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-                    hl.Parent = plr.Character
-                end
-            end
+            Connections["EventLoop"] = RunService.RenderStepped:Connect(ProcessEventItems)
         else
-            for _, plr in pairs(game.Players:GetPlayers()) do
-                if plr.Character and plr.Character:FindFirstChild("DevESP") then
-                    plr.Character.DevESP:Destroy()
-                end
+            if not Config.Event.TeleportEnabled and Connections["EventLoop"] then 
+                Connections["EventLoop"]:Disconnect() 
             end
         end
     end
 })
 
--- >> ABA: SETTINGS (Controle da UI)
-SettingsTab:Section({ Title = "UI Management" })
+TabEvent:Toggle({
+    Title = "Teleport Mode (Ir até Item)",
+    Desc = "Teleporta você para cada item encontrado",
+    Value = false,
+    Callback = function(state)
+        Config.Event.TeleportEnabled = state
+        Config.Event.MagnetEnabled = false -- Segurança: desativa o outro modo
+        
+        if state then
+            Connections["EventLoop"] = RunService.RenderStepped:Connect(ProcessEventItems)
+        else
+            if not Config.Event.MagnetEnabled and Connections["EventLoop"] then 
+                Connections["EventLoop"]:Disconnect() 
+            end
+        end
+    end
+})
 
-SettingsTab:Button({
-    Title = "Recarregar Tema KLS",
-    Icon = "rotate-ccw",
+-- ==========================================
+-- CONFIG E CLEANUP
+-- ==========================================
+TabSettings:Section({ Title = "UI" })
+TabSettings:Button({
+    Title = "Destruir Script",
+    Desc = "Limpa conexões e fecha a UI",
     Callback = function()
-        WindUI:SetTheme("KLS Dark")
+        for _, conn in pairs(Connections) do
+            if conn then conn:Disconnect() end
+        end
+        Window:Close()
     end
 })
 
-SettingsTab:Keybind({
-    Title = "Menu Toggle",
-    Desc = "Tecla para ocultar o painel",
-    Value = "RightControl",
-    Callback = function(key)
-        Window:SetToggleKey(Enum.KeyCode[key])
-    end
-})
-
--- Notificação Inicial
+-- Inicialização
 WindUI:Notify({
-    Title = "Dev Mode Active",
-    Content = "KLS HUB carregado. Monitorando logs...",
-    Duration = 4,
-    Icon = "terminal",
+    Title = "KLS Event Tester",
+    Content = "Script injetado. Configure o nome do item na aba Evento.",
+    Duration = 6,
+    Icon = "shield-alert",
 })
