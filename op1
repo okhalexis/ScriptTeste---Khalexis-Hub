@@ -1,185 +1,171 @@
 --[[
-    KLS HUB - BRAINROT TYCOON AUDIT
-    Alvo: Teste de Física e Interação de Eventos
-    Criado com base no Dump do Jogo fornecido.
+    SOLO HUB - BRAINROT TYCOON [SECURITY AUDIT]
+    Premium UI Style | Full Automation
 ]]
 
+-- 1. Carregar Library (WindUI - Estilo Moderno)
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
 
+-- 2. Serviços
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 local LocalPlayer = Players.LocalPlayer
 
--- ==========================================
--- VARIÁVEIS E FUNÇÕES AUXILIARES
--- ==========================================
+-- 3. Variáveis de Controle
 local Flags = {
+    AutoCollect = false,
+    AutoBuy = false,
+    AutoLuckyBlock = false,
+    MagnetDrops = false,
     Speed = 16,
     SpeedEnabled = false,
-    MagnetDrops = false,
-    AutoLuckyBlock = false,
-    AutoCollectCash = false,
-    RemoveLava = false,
-    MyTycoon = nil -- Vai detectar automaticamente
+    SelectedTycoon = nil,
+    ESPRarity = { "Secret", "Godly", "Celestial", "Mythical" } -- Filtro de ESP
 }
 
-local Connections = {}
-
--- Função Segura para Tocar em Partes (Simula TouchInterest)
-local function FireTouch(part)
-    if not part then return end
-    local Char = LocalPlayer.Character
-    if Char and Char:FindFirstChild("HumanoidRootPart") then
-        firetouchinterest(Char.HumanoidRootPart, part, 0) -- Toca
-        task.wait()
-        firetouchinterest(Char.HumanoidRootPart, part, 1) -- Solta
-    end
-end
-
--- Tenta encontrar o Tycoon do jogador
-local function GetMyTycoon()
+-- 4. Função para Encontrar o Tycoon do Jogador
+local function FindMyTycoon()
+    -- Tenta achar pela placa ou owner
     for _, base in pairs(Workspace.Bases:GetChildren()) do
-        -- Geralmente o nome do dono fica numa StringValue ou no Texto da Placa
-        -- Vou procurar pelo nome do jogador na placa da base
         local sign = base:FindFirstChild("Title") or base:FindFirstChild("Sign")
         if sign then
+            -- Verifica se o nome do jogador está na GUI da placa
             local textLabel = sign:FindFirstChild("TextLabel", true) or sign:FindFirstChild("PlayerName", true)
-            if textLabel and string.find(textLabel.Text, LocalPlayer.Name) then
+            if textLabel and textLabel:IsA("TextLabel") and string.find(textLabel.Text, LocalPlayer.Name) then
                 return base
             end
+        end
+        
+        -- Método alternativo: Verificar Owner Value se existir
+        local ownerVal = base:FindFirstChild("Owner")
+        if ownerVal and ownerVal.Value == LocalPlayer then
+            return base
         end
     end
     return nil
 end
 
--- ==========================================
--- UI SETUP
--- ==========================================
+-- 5. Criação da Janela
 WindUI:SetNotificationLower(true)
 local Window = WindUI:CreateWindow({
-    Title = "KLS: Brainrot Tycoon Test",
-    Icon = "brain-circuit",
-    Author = "KLS Team",
-    Folder = "KLSTycoon",
-    Size = UDim2.fromOffset(600, 450),
+    Title = "SOLO HUB | Brainrot Tycoon",
+    Icon = "skull", 
+    Author = "Audit Tool",
+    Folder = "BrainrotTycoon",
+    Size = UDim2.fromOffset(620, 480),
     Transparent = true,
     Theme = "Dark",
 })
 
-local TabFarm = Window:Tab({ Title = "Tycoon & Farm", Icon = "coins" })
-local TabEvent = Window:Tab({ Title = "Eventos & Drops", Icon = "zap" })
-local TabPlayer = Window:Tab({ Title = "Player (Física)", Icon = "user" })
+local TabFarm = Window:Tab({ Title = "Auto Farm", Icon = "coins" })
+local TabEvent = Window:Tab({ Title = "Eventos/Lucky", Icon = "gift" })
+local TabVisuals = Window:Tab({ Title = "ESP & Render", Icon = "eye" })
+local TabPlayer = Window:Tab({ Title = "Player", Icon = "user" })
 
--- ==========================================
--- ABA: TYCOON FARM
--- ==========================================
-TabFarm:Section({ Title = "Automação da Base" })
+-- ==================================================================
+-- ABA 1: AUTO FARM (TYCOON)
+-- ==================================================================
+TabFarm:Section({ Title = "Gerenciador do Tycoon" })
 
 TabFarm:Button({
-    Title = "Detectar Minha Base",
-    Desc = "Clica aqui se o Auto Farm não funcionar",
+    Title = "Escanear Minha Base",
+    Desc = "Clique aqui para vincular o script à sua base.",
     Callback = function()
-        Flags.MyTycoon = GetMyTycoon()
-        if Flags.MyTycoon then
-            WindUI:Notify({ Title = "Sucesso", Content = "Base encontrada: " .. Flags.MyTycoon.Name, Icon = "check" })
+        Flags.SelectedTycoon = FindMyTycoon()
+        if Flags.SelectedTycoon then
+            WindUI:Notify({ Title = "Sucesso", Content = "Base vinculada: " .. Flags.SelectedTycoon.Name, Icon = "check" })
         else
-            WindUI:Notify({ Title = "Erro", Content = "Não encontrei sua base. Reivindique uma primeiro!", Icon = "alert-triangle" })
+            WindUI:Notify({ Title = "Erro", Content = "Base não encontrada. Pegue uma base primeiro!", Icon = "alert-triangle" })
         end
     end
 })
 
 TabFarm:Toggle({
-    Title = "Auto Collect Cash",
-    Desc = "Coleta dinheiro dos coletores automaticamente (TouchInterest)",
+    Title = "Auto Collect Money (Silent)",
+    Desc = "Coleta dinheiro sem andar (Usa firetouchinterest)",
     Callback = function(state)
-        Flags.AutoCollectCash = state
+        Flags.AutoCollect = state
         if state then
             task.spawn(function()
-                while Flags.AutoCollectCash do
-                    if not Flags.MyTycoon then Flags.MyTycoon = GetMyTycoon() end
-                    
-                    if Flags.MyTycoon then
-                        -- Vasculha os Slots da base por 'CollectMoneyGui' ou pads de coleta
-                        local slots = Flags.MyTycoon:FindFirstChild("Slots")
+                while Flags.AutoCollect do
+                    if Flags.SelectedTycoon then
+                        -- Procura botões de coleta nos Slots
+                        local slots = Flags.SelectedTycoon:FindFirstChild("Slots")
                         if slots then
                             for _, slot in pairs(slots:GetChildren()) do
+                                -- Baseado no seu dump: Slots -> SlotX -> Collect -> CollectMoneyGui
                                 local collectPart = slot:FindFirstChild("Collect")
-                                if collectPart then
-                                    FireTouch(collectPart)
+                                if collectPart and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                                    -- Simula o toque fisicamente no servidor
+                                    firetouchinterest(LocalPlayer.Character.HumanoidRootPart, collectPart, 0)
+                                    firetouchinterest(LocalPlayer.Character.HumanoidRootPart, collectPart, 1)
                                 end
                             end
                         end
                     end
-                    task.wait(1) -- Coleta a cada 1 segundo
+                    task.wait(0.5) -- Delay para não crashar
                 end
             end)
         end
     end
 })
 
--- ==========================================
--- ABA: EVENTOS & DROPS (O PEDIDO PRINCIPAL)
--- ==========================================
-TabEvent:Section({ Title = "Chuva de Itens (Tsunami/UFO)" })
-
-TabEvent:Toggle({
-    Title = "Magnet Event Drops",
-    Desc = "Puxa as moedas do Tsunami/UFO (WaveCoinDrops)",
+TabFarm:Toggle({
+    Title = "Auto Buy Buttons",
+    Desc = "Pisa automaticamente nos botões de compra",
     Callback = function(state)
-        Flags.MagnetDrops = state
+        Flags.AutoBuy = state
         if state then
-            Connections["MagnetLoop"] = RunService.Heartbeat:Connect(function()
-                local Char = LocalPlayer.Character
-                if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
-                local Root = Char.HumanoidRootPart
-
-                -- Puxa da pasta WaveCoinDrops (baseado no seu dump)
-                if Workspace:FindFirstChild("WaveCoinDrops") then
-                    for _, drop in pairs(Workspace.WaveCoinDrops:GetChildren()) do
-                        if drop:IsA("BasePart") and drop.Anchored == false then
-                            -- Traz fisicamente para o jogador
-                            drop.CFrame = Root.CFrame
-                            drop.AssemblyLinearVelocity = Vector3.new(0,0,0)
+            task.spawn(function()
+                while Flags.AutoBuy do
+                    if Flags.SelectedTycoon then
+                         local slots = Flags.SelectedTycoon:FindFirstChild("Slots")
+                        if slots then
+                            for _, slot in pairs(slots:GetChildren()) do
+                                -- Baseado no dump: Slots -> SlotX -> Upgrade -> UpgradeGui -> Button
+                                -- Normalmente o botão físico é uma Part com TouchInterest
+                                local upgradePart = slot:FindFirstChild("Upgrade")
+                                if upgradePart and upgradePart:FindFirstChild("TouchInterest") then
+                                     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                                        firetouchinterest(LocalPlayer.Character.HumanoidRootPart, upgradePart, 0)
+                                        firetouchinterest(LocalPlayer.Character.HumanoidRootPart, upgradePart, 1)
+                                    end
+                                end
+                            end
                         end
                     end
-                end
-                
-                -- Puxa moedas de bomba se houver
-                if Workspace:FindFirstChild("CoinBombs") then
-                     for _, bomb in pairs(Workspace.CoinBombs:GetChildren()) do
-                        if bomb:IsA("BasePart") then
-                             bomb.CFrame = Root.CFrame
-                        end
-                     end
+                    task.wait(0.2)
                 end
             end)
-        else
-            if Connections["MagnetLoop"] then Connections["MagnetLoop"]:Disconnect() end
         end
     end
 })
 
-TabEvent:Section({ Title = "Lucky Blocks & Brainrots" })
+-- ==================================================================
+-- ABA 2: EVENTOS E LUCKY BLOCKS
+-- ==================================================================
+TabEvent:Section({ Title = "Lucky Blocks" })
 
 TabEvent:Toggle({
-    Title = "Auto Break Lucky Blocks",
-    Desc = "Teleporta e interage com Lucky Blocks ativos (Celestial, Cosmic, etc)",
+    Title = "Sniper Lucky Blocks",
+    Desc = "Teleporta e abre Lucky Blocks instantaneamente",
     Callback = function(state)
         Flags.AutoLuckyBlock = state
         if state then
             task.spawn(function()
                 while Flags.AutoLuckyBlock do
-                    local Char = LocalPlayer.Character
-                    if Char and Char:FindFirstChild("HumanoidRootPart") and Workspace:FindFirstChild("ActiveLuckyBlocks") then
+                    -- Baseado no dump: workspace.ActiveLuckyBlocks
+                    if Workspace:FindFirstChild("ActiveLuckyBlocks") then
                         for _, block in pairs(Workspace.ActiveLuckyBlocks:GetChildren()) do
                             local root = block:FindFirstChild("RootPart")
-                            if root then
-                                -- Teleporta perto (teste de AC: Teleporte curto)
-                                Char.HumanoidRootPart.CFrame = root.CFrame * CFrame.new(0, 3, 0)
+                            if root and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                                -- 1. Teleporta
+                                LocalPlayer.Character.HumanoidRootPart.CFrame = root.CFrame * CFrame.new(0, 3, 0)
                                 task.wait(0.1)
                                 
-                                -- Tenta acionar o ProximityPrompt
+                                -- 2. Aciona o ProximityPrompt (Interação)
                                 local prompt = root:FindFirstChild("ProximityPrompt")
                                 if prompt then
                                     fireproximityprompt(prompt)
@@ -187,26 +173,59 @@ TabEvent:Toggle({
                             end
                         end
                     end
-                    task.wait(0.5)
+                    task.wait(0.2)
                 end
             end)
         end
     end
 })
 
--- ==========================================
--- ABA: PLAYER (BYPASS REAL)
--- ==========================================
-TabPlayer:Section({ Title = "Movimentação Bypass" })
+TabEvent:Section({ Title = "Eventos (Tsunami/UFO)" })
+
+TabEvent:Toggle({
+    Title = "Magnet Drops (Tsunami/UFO)",
+    Desc = "Puxa moedas e drops do evento para você",
+    Callback = function(state)
+        Flags.MagnetDrops = state
+        if state then
+            RunService.RenderStepped:Connect(function()
+                if not Flags.MagnetDrops then return end
+                local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if not root then return end
+
+                -- Pasta do dump: WaveCoinDrops
+                if Workspace:FindFirstChild("WaveCoinDrops") then
+                    for _, coin in pairs(Workspace.WaveCoinDrops:GetChildren()) do
+                        if coin:IsA("BasePart") then
+                            coin.CFrame = root.CFrame
+                            coin.AssemblyLinearVelocity = Vector3.new(0,0,0) -- Remove inércia
+                        end
+                    end
+                end
+                
+                -- Pasta do dump: CoinBombs
+                if Workspace:FindFirstChild("CoinBombs") then
+                    for _, bomb in pairs(Workspace.CoinBombs:GetChildren()) do
+                         if bomb:IsA("BasePart") then
+                            bomb.CFrame = root.CFrame
+                         end
+                    end
+                end
+            end)
+        end
+    end
+})
+
+-- ==================================================================
+-- ABA 3: PLAYER
+-- ==================================================================
+TabPlayer:Section({ Title = "Modificadores" })
 
 TabPlayer:Slider({
-    Title = "Velocity Speed",
-    Desc = "Velocidade que ignora Humanoid.WalkSpeed",
+    Title = "Speed (Velocity)",
     Step = 1,
-    Value = { Min = 16, Max = 200, Default = 16 },
-    Callback = function(v)
-        Flags.Speed = v
-    end
+    Value = {Min = 16, Max = 300, Default = 16},
+    Callback = function(v) Flags.Speed = v end
 })
 
 TabPlayer:Toggle({
@@ -214,46 +233,92 @@ TabPlayer:Toggle({
     Callback = function(state)
         Flags.SpeedEnabled = state
         if state then
-            Connections["SpeedBypass"] = RunService.Heartbeat:Connect(function()
-                local Char = LocalPlayer.Character
-                if Char and Char:FindFirstChild("Humanoid") and Char:FindFirstChild("HumanoidRootPart") then
-                    local Hum = Char.Humanoid
-                    local Root = Char.HumanoidRootPart
-                    if Hum.MoveDirection.Magnitude > 0 then
-                        Root.AssemblyLinearVelocity = Vector3.new(
-                            Hum.MoveDirection.X * Flags.Speed,
-                            Root.AssemblyLinearVelocity.Y,
-                            Hum.MoveDirection.Z * Flags.Speed
+            RunService.Heartbeat:Connect(function()
+                if not Flags.SpeedEnabled then return end
+                local char = LocalPlayer.Character
+                if char and char:FindFirstChild("Humanoid") and char:FindFirstChild("HumanoidRootPart") then
+                    local hum = char.Humanoid
+                    local root = char.HumanoidRootPart
+                    if hum.MoveDirection.Magnitude > 0 then
+                        root.AssemblyLinearVelocity = Vector3.new(
+                            hum.MoveDirection.X * Flags.Speed,
+                            root.AssemblyLinearVelocity.Y,
+                            hum.MoveDirection.Z * Flags.Speed
                         )
                     end
                 end
             end)
-        else
-            if Connections["SpeedBypass"] then Connections["SpeedBypass"]:Disconnect() end
         end
     end
 })
 
-TabPlayer:Section({ Title = "Segurança / Visual" })
+-- ==================================================================
+-- ABA 4: ESP (VISUAIS)
+-- ==================================================================
+TabVisuals:Section({ Title = "Brainrot ESP" })
 
-TabPlayer:Button({
-    Title = "Remover Lava",
-    Desc = "Deleta a pasta Workspace.Lava para não morrer",
-    Icon = "trash",
+local ESPFolder = Instance.new("Folder", game.CoreGui)
+ESPFolder.Name = "KLS_ESP"
+
+local function AddESP(model, color)
+    if not model:FindFirstChild("RootPart") and not model.PrimaryPart then return end
+    local part = model:FindFirstChild("RootPart") or model.PrimaryPart
+    
+    local highlight = Instance.new("Highlight")
+    highlight.Adornee = model
+    highlight.FillColor = color
+    highlight.OutlineColor = Color3.new(1,1,1)
+    highlight.FillTransparency = 0.5
+    highlight.Parent = ESPFolder
+    
+    -- Texto
+    local bg = Instance.new("BillboardGui")
+    bg.Adornee = part
+    bg.Size = UDim2.new(0, 100, 0, 50)
+    bg.StudsOffset = Vector3.new(0, 3, 0)
+    bg.AlwaysOnTop = true
+    bg.Parent = ESPFolder
+    
+    local txt = Instance.new("TextLabel", bg)
+    txt.Size = UDim2.new(1,0,1,0)
+    txt.BackgroundTransparency = 1
+    txt.Text = model.Name
+    txt.TextColor3 = color
+    txt.TextStrokeTransparency = 0
+end
+
+TabVisuals:Button({
+    Title = "Atualizar ESP de Raros",
+    Desc = "Marca Brainrots Secret, Godly e Celestial",
     Callback = function()
-        if Workspace:FindFirstChild("Lava") then
-            Workspace.Lava:Destroy()
-            WindUI:Notify({ Title = "Lava Removida", Content = "Você não toma mais dano de lava.", Icon = "flame" })
-        else
-            WindUI:Notify({ Title = "Aviso", Content = "Lava não encontrada ou já removida.", Icon = "info" })
+        ESPFolder:ClearAllChildren()
+        
+        -- Baseado no dump: ActiveBrainrots -> [Categoria] -> [Modelo]
+        if Workspace:FindFirstChild("ActiveBrainrots") then
+            for _, rarityFolder in pairs(Workspace.ActiveBrainrots:GetChildren()) do
+                local color = Color3.new(1,1,1)
+                
+                -- Cores baseadas na raridade
+                if rarityFolder.Name == "Secret" then color = Color3.fromRGB(255, 0, 0) -- Vermelho
+                elseif rarityFolder.Name == "Godly" or rarityFolder.Name == "Divine" then color = Color3.fromRGB(255, 0, 255) -- Roxo
+                elseif rarityFolder.Name == "Celestial" then color = Color3.fromRGB(0, 255, 255) -- Ciano
+                elseif rarityFolder.Name == "Mythical" then color = Color3.fromRGB(255, 170, 0) -- Laranja
+                else color = Color3.fromRGB(0, 255, 0) end -- Comum/Outros
+                
+                for _, brainrot in pairs(rarityFolder:GetChildren()) do
+                    if brainrot:IsA("Model") then
+                        AddESP(brainrot, color)
+                    end
+                end
+            end
+            WindUI:Notify({ Title = "ESP", Content = "ESP Atualizado!", Icon = "eye" })
         end
     end
 })
 
--- Notificação Inicial
 WindUI:Notify({
-    Title = "Script Carregado",
-    Content = "KLS Brainrot Edition Ativado. Use a aba Farm para configurar sua base.",
+    Title = "Script Injetado",
+    Content = "Bem-vindo ao Solo Hub. Configure sua base na aba Auto Farm.",
     Duration = 5,
-    Icon = "check",
+    Icon = "check-circle",
 })
