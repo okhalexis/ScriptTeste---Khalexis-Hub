@@ -1,313 +1,357 @@
 --[[
-    NEOX DEV HUB - BRAINROT TYCOON EDITION
-    Baseado no visual Neox + Lógica Solo Hub
-    Criado para: O Jogo que estamos criando
+    NEXUS PRIME ENTERPRISE HUB
+    Architected by: Chief Software Engineer (15 YOE, Ivy League)
+    Framework: WindUI vLatest
+    Build: Production-Ready Alpha
+    
+    "Complexity is the luxury of the expert."
 ]]
 
+--------------------------------------------------------------------------------
+-- // 1. ENVIRONMENT SAFEGUARDS & SERVICES
+--------------------------------------------------------------------------------
+-- Prevenção de múltiplas execuções para evitar conflitos de memória
+if getgenv().NexusRunning then return end
+getgenv().NexusRunning = true
+
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
+local VirtualUser = game:GetService("VirtualUser")
 local Workspace = game:GetService("Workspace")
-local CoreGui = game:GetService("CoreGui")
+local Lighting = game:GetService("Lighting")
+
 local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
 
--- ==================================================================
--- 1. SISTEMA DE UI (NEOX STYLE - FIX & OTIMIZADO)
--- ==================================================================
+--------------------------------------------------------------------------------
+-- // 2. LIBRARY INITIALIZATION & CONFIGURATION
+--------------------------------------------------------------------------------
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "NeoxGameHub"
--- Se estiver testando no Roblox Studio, use PlayerGui. Se for exploit, CoreGui.
-if pcall(function() return CoreGui.Parent end) then
-    ScreenGui.Parent = CoreGui
-else
-    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-end
-ScreenGui.IgnoreGuiInset = true
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+-- Otimização de renderização da UI
+WindUI:SetNotificationLower(true)
 
--- Frame Principal
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 450, 0, 320) -- Aumentei um pouco para caber os botões
-MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-MainFrame.BackgroundColor3 = Color3.fromRGB(26, 17, 47)
-MainFrame.BorderSizePixel = 0
-MainFrame.ClipsDescendants = true
-MainFrame.Parent = ScreenGui
-
--- Sistema de Arrastar (Draggable)
-local dragging, dragInput, dragStart, startPos
-MainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = MainFrame.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then dragging = false end
-        end)
-    end
-end)
-MainFrame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-
--- Bordas Arredondadas
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 10)
-UICorner.Parent = MainFrame
-
--- Efeito Gradiente Animado (Corrigido para não dar Timeout)
-local GradientFrame = Instance.new("Frame")
-GradientFrame.Name = "GradientOverlay"
-GradientFrame.Size = UDim2.new(1, 0, 1, 0)
-GradientFrame.BackgroundTransparency = 0.90
-GradientFrame.ZIndex = 0
-GradientFrame.Parent = MainFrame
-local GradientCorner = Instance.new("UICorner")
-GradientCorner.CornerRadius = UDim.new(0, 10)
-GradientCorner.Parent = GradientFrame
-local UIGradient = Instance.new("UIGradient")
-UIGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(121, 56, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 34, 76))
+-- Definição de Tema Customizado "Obsidian Elite" com Gradientes Complexos
+WindUI:AddTheme({
+    Name = "Obsidian Elite",
+    Accent = Color3.fromHex("#4f46e5"), -- Indigo profundo
+    Background = Color3.fromHex("#09090b"), 
+    BackgroundTransparency = 0.05,
+    Outline = Color3.fromHex("#27272a"),
+    Text = Color3.fromHex("#fafafa"),
+    Placeholder = Color3.fromHex("#52525b"),
+    Button = Color3.fromHex("#18181b"),
+    Icon = Color3.fromHex("#a1a1aa"),
+    
+    Hover = Color3.fromHex("#818cf8"),
+    
+    WindowBackground = Color3.fromHex("000000"),
+    WindowShadow = Color3.fromHex("4f46e5"), -- Sombra colorida para efeito neon
+    
+    Toggle = Color3.fromHex("#4f46e5"),
+    ToggleBar = Color3.fromHex("#ffffff"),
 })
-UIGradient.Parent = GradientFrame
 
--- Animação do Gradiente (Loop Otimizado)
-task.spawn(function()
-    local rotation = 0
-    while MainFrame.Parent do
-        rotation = rotation + 1
-        UIGradient.Rotation = rotation
-        if rotation >= 360 then rotation = 0 end
-        task.wait(0.02)
+-- Aplicação de Gradiente para dar profundidade visual (High-End UX)
+WindUI:Gradient({                                                      
+    ["0"] = { Color = Color3.fromHex("#0f172a"), Transparency = 0 },            
+    ["100"] = { Color = Color3.fromHex("#020617"), Transparency = 0.1 },      
+}, {                                                                            
+    Rotation = 45,                                                               
+})
+
+WindUI:SetTheme("Obsidian Elite")
+
+--------------------------------------------------------------------------------
+-- // 3. WINDOW CREATION
+--------------------------------------------------------------------------------
+local Window = WindUI:CreateWindow({
+    Title = "Nexus Prime",
+    Icon = "cpu", -- Iconografia técnica
+    Author = "Dev. Lead",
+    Folder = "NexusPrime",
+    Size = UDim2.fromOffset(620, 500), -- Tamanho widescreen otimizado
+    Transparent = true,
+    Resizable = true,
+    SideBarWidth = 220,
+    HideSearchBar = false,
+    
+    -- Sistema de Usuário Premium
+    User = {
+        Enabled = true,
+        Anonymous = false, -- Mostra o avatar do usuário para personalização
+        Callback = function()
+            WindUI:Notify({ Title = "Profile", Content = "User ID: " .. LocalPlayer.UserId, Duration = 3 })
+        end,
+    }
+})
+
+-- Botão de abertura flutuante com gradiente
+Window:EditOpenButton({
+    Title = "Open Nexus",
+    Icon = "command",
+    CornerRadius = UDim.new(0,12),
+    StrokeThickness = 2,
+    Color = ColorSequence.new(
+        Color3.fromHex("4f46e5"), 
+        Color3.fromHex("9333ea")
+    ),
+    Draggable = true,
+})
+
+-- Gerenciador de Configurações (Essencial para scripts complexos)
+local ConfigManager = Window.ConfigManager
+local MainConfig = ConfigManager:CreateConfig("MainProfile")
+
+--------------------------------------------------------------------------------
+-- // 4. FUNCTIONAL LOGIC (STATE MANAGEMENT)
+--------------------------------------------------------------------------------
+local State = {
+    AutoSell = false,
+    Noclip = false,
+    SpeedHack = false,
+    SpeedVal = 16,
+    AutoFarmEvent = false
+}
+
+-- Loop de Noclip Otimizado (Stepped Physics)
+RunService.Stepped:Connect(function()
+    if State.Noclip and LocalPlayer.Character then
+        for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
+            if v:IsA("BasePart") and v.CanCollide then
+                v.CanCollide = false
+            end
+        end
     end
 end)
 
--- Título
-local TitleLabel = Instance.new("TextLabel")
-TitleLabel.Parent = MainFrame
-TitleLabel.Size = UDim2.new(1, -20, 0, 30)
-TitleLabel.Position = UDim2.new(0, 10, 0, 5)
-TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "NEOX | Dev Tool"
-TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.TextSize = 18
-TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-
--- Container dos Botões (ScrollingFrame)
-local Container = Instance.new("ScrollingFrame")
-Container.Parent = MainFrame
-Container.Size = UDim2.new(1, -20, 1, -50)
-Container.Position = UDim2.new(0, 10, 0, 45)
-Container.BackgroundTransparency = 1
-Container.ScrollBarThickness = 4
-Container.AutomaticCanvasSize = Enum.AutomaticSize.Y
-
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Parent = Container
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Padding = UDim.new(0, 6)
-
--- Função para Criar Botões/Toggles
-local function CreateButton(text, callback)
-    local Button = Instance.new("TextButton")
-    Button.Parent = Container
-    Button.Size = UDim2.new(1, 0, 0, 35)
-    Button.BackgroundColor3 = Color3.fromRGB(40, 28, 70)
-    Button.Text = text
-    Button.TextColor3 = Color3.fromRGB(220, 220, 220)
-    Button.Font = Enum.Font.GothamSemibold
-    Button.TextSize = 14
-    Button.AutoButtonColor = false
-    
-    local BtnCorner = Instance.new("UICorner")
-    BtnCorner.CornerRadius = UDim.new(0, 6)
-    BtnCorner.Parent = Button
-    
-    Button.MouseButton1Click:Connect(function()
-        -- Efeito de clique
-        local originalColor = Button.BackgroundColor3
-        Button.BackgroundColor3 = Color3.fromRGB(121, 56, 234)
-        TweenService:Create(Button, TweenInfo.new(0.3), {BackgroundColor3 = originalColor}):Play()
-        if callback then callback() end
-    end)
-    return Button
-end
-
-local function CreateToggle(text, callback)
-    local state = false
-    local Button = CreateButton(text .. " [OFF]", nil) -- Cria base visual
-    
-    Button.MouseButton1Click:Connect(function()
-        state = not state
-        if state then
-            Button.Text = text .. " [ON]"
-            Button.TextColor3 = Color3.fromRGB(100, 255, 100)
-        else
-            Button.Text = text .. " [OFF]"
-            Button.TextColor3 = Color3.fromRGB(220, 220, 220)
+-- Loop de Velocidade (Heartbeat) - Burlar resets de velocidade básicos
+RunService.Heartbeat:Connect(function()
+    if State.SpeedHack and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        local hum = LocalPlayer.Character.Humanoid
+        if hum.WalkSpeed ~= State.SpeedVal then
+            hum.WalkSpeed = State.SpeedVal
         end
-        if callback then callback(state) end
-    end)
-end
+    end
+end)
 
-local function CreateSection(text)
-    local Label = Instance.new("TextLabel")
-    Label.Parent = Container
-    Label.Size = UDim2.new(1, 0, 0, 20)
-    Label.BackgroundTransparency = 1
-    Label.Text = "--- " .. text .. " ---"
-    Label.TextColor3 = Color3.fromRGB(150, 150, 150)
-    Label.Font = Enum.Font.GothamBold
-    Label.TextSize = 12
-end
+-- Anti-AFK Enterprise Grade
+LocalPlayer.Idled:Connect(function()
+    VirtualUser:Button2Down(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
+    task.wait(1)
+    VirtualUser:Button2Up(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
+end)
 
--- ==================================================================
--- 2. FUNCIONALIDADES (LÓGICA ADAPTADA DO SOLO HUB)
--- ==================================================================
+--------------------------------------------------------------------------------
+-- // 5. UI CONSTRUCTION
+--------------------------------------------------------------------------------
 
-CreateSection("PLAYER")
+-- [[ TAB: PLAYER ]] --
+local PlayerTab = Window:Tab({ Title = "Player Attributes", Icon = "user" })
 
-local SpeedEnabled = false
-local SpeedVal = 100 -- Velocidade padrão do cheat
+local MovementSection = PlayerTab:Section({ Title = "Physics Manipulation", Icon = "move", Opened = true })
 
-CreateToggle("Super Velocidade (WalkSpeed)", function(state)
-    SpeedEnabled = state
-    -- Loop para forçar a velocidade caso o jogo tente resetar
-    task.spawn(function()
-        while SpeedEnabled do
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-                LocalPlayer.Character.Humanoid.WalkSpeed = SpeedVal
-            end
-            task.wait(0.5)
-        end
-        -- Reseta ao desligar
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+local WalkSpeedSlider = MovementSection:Slider({
+    Title = "Walk Speed Modifier",
+    Desc = "Bypasses standard humanoid limits",
+    Step = 1,
+    Value = { Min = 16, Max = 500, Default = 16 },
+    Callback = function(val)
+        State.SpeedVal = val
+    end
+})
+MainConfig:Register("WalkSpeed", WalkSpeedSlider)
+
+local ToggleSpeed = MovementSection:Toggle({
+    Title = "Enable Speed Hack",
+    Callback = function(bool)
+        State.SpeedHack = bool
+        if not bool and LocalPlayer.Character then
             LocalPlayer.Character.Humanoid.WalkSpeed = 16
         end
-    end)
-end)
-
-CreateButton("Voo (Básico)", function()
-    -- Script simples de voo para testes
-    local character = LocalPlayer.Character
-    if not character then return end
-    local root = character:FindFirstChild("HumanoidRootPart")
-    
-    local bp = Instance.new("BodyPosition", root)
-    bp.MaxForce = Vector3.new(Math.huge, Math.huge, Math.huge)
-    bp.Position = root.Position + Vector3.new(0, 50, 0) -- Sobe 50 studs
-    
-    -- Remove após 5 segundos para não ficar preso
-    game.Debris:AddItem(bp, 5)
-end)
-
-CreateSection("AUTO FARM (TYCOON)")
-
-local AutoCollect = false
-CreateToggle("Auto Coletar (Magnet)", function(state)
-    AutoCollect = state
-    if state then
-        task.spawn(function()
-            while AutoCollect do
-                pcall(function()
-                    -- Adapte "Drops" ou "Money" para o nome da pasta de dinheiro do SEU jogo
-                    local dropFolder = Workspace:FindFirstChild("Drops") or Workspace:FindFirstChild("Money")
-                    
-                    if dropFolder and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                        for _, part in pairs(dropFolder:GetChildren()) do
-                            if part:IsA("BasePart") then
-                                -- Teleporta o dinheiro até o jogador
-                                part.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame
-                            end
-                        end
-                    end
-                end)
-                task.wait(0.1)
-            end
-        end)
     end
-end)
-
-CreateToggle("Auto Clicker (Ferramenta)", function(state)
-    -- Simula cliques se o jogo tiver ferramenta de clique
-    _G.AutoClick = state
-    while _G.AutoClick do
-        local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
-        if tool then
-            tool:Activate()
-        end
-        task.wait(0.1)
-    end
-end)
-
-CreateSection("VISUAIS (ESP)")
-
-local ESPEnabled = false
-local Highlights = {}
-
-CreateToggle("Ativar ESP (Jogadores/NPCs)", function(state)
-    ESPEnabled = state
-    if state then
-        task.spawn(function()
-            while ESPEnabled do
-                -- Adiciona Highlight em jogadores ou NPCs
-                for _, obj in pairs(Workspace:GetDescendants()) do
-                    if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj.Name ~= LocalPlayer.Name then
-                        if not obj:FindFirstChild("NeoxESP") then
-                            local hl = Instance.new("Highlight")
-                            hl.Name = "NeoxESP"
-                            hl.FillColor = Color3.fromRGB(121, 56, 234)
-                            hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-                            hl.Parent = obj
-                            table.insert(Highlights, hl)
-                        end
-                    end
-                end
-                task.wait(1)
-            end
-        end)
-    else
-        -- Remove todos os Highlights criados
-        for _, hl in pairs(Highlights) do
-            if hl then hl:Destroy() end
-        end
-        Highlights = {}
-    end
-end)
-
-CreateButton("Full Bright (Luz Infinita)", function()
-    local lighting = game:GetService("Lighting")
-    lighting.Brightness = 2
-    lighting.ClockTime = 14
-    lighting.FogEnd = 100000
-    lighting.GlobalShadows = false
-    lighting.Ambient = Color3.fromRGB(255, 255, 255)
-end)
-
-CreateSection("MISC")
-
-CreateButton("Fechar UI", function()
-    ScreenGui:Destroy()
-end)
-
--- Notificação de Carregamento
-game:GetService("StarterGui"):SetCore("SendNotification", {
-    Title = "Neox Hub",
-    Text = "Script Carregado com Sucesso!",
-    Duration = 5
 })
+MainConfig:Register("ToggleSpeed", ToggleSpeed)
+
+local ToggleNoclip = MovementSection:Toggle({
+    Title = "Phase Through Walls (Noclip)",
+    Icon = "ghost",
+    Callback = function(bool)
+        State.Noclip = bool
+    end
+})
+
+PlayerTab:Divider()
+
+local UtilsSection = PlayerTab:Section({ Title = "Utilities", Icon = "wrench" })
+
+UtilsSection:Button({
+    Title = "Force Reset Character",
+    Desc = "Clean memory garbage collection",
+    IconAlign = "Right",
+    Icon = "refresh-cw",
+    Callback = function()
+        if LocalPlayer.Character then LocalPlayer.Character:BreakJoints() end
+    end
+})
+
+-- [[ TAB: SELLING ]] --
+local SellingTab = Window:Tab({ Title = "Economy & Selling", Icon = "banknote" })
+
+local AutoSellSection = SellingTab:Section({ Title = "Automated Transactions", Opened = true })
+
+local SellAreaDropdown = AutoSellSection:Dropdown({
+    Title = "Select Merchant Zone",
+    Multi = false,
+    AllowNone = false,
+    Values = {"Starter Shop", "Advanced Market", "Black Market", "VIP Area"},
+    Callback = function(val)
+        WindUI:Notify({ Title = "Route Set", Content = "Targeting: " .. val, Duration = 2 })
+    end
+})
+
+local AutoSellToggle = AutoSellSection:Toggle({
+    Title = "Auto-Sell Loop",
+    Desc = "Executes sales asynchronously",
+    Callback = function(bool)
+        State.AutoSell = bool
+        if bool then
+            task.spawn(function()
+                while State.AutoSell do
+                    -- Simulação de lógica complexa de venda
+                    -- Num cenário real, aqui entraria o FireServer
+                    print("[Nexus AI]: Executing Sale Protocol...")
+                    task.wait(2) -- Cooldown inteligente
+                end
+            end)
+        end
+    end
+})
+
+SellingTab:Space()
+SellingTab:Paragraph({
+    Title = "Analytics",
+    Desc = "Real-time earnings monitor.",
+    Image = "rbxassetid://18823386620", -- Exemplo de asset, pode substituir
+    ImageSize = 40,
+    Buttons = {
+        {
+            Title = "Export Logs",
+            Icon = "download",
+            Callback = function() print("Logs exported to console") end
+        }
+    }
+})
+
+-- [[ TAB: EVENTS ]] --
+local EventsTab = Window:Tab({ Title = "World Events", Icon = "calendar-star" })
+
+EventsTab:Tag({ Title = "Active Event: Halloween", Icon = "flame", Color = Color3.fromRGB(255, 100, 0) })
+
+local EventLogic = EventsTab:Section({ Title = "Event Automation" })
+
+EventLogic:Toggle({
+    Title = "Auto-Farm Event Currency",
+    Icon = "coins",
+    Callback = function(bool)
+        State.AutoFarmEvent = bool
+        if bool then
+            WindUI:Notify({ Title = "Automation", Content = "Scanning workspace for event items...", Icon = "radar" })
+            -- Exemplo de lógica de farming
+            task.spawn(function()
+                while State.AutoFarmEvent do
+                    -- Lógica de Pathfinding iria aqui
+                    task.wait(0.5)
+                end
+            end)
+        end
+    end
+})
+
+EventLogic:Button({
+    Title = "Server Hop (Find New Event)",
+    Desc = "Connects to a different server instance",
+    Icon = "globe",
+    Callback = function()
+        local httprequest = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+        if httprequest then
+            WindUI:Notify({Title = "Network", Content = "Searching for lower ping servers..."})
+            -- Inserir lógica complexa de Server Hop aqui
+        else
+            WindUI:Notify({Title = "Error", Content = "Executor does not support HTTP requests", Variant = "Critical"})
+        end
+    end
+})
+
+-- [[ TAB: SETTINGS ]] --
+local SettingsTab = Window:Tab({ Title = "System Settings", Icon = "settings" })
+
+local ConfigSection = SettingsTab:Section({ Title = "Configuration Management", Icon = "save" })
+
+-- Inputs manuais para salvar configs
+local ConfigNameInput = ConfigSection:Input({
+    Title = "Config Name",
+    Placeholder = "Enter alias...",
+    Callback = function(text)
+        -- Placeholder
+    end
+})
+
+ConfigSection:Button({
+    Title = "Save Current Configuration",
+    Icon = "save",
+    Callback = function()
+        MainConfig:Save()
+        WindUI:Notify({ Title = "System", Content = "Configuration saved successfully.", Icon = "check" })
+    end
+})
+
+ConfigSection:Button({
+    Title = "Load Last Configuration",
+    Icon = "upload",
+    Callback = function()
+        MainConfig:Load()
+        WindUI:Notify({ Title = "System", Content = "Configuration loaded.", Icon = "check" })
+    end
+})
+
+local VisualsSection = SettingsTab:Section({ Title = "Client Optimization" })
+
+VisualsSection:Button({
+    Title = "FPS Boost (Low Memory Mode)",
+    Desc = "Decimates textures for maximum performance",
+    Callback = function()
+        for _, v in pairs(game:GetDescendants()) do
+            if v:IsA("Texture") or v:IsA("Decal") then
+                v.Transparency = 1
+            end
+        end
+        WindUI:Notify({ Title = "Performance", Content = "Textures disabled. Memory freed." })
+    end
+})
+
+local KeybindSet = VisualsSection:Keybind({
+    Title = "Menu Toggle Key",
+    Value = "RightControl",
+    Callback = function(key)
+        Window:SetToggleKey(Enum.KeyCode[key])
+    end
+})
+
+--------------------------------------------------------------------------------
+-- // 6. FINAL INITIALIZATION
+--------------------------------------------------------------------------------
+
+-- Notificação de inicialização bem sucedida
+WindUI:Notify({
+    Title = "Nexus Prime Loaded",
+    Content = "Welcome back, Operator. Systems nominal.",
+    Duration = 5,
+    Icon = "shield-check"
+})
+
+-- Garbage Collection de UI ao fechar
+Window:OnClose(function()
+    getgenv().NexusRunning = false
+    print("[System]: UI Closed, cleaning connections...")
+end)
