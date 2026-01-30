@@ -1,12 +1,10 @@
+-- ╔══════════════════════════════════════════════════════════════╗
 -- ║                 BASE HUB - WINDUI STRUCTURE                  ║
 -- ╚══════════════════════════════════════════════════════════════╝
 
--- Services básicos
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Carregar WindUI (última versão)
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 -- WindUI latest
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))() -- [web:8]
 
@@ -14,52 +12,44 @@ WindUI:SetNotificationLower(true)
 
 -- ▓▓ Temas básicos + anime
 
--- ▓▓ Temas customizados
 WindUI:AddTheme({
     Name = "EliteDark",
     Accent = Color3.fromHex("#6366f1"),
-@@ -20,48 +22,39 @@ WindUI:AddTheme({
+    Background = Color3.fromHex("#0a0a0f"),
+    BackgroundTransparency = 0,
+    Outline = Color3.fromHex("#6366f1"),
+    Text = Color3.fromHex("#e5e7eb"),
     Placeholder = Color3.fromHex("#6b7280"),
     Button = Color3.fromHex("#1e1e2e"),
     Icon = Color3.fromHex("#818cf8"),
-
     Hover = Color3.fromHex("#ffffff"),
-
     WindowBackground = Color3.fromHex("#0a0a0f"),
     WindowShadow = Color3.fromHex("#000000"),
-
     DialogBackground = Color3.fromHex("#0a0a0f"),
     DialogBackgroundTransparency = 0.05,
     DialogTitle = Color3.fromHex("#e5e7eb"),
     DialogContent = Color3.fromHex("#d1d5db"),
     DialogIcon = Color3.fromHex("#818cf8"),
-
     WindowTopbarButtonIcon = Color3.fromHex("#818cf8"),
     WindowTopbarTitle = Color3.fromHex("#ffffff"),
     WindowTopbarAuthor = Color3.fromHex("#9ca3af"),
     WindowTopbarIcon = Color3.fromHex("#6366f1"),
-
     TabBackground = Color3.fromHex("#1e1e2e"),
     TabTitle = Color3.fromHex("#e5e7eb"),
     TabIcon = Color3.fromHex("#818cf8"),
-
     ElementBackground = Color3.fromHex("#1e1e2e"),
     ElementTitle = Color3.fromHex("#e5e7eb"),
     ElementDesc = Color3.fromHex("#9ca3af"),
     ElementIcon = Color3.fromHex("#818cf8"),
-
     PopupBackground = Color3.fromHex("#0a0a0f"),
     PopupBackgroundTransparency = 0.05,
     PopupTitle = Color3.fromHex("#e5e7eb"),
     PopupContent = Color3.fromHex("#d1d5db"),
     PopupIcon = Color3.fromHex("#818cf8"),
-
     Toggle = Color3.fromHex("#1e1e2e"),
     ToggleBar = Color3.fromHex("#6366f1"),
-
     Checkbox = Color3.fromHex("#1e1e2e"),
     CheckboxIcon = Color3.fromHex("#6366f1"),
-
     Slider = Color3.fromHex("#1e1e2e"),
     SliderThumb = Color3.fromHex("#6366f1"),
 })
@@ -68,53 +58,45 @@ WindUI:AddTheme({
 WindUI:AddTheme({
     Name = "CrimsonNight",
     Accent = Color3.fromHex("#f97373"),
-@@ -72,52 +65,86 @@ WindUI:AddTheme({
+    Background = Color3.fromHex("#09030a"),
+    BackgroundTransparency = 0,
+    Outline = Color3.fromHex("#f97373"),
+    Text = Color3.fromHex("#f9fafb"),
     Placeholder = Color3.fromHex("#6b7280"),
     Button = Color3.fromHex("#111827"),
     Icon = Color3.fromHex("#fecaca"),
-
     Hover = Color3.fromHex("#ffffff"),
-
     WindowBackground = Color3.fromHex("#09030a"),
     WindowShadow = Color3.fromHex("#000000"),
-
     DialogBackground = Color3.fromHex("#09030a"),
     DialogBackgroundTransparency = 0.05,
     DialogTitle = Color3.fromHex("#f9fafb"),
     DialogContent = Color3.fromHex("#e5e7eb"),
     DialogIcon = Color3.fromHex("#fecaca"),
-
     WindowTopbarButtonIcon = Color3.fromHex("#fecaca"),
     WindowTopbarTitle = Color3.fromHex("#f9fafb"),
     WindowTopbarAuthor = Color3.fromHex("#e5e7eb"),
     WindowTopbarIcon = Color3.fromHex("#f97373"),
-
     TabBackground = Color3.fromHex("#111827"),
     TabTitle = Color3.fromHex("#f9fafb"),
     TabIcon = Color3.fromHex("#fecaca"),
-
     ElementBackground = Color3.fromHex("#111827"),
     ElementTitle = Color3.fromHex("#f9fafb"),
     ElementDesc = Color3.fromHex("#e5e7eb"),
     ElementIcon = Color3.fromHex("#fecaca"),
-
     PopupBackground = Color3.fromHex("#09030a"),
     PopupBackgroundTransparency = 0.05,
     PopupTitle = Color3.fromHex("#f9fafb"),
     PopupContent = Color3.fromHex("#e5e7eb"),
     PopupIcon = Color3.fromHex("#fecaca"),
-
     Toggle = Color3.fromHex("#111827"),
     ToggleBar = Color3.fromHex("#f97373"),
-
     Checkbox = Color3.fromHex("#111827"),
     CheckboxIcon = Color3.fromHex("#f97373"),
-
     Slider = Color3.fromHex("#111827"),
     SliderThumb = Color3.fromHex("#f97373"),
 })
 
-WindUI:SetNotificationLower(true)
 -- Temas com background de anime (usando rbxassetid://) [web:4][web:6]
 
 local AnimeBackgrounds = {
@@ -161,26 +143,46 @@ WindUI:AddTheme({
 
 WindUI:SetTheme("EliteDark")
 
--- ▓▓ Janela principal
 -- ▓▓ Janela principal (background padrão, será alterado pelas settings)
 
 local Window = WindUI:CreateWindow({
     Title = "My Super Hub",
     Icon = "lucide:crown",
-@@ -133,7 +160,7 @@ local Window = WindUI:CreateWindow({
+    Author = "by você",
+    Folder = "MySuperHub",
+    Size = UDim2.fromOffset(580, 460),
+    Theme = "EliteDark",
+    Resizable = true,
+    SideBarWidth = 200,
+    HideSearchBar = false,
+    ScrollBarEnabled = true,
+})
 
 Window:SetToggleKey(Enum.KeyCode.RightShift)
 
--- ▓▓ Tabs vazias (somente estrutura)
 -- ▓▓ Tabs
 
 local PlayerTab = Window:Tab({
     Title = "Player",
-@@ -156,7 +183,24 @@ local SettingsTab = Window:Tab({
+    Icon = "lucide:user",
+})
+
+local SellingTab = Window:Tab({
+    Title = "Selling",
+    Icon = "lucide:shopping-cart",
+})
+
+local EventsTab = Window:Tab({
+    Title = "Events",
+    Icon = "lucide:calendar-days",
+})
+
+local SettingsTab = Window:Tab({
+    Title = "Settings",
+    Icon = "lucide:settings",
 })
 
 -- ══════════════════════════════════════════════════════
--- SETTINGS: apenas tema (Theme Picker)
 -- PLAYER: categoria Farm (estrutura, ainda vazia)
 -- ══════════════════════════════════════════════════════
 
@@ -202,7 +204,8 @@ FarmSection:Paragraph({
 -- ══════════════════════════════════════════════════════
 
 local ThemeSection = SettingsTab:Section({
-@@ -165,12 +209,17 @@ local ThemeSection = SettingsTab:Section({
+    Title = "Theme",
+    Box = true,
     Opened = true,
 })
 
@@ -220,7 +223,9 @@ local ThemeDropdown = ThemeSection:Dropdown({
         "Dark",
         "Light",
     },
-@@ -180,18 +229,55 @@ local ThemeDropdown = ThemeSection:Dropdown({
+    SearchBarEnabled = false,
+    Callback = function(value)
+        WindUI:SetTheme(value)
     end,
 })
 
@@ -264,23 +269,15 @@ ThemeSection:Slider({
 })
 
 ThemeSection:Button({
-    Title = "Preview Theme",
-    Icon = "lucide:eye",
     Title = "Show Current Theme",
     Icon = "lucide:info",
     Callback = function()
-        local current = WindUI:GetCurrentTheme()
         local t = WindUI:GetCurrentTheme() -- [web:2]
         WindUI:Notify({
-            Title = "Theme Preview",
-            Content = "Current theme: " .. tostring(current),
             Title = "Theme",
             Content = "Current theme: " .. tostring(t),
             Duration = 3,
-            Icon = "lucide:info",
             Icon = "lucide:palette",
         })
     end,
 })
-
--- Você ainda pode adicionar mais coisas depois dentro de PlayerTab, SellingTab e EventsTab.
