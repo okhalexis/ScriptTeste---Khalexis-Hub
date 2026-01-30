@@ -3,21 +3,12 @@
 
 -- Services básicos
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-
 local LocalPlayer = Players.LocalPlayer
-
--- Função util pra pegar Humanoid e HRP seguro
-local function GetCharacter()
-    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    return char, hum, hrp
-end
 
 -- Carregar WindUI (última versão)
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+-- WindUI latest
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))() -- [web:8]
 
 WindUI:SetNotificationLower(true)
 
@@ -27,10 +18,7 @@ WindUI:SetNotificationLower(true)
 WindUI:AddTheme({
     Name = "EliteDark",
     Accent = Color3.fromHex("#6366f1"),
-    Background = Color3.fromHex("#020617"),
-    BackgroundTransparency = 0,
-    Outline = Color3.fromHex("#4b5563"),
-    Text = Color3.fromHex("#e5e7eb"),
+@@ -20,48 +22,39 @@ WindUI:AddTheme({
     Placeholder = Color3.fromHex("#6b7280"),
     Button = Color3.fromHex("#1e1e2e"),
     Icon = Color3.fromHex("#818cf8"),
@@ -80,10 +68,7 @@ WindUI:AddTheme({
 WindUI:AddTheme({
     Name = "CrimsonNight",
     Accent = Color3.fromHex("#f97373"),
-    Background = Color3.fromHex("#020617"),
-    BackgroundTransparency = 0,
-    Outline = Color3.fromHex("#4b5563"),
-    Text = Color3.fromHex("#f9fafb"),
+@@ -72,52 +65,86 @@ WindUI:AddTheme({
     Placeholder = Color3.fromHex("#6b7280"),
     Button = Color3.fromHex("#111827"),
     Icon = Color3.fromHex("#fecaca"),
@@ -130,12 +115,12 @@ WindUI:AddTheme({
 })
 
 WindUI:SetNotificationLower(true)
+-- Temas com background de anime (usando rbxassetid://) [web:4][web:6]
 
--- Temas com background de anime (usando rbxassetid://)
 local AnimeBackgrounds = {
-    ["AnimeGirlBlue"] = "rbxassetid://665326906309",
-    ["AnimePastel"]   = "rbxassetid://1096405055049",
-    ["AnimeBoyDark"]  = "rbxassetid://256579271238",
+    ["AnimeGirlBlue"] = "rbxassetid://665326906309",      -- Anime Aesthetic [web:6]
+    ["AnimePastel"]   = "rbxassetid://1096405055049",    -- ~Aesthetic Anime~ [web:6]
+    ["AnimeBoyDark"]  = "rbxassetid://256579271238",     -- Anime boy [web:6]
 }
 
 WindUI:AddTheme({
@@ -177,40 +162,26 @@ WindUI:AddTheme({
 WindUI:SetTheme("EliteDark")
 
 -- ▓▓ Janela principal
+-- ▓▓ Janela principal (background padrão, será alterado pelas settings)
+
 local Window = WindUI:CreateWindow({
     Title = "My Super Hub",
     Icon = "lucide:crown",
-    Size = UDim2.fromOffset(620, 450),
-    Center = true,
-    Animate = true,
-    Theme = "EliteDark",
-})
+@@ -133,7 +160,7 @@ local Window = WindUI:CreateWindow({
 
 Window:SetToggleKey(Enum.KeyCode.RightShift)
 
+-- ▓▓ Tabs vazias (somente estrutura)
 -- ▓▓ Tabs
+
 local PlayerTab = Window:Tab({
     Title = "Player",
-    Icon = "lucide:user",
-})
-
-local SellingTab = Window:Tab({
-    Title = "Selling",
-    Icon = "lucide:dollar-sign",
-})
-
-local EventsTab = Window:Tab({
-    Title = "Events",
-    Icon = "lucide:calendar",
-})
-
-local SettingsTab = Window:Tab({
-    Title = "Settings",
-    Icon = "lucide:settings",
+@@ -156,7 +183,24 @@ local SettingsTab = Window:Tab({
 })
 
 -- ══════════════════════════════════════════════════════
--- PLAYER: categoria Farm (Speed / Jump / Fly / Double Speed)
+-- SETTINGS: apenas tema (Theme Picker)
+-- PLAYER: categoria Farm (estrutura, ainda vazia)
 -- ══════════════════════════════════════════════════════
 
 local FarmSection = PlayerTab:Section({
@@ -220,257 +191,10 @@ local FarmSection = PlayerTab:Section({
     FontWeight = "SemiBold",
 })
 
+-- aqui depois vamos colocar Auto Farm, TP, etc.
 FarmSection:Paragraph({
     Title = "Farm System",
     Desc = "Base pronta para futuros sistemas de auto farm.",
-})
-
--- Estado atual de atributos
-local CurrentWalkSpeed = 16
-local CurrentJumpHeight = 7.2 -- padrão Roblox aproximado
-local DoubleSpeedEnabled = false
-
--- Aplica speed e jump no humanoid
-local function ApplyMovementStats()
-    local _, hum = GetCharacter()
-    if hum then
-        local ws = CurrentWalkSpeed
-        if DoubleSpeedEnabled then
-            ws = math.clamp(ws * 2, 16, 1000)
-        end
-        hum.WalkSpeed = ws  -- WalkSpeed padrão 16 [web:2]
-        hum.JumpHeight = CurrentJumpHeight -- pode trocar pra JumpPower se preferir [web:5]
-    end
-end
-
--- Input de WalkSpeed (16–1000)
-FarmSection:Slider({
-    Title = "Walk Speed",
-    Desc = "Velocidade do jogador (16-1000)",
-    Value = {
-        Min = 16,
-        Max = 1000,
-        Default = 16,
-    },
-    Step = 1,
-    Callback = function(v)
-        CurrentWalkSpeed = math.clamp(v, 16, 1000)
-        ApplyMovementStats()
-    end,
-})
-
--- Input de JumpHeight (0–200, ajustável)
-FarmSection:Slider({
-    Title = "Jump Height",
-    Desc = "Altura do pulo (0-200)",
-    Value = {
-        Min = 0,
-        Max = 200,
-        Default = 7.2,
-    },
-    Step = 1,
-    Callback = function(v)
-        CurrentJumpHeight = v
-        ApplyMovementStats()
-    end,
-})
-
--- Double Speed toggle
-FarmSection:Toggle({
-    Title = "Double Speed",
-    Desc = "Dobra a velocidade atual",
-    Default = false,
-    Callback = function(state)
-        DoubleSpeedEnabled = state
-        ApplyMovementStats()
-    end,
-})
-
--- ══════════════════════════════════════════════════════
--- Super Jump Horizontal
--- ══════════════════════════════════════════════════════
-
-local SuperJumpEnabled = true -- se quiser, pode ligar/desligar com toggle depois
-
-local function SetupSuperJump()
-    local char, hum, hrp = GetCharacter()
-    if not hum or not hrp then return end
-
-    hum.StateChanged:Connect(function(old, new)
-        if not SuperJumpEnabled then return end
-        if new == Enum.HumanoidStateType.Jumping then
-            -- pega a moveDirection do humanoid pra dash horizontal [web:3]
-            local dir = hum.MoveDirection
-            if dir.Magnitude > 0 then
-                local horizontalBoost = 60 -- ajusta aqui a intensidade
-                local vel = dir.Unit * horizontalBoost
-                hrp.Velocity = Vector3.new(vel.X, hrp.Velocity.Y, vel.Z)
-            end
-        end
-    end)
-end
-
--- mantém super jump ao respawn
-LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(1)
-    ApplyMovementStats()
-    SetupSuperJump()
-end)
-
-if LocalPlayer.Character then
-    task.spawn(function()
-        task.wait(1)
-        ApplyMovementStats()
-        SetupSuperJump()
-    end)
-end
-
--- ══════════════════════════════════════════════════════
--- Fly system (toggle + F)
--- ══════════════════════════════════════════════════════
-
-local FlyEnabled = false
-local BV -- BodyVelocity
-local BG -- BodyGyro
-local FlySpeed = 75 -- velocidade base do fly
-local MoveVector = Vector3.zero
-
--- Atualiza MoveVector baseado em teclas WASD
-UserInputService.InputBegan:Connect(function(input, gp)
-    if gp then return end
-    if input.KeyCode == Enum.KeyCode.W then
-        MoveVector = Vector3.new(MoveVector.X, MoveVector.Y, -1)
-    elseif input.KeyCode == Enum.KeyCode.S then
-        MoveVector = Vector3.new(MoveVector.X, MoveVector.Y, 1)
-    elseif input.KeyCode == Enum.KeyCode.A then
-        MoveVector = Vector3.new(-1, MoveVector.Y, MoveVector.Z)
-    elseif input.KeyCode == Enum.KeyCode.D then
-        MoveVector = Vector3.new(1, MoveVector.Y, MoveVector.Z)
-    elseif input.KeyCode == Enum.KeyCode.Space then
-        MoveVector = Vector3.new(MoveVector.X, 1, MoveVector.Z)
-    elseif input.KeyCode == Enum.KeyCode.LeftControl then
-        MoveVector = Vector3.new(MoveVector.X, -1, MoveVector.Z)
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input, gp)
-    if gp then return end
-    if input.KeyCode == Enum.KeyCode.W or input.KeyCode == Enum.KeyCode.S then
-        MoveVector = Vector3.new(MoveVector.X, MoveVector.Y, 0)
-    elseif input.KeyCode == Enum.KeyCode.A or input.KeyCode == Enum.KeyCode.D then
-        MoveVector = Vector3.new(0, MoveVector.Y, MoveVector.Z)
-    elseif input.KeyCode == Enum.KeyCode.Space or input.KeyCode == Enum.KeyCode.LeftControl then
-        MoveVector = Vector3.new(MoveVector.X, 0, MoveVector.Z)
-    end
-end)
-
--- Ativa/desativa fly pela lógica
-local function EnableFly()
-    local char, hum, hrp = GetCharacter()
-    if not hum or not hrp then return end
-
-    FlyEnabled = true
-    hum.PlatformStand = true
-
-    BV = Instance.new("BodyVelocity")
-    BV.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-    BV.Velocity = Vector3.zero
-    BV.Parent = hrp
-
-    BG = Instance.new("BodyGyro")
-    BG.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-    BG.CFrame = hrp.CFrame
-    BG.P = 1e4
-    BG.Parent = hrp
-end
-
-local function DisableFly()
-    local _, hum, hrp = GetCharacter()
-    FlyEnabled = false
-    if hum then
-        hum.PlatformStand = false
-    end
-    if BV then
-        BV:Destroy()
-        BV = nil
-    end
-    if BG then
-        BG:Destroy()
-        BG = nil
-    end
-end
-
--- Atualiza fly na RenderStepped
-RunService.RenderStepped:Connect(function(dt)
-    if not FlyEnabled then return end
-
-    local char, hum, hrp = GetCharacter()
-    if not hum or not hrp or not BV or not BG then
-        DisableFly()
-        return
-    end
-
-    local cam = workspace.CurrentCamera
-    if not cam then return end
-
-    -- direção da camera + MoveVector para mover no ar [web:3][web:6]
-    local camCF = cam.CFrame
-    local move = Vector3.new(0, 0, 0)
-
-    if MoveVector.Z ~= 0 then
-        move = move + (-camCF.LookVector * MoveVector.Z)
-    end
-    if MoveVector.X ~= 0 then
-        move = move + (camCF.RightVector * MoveVector.X)
-    end
-    if MoveVector.Y ~= 0 then
-        move = move + Vector3.new(0, MoveVector.Y, 0)
-    end
-
-    if move.Magnitude > 0 then
-        move = move.Unit * FlySpeed
-    end
-
-    BV.Velocity = move
-    BG.CFrame = camCF
-end)
-
--- Toggle fly com tecla F
-UserInputService.InputBegan:Connect(function(input, gp)
-    if gp then return end
-    if input.KeyCode == Enum.KeyCode.F then
-        if FlyEnabled then
-            DisableFly()
-            WindUI:Notify({
-                Title = "Fly",
-                Content = "Fly desativado (F)",
-                Duration = 2,
-                Icon = "lucide:move-vertical",
-            })
-        else
-            EnableFly()
-            WindUI:Notify({
-                Title = "Fly",
-                Content = "Fly ativado (WASD/Space/CTRL) - F para desligar",
-                Duration = 3,
-                Icon = "lucide:move-vertical",
-            })
-        end
-    end
-end)
-
--- Toggle extra na UI pra fly (opcional)
-FarmSection:Toggle({
-    Title = "Fly (F Toggle)",
-    Desc = "Ativa/desativa fly (também pela tecla F)",
-    Default = false,
-    Callback = function(state)
-        if state and not FlyEnabled then
-            EnableFly()
-        elseif not state and FlyEnabled then
-            DisableFly()
-        end
-    end,
 })
 
 -- ══════════════════════════════════════════════════════
@@ -478,8 +202,7 @@ FarmSection:Toggle({
 -- ══════════════════════════════════════════════════════
 
 local ThemeSection = SettingsTab:Section({
-    Title = "Themes",
-    Box = true,
+@@ -165,12 +209,17 @@ local ThemeSection = SettingsTab:Section({
     Opened = true,
 })
 
@@ -497,10 +220,7 @@ local ThemeDropdown = ThemeSection:Dropdown({
         "Dark",
         "Light",
     },
-    Multi = false,
-    Default = "EliteDark",
-    Callback = function(value)
-        WindUI:SetTheme(value)
+@@ -180,18 +229,55 @@ local ThemeDropdown = ThemeSection:Dropdown({
     end,
 })
 
@@ -517,14 +237,14 @@ local AnimeBgDropdown = ThemeSection:Dropdown({
     Callback = function(choice)
         if choice == "None" then
             CurrentBackgroundKey = nil
-            Window:SetBackgroundImage("")
+            Window:SetBackgroundImage("")  -- limpa
             return
         end
 
         CurrentBackgroundKey = choice
         local asset = AnimeBackgrounds[choice]
         if asset then
-            Window:SetBackgroundImage(asset)
+            Window:SetBackgroundImage(asset) -- rbxassetid://id [web:4][web:6]
         end
     end,
 })
@@ -544,15 +264,23 @@ ThemeSection:Slider({
 })
 
 ThemeSection:Button({
+    Title = "Preview Theme",
+    Icon = "lucide:eye",
     Title = "Show Current Theme",
-    Icon = "lucide:palette",
+    Icon = "lucide:info",
     Callback = function()
-        local t = WindUI:GetCurrentTheme()
+        local current = WindUI:GetCurrentTheme()
+        local t = WindUI:GetCurrentTheme() -- [web:2]
         WindUI:Notify({
+            Title = "Theme Preview",
+            Content = "Current theme: " .. tostring(current),
             Title = "Theme",
             Content = "Current theme: " .. tostring(t),
             Duration = 3,
+            Icon = "lucide:info",
             Icon = "lucide:palette",
         })
     end,
 })
+
+-- Você ainda pode adicionar mais coisas depois dentro de PlayerTab, SellingTab e EventsTab.
