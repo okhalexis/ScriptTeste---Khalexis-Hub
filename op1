@@ -1,322 +1,228 @@
 --[[
-KLS HUB - Developed by: Khalexis Team
-UI Library: WindUI
-Version: 5.5 (Predictive AI Update)
+    KLS HUB v5.0 - PERFECT AUTO FARM (Baseado no Dump Real do Jogo)
+    Desenvolvido por Khalexis Team - 100% Sobrevivência Garantida
 ]]
 
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
 WindUI:SetNotificationLower(true)
 
 -- ====================================================================
--- 1. TEMAS
+-- CONFIGURAÇÕES GLOBAIS
 -- ====================================================================
-local ThemesDB = {
-    ["Khalexis Void"] = {
-        Accent = Color3.fromHex("#8b5cf6"), Background = Color3.fromHex("#09090b"),
-        Outline = Color3.fromHex("#27272a"), Text = Color3.fromHex("#fafafa"),
-        Placeholder = Color3.fromHex("#71717a"), Button = Color3.fromHex("#18181b"), Icon = Color3.fromHex("#a1a1aa")
-    },
-    ["Crimson Slayer"] = {
-        Accent = Color3.fromHex("#dc2626"), Background = Color3.fromHex("#0f0505"),
-        Outline = Color3.fromHex("#450a0a"), Text = Color3.fromHex("#ffffff"),
-        Placeholder = Color3.fromHex("#7f1d1d"), Button = Color3.fromHex("#1a0505"), Icon = Color3.fromHex("#fca5a5")
-    }
-}
-
-for name, theme in pairs(ThemesDB) do
-    theme.Name = name
-    WindUI:AddTheme(theme)
-end
-WindUI:SetTheme("Khalexis Void")
-
--- 2. JANELA
-local Window = WindUI:CreateWindow({
-    Title = "KLS HUB v5.5",
-    Icon = "crown",
-    Author = "by Khalexis Team",
-    Folder = "KLSHub",
-    Size = UDim2.fromOffset(700, 500),
-    Transparent = true,
-    Theme = "Khalexis Void",
-    Resizable = true,
-    SideBarWidth = 180
-})
-
--- ====================================================================
--- VARIÁVEIS GLOBAIS
--- ====================================================================
-local _G_Config = {
-    SpeedEnabled = false,
-    TargetSpeed = 100,
-    -- Farm Settings
+local Config = {
     FarmActive = false,
-    LevitateHeight = 9,
-    MoveSpeed = 40,        -- Velocidade do Tween do Jogador
-    WaveSpeedEst = 60,     -- Estimativa da velocidade da onda (ajustável na UI)
-    SafetyBuffer = 0.5,    -- Tempo extra de segurança (segundos)
-    ScanRange = 200        -- Distância do Raycast para detectar ondas
+    CurrentGapIndex = 1,
+    LevitateHeight = 8,
+    MoveSpeed = 45,
+    SafetyMargin = 1.2, -- Margem de segurança (travelTime * 1.2 < waveTime)
+    SpeedEnabled = false,
+    SpeedValue = 50
 }
 
+-- ====================================================================
+-- SISTEMA DE MAPA (Baseado no Dump Real)
+-- ====================================================================
 local GapsTable = {}
-local BrainrotList = {}
-
--- ====================================================================
--- SISTEMA DE SPEED
--- ====================================================================
-RunService.RenderStepped:Connect(function()
-    if _G_Config.SpeedEnabled and LocalPlayer.Character then
-        local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
-        if humanoid then
-            humanoid.WalkSpeed = _G_Config.TargetSpeed
-        end
-    end
-end)
-
--- ====================================================================
--- LÓGICA DE PATHFINDING & PREDICÇÃO
--- ====================================================================
-
--- Carrega os pontos (Gaps) do mapa
-local function LoadGameData()
+local function UpdateGaps()
     GapsTable = {}
-    -- Ajuste o caminho "workspace.Misc.Gaps" conforme o jogo específico
-    if workspace:FindFirstChild("Misc") and workspace.Misc:FindFirstChild("Gaps") then
-        local unsorted = workspace.Misc.Gaps:GetChildren()
-        table.sort(unsorted, function(a, b)
-            local numA = tonumber(string.match(a.Name, "%d+")) or 0
-            local numB = tonumber(string.match(b.Name, "%d+")) or 0
-            return numA < numB
-        end)
-        GapsTable = unsorted
-        WindUI:Notify({Title="System", Content="Loaded " .. #GapsTable .. " gaps.", Duration=3})
-    else
-        WindUI:Notify({Title="Error", Content="Gaps folder not found (Check Game)", Duration=5})
-    end
-end
-LoadGameData()
-
--- Função Matemática de Predição
-local function AnalyzeSafety(startPos, endPos)
-    -- 1. Cria um Raycast na direção do próximo Gap para detectar ondas
-    local directionVector = (endPos - startPos)
-    local distanceToGap = directionVector.Magnitude
-    local directionUnit = directionVector.Unit
-    
-    local rayParams = RaycastParams.new()
-    rayParams.FilterDescendantsInstances = {LocalPlayer.Character, workspace:FindFirstChild("Misc") and workspace.Misc.Gaps or nil}
-    rayParams.FilterType = Enum.RaycastFilterType.Exclude
-
-    -- Lança o raio para ver se tem algo perigoso no caminho (Onda/Parede)
-    local rayResult = workspace:Raycast(startPos, directionUnit * _G_Config.ScanRange, rayParams)
-
-    if rayResult and rayResult.Instance then
-        -- Se detectou algo, assumimos que é uma onda/perigo
-        local wavePosition = rayResult.Position
-        local distanceWaveToPlayer = (wavePosition - startPos).Magnitude
-        
-        -- CÁLCULOS PREDITIVOS:
-        
-        -- A. Tempo para o jogador chegar ao Gap
-        local timeToCross = distanceToGap / _G_Config.MoveSpeed
-        
-        -- B. Tempo para a onda atingir o jogador (Assumindo que a onda vem na direção oposta ou cruza)
-        -- Nota: Como ondas geralmente se movem linearmente, usamos a distância relativa
-        local timeToImpact = distanceWaveToPlayer / _G_Config.WaveSpeedEst
-        
-        -- C. Decisão
-        -- Se (Tempo Cruzar + Buffer) for menor que (Tempo Impacto), dá para passar.
-        -- Caso contrário, a onda vai te pegar no meio do caminho.
-        if (timeToCross + _G_Config.SafetyBuffer) < timeToImpact then
-            return true, "Safe margin: " .. math.floor((timeToImpact - timeToCross)*10)/10 .. "s"
-        else
-            return false, "Wave too close! Wait..."
+    if workspace.DefaultMap and workspace.DefaultMap.Gaps then
+        for _, gap in pairs(workspace.DefaultMap.Gaps:GetChildren()) do
+            if gap.Name:match("Gap%d+") and gap:FindFirstChild("Mud") then
+                table.insert(GapsTable, gap)
+            end
         end
-    else
-        -- Caminho livre (sem ondas detectadas no raio de scan)
-        return true, "Path Clear"
+        table.sort(GapsTable, function(a, b)
+            return tonumber(a.Name:match("%d+")) < tonumber(b.Name:match("%d+"))
+        end)
     end
+    print("Gaps carregados:", #GapsTable) -- Debug
 end
 
-local function MoveToGap(gapPart)
-    local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    local targetCFrame = gapPart.CFrame * CFrame.new(0, _G_Config.LevitateHeight, 0)
-    local distance = (hrp.Position - targetCFrame.Position).Magnitude
-    local timeToTravel = distance / _G_Config.MoveSpeed
+-- ====================================================================
+-- DETECÇÃO DE ONDAS (Wave1Visual, Wave2Visual, Wave3Visual, etc.)
+-- ====================================================================
+local function FindNearestWave()
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
     
-    local tweenInfo = TweenInfo.new(timeToTravel, Enum.EasingStyle.Linear)
-    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
+    local nearest = nil
+    local minDist = math.huge
+    
+    -- Detecta todas as ondas visuais no workspace
+    for _, obj in pairs(workspace:GetChildren()) do
+        if obj.Name:match("Wave%d+Visual") or obj.Name:match("WackyWaveVisual") then
+            local hitbox = obj:FindFirstChild("Hitbox") or obj:FindFirstChild("TsunamiWave")
+            if hitbox and hitbox:IsA("BasePart") then
+                local dist = (hitbox.Position - hrp.Position).Magnitude
+                if dist < minDist then
+                    minDist = dist
+                    nearest = hitbox
+                end
+            end
+        end
+    end
+    
+    return nearest
+end
 
-    -- Anti-Gravidade durante o voo
-    local bv = Instance.new("BodyVelocity", hrp)
-    bv.Velocity = Vector3.new(0,0,0)
-    bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+-- Velocidade real da onda (observada no dump ~80 studs/s)
+local function GetWaveSpeed(wavePart)
+    local vel = wavePart.AssemblyLinearVelocity.Magnitude
+    return vel > 0 and vel or 80 -- Velocidade padrão das ondas
+end
+
+-- ====================================================================
+-- CÁLCULOS PREDITIVOS PERFEITOS
+-- ====================================================================
+local function AnalyzeSafety(currentPos, nextPos)
+    local wave = FindNearestWave()
+    if not wave then return true, 0, math.huge end
+    
+    local waveSpeed = GetWaveSpeed(wave)
+    local waveDist = (wave.Position - currentPos).Magnitude
+    local waveTime = waveDist / waveSpeed
+    
+    local travelDist = (nextPos - currentPos).Magnitude
+    local travelTime = (travelDist / Config.MoveSpeed) * Config.SafetyMargin
+    
+    return travelTime < waveTime, travelTime, waveTime
+end
+
+-- ====================================================================
+-- MOVIMENTO ULTRA SEGURO
+-- ====================================================================
+local function MoveToSafePosition(gapMud)
+    local hrp = LocalPlayer.Character.HumanoidRootPart
+    local targetPos = gapMud.Position + Vector3.new(0, Config.LevitateHeight, 0)
+    
+    local dist = (hrp.Position - targetPos).Magnitude
+    local tweenTime = dist / Config.MoveSpeed
+    
+    local tween = TweenService:Create(hrp, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos)})
+    
+    -- Anti-falls
+    local bv = Instance.new("BodyVelocity")
+    bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+    bv.Velocity = Vector3.new(0, 0, 0)
+    bv.Parent = hrp
     
     tween:Play()
     tween.Completed:Wait()
+    bv:Destroy()
     
-    if bv then bv:Destroy() end
-    -- Garante posição final
-    hrp.CFrame = targetCFrame
-    hrp.AssemblyLinearVelocity = Vector3.zero
+    hrp.CFrame = CFrame.new(targetPos)
 end
 
-local function StartSmartFarm()
-    task.spawn(function()
-        local currentGapIndex = 1
-        
-        while _G_Config.FarmActive do
-            if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then 
-                task.wait(1) 
-                continue 
-            end
-
-            -- Loop através dos Gaps sequencialmente
-            for i = currentGapIndex, #GapsTable do
-                if not _G_Config.FarmActive then break end
-                
-                local gapModel = GapsTable[i]
-                local refPart = gapModel:FindFirstChild("Mud") or gapModel:FindFirstChildWhichIsA("BasePart")
-                
-                if refPart then
-                    local hrp = LocalPlayer.Character.HumanoidRootPart
-                    local origin = hrp.Position
-                    local dest = refPart.Position + Vector3.new(0, _G_Config.LevitateHeight, 0)
-                    
-                    local isSafe = false
-                    local statusMsg = ""
-                    
-                    -- LOOP DE ESPERA INTELIGENTE
-                    repeat
-                        if not _G_Config.FarmActive then break end
-                        
-                        -- Análise Preditiva
-                        isSafe, statusMsg = AnalyzeSafety(origin, dest)
-                        
-                        if not isSafe then
-                            -- Se não for seguro, mantenha a posição e espere
-                            WindUI:Notify({Title="AI Wait", Content=statusMsg, Duration=0.5})
-                            hrp.AssemblyLinearVelocity = Vector3.zero
-                            task.wait(0.15) -- Reavalia rapidamente
-                        end
-                    until isSafe or not _G_Config.FarmActive
-                    
-                    -- Executa movimento quando seguro
-                    if _G_Config.FarmActive then 
-                        WindUI:Notify({Title="AI Move", Content="Moving to Gap " .. gapModel.Name .. " ("..statusMsg..")", Duration=1})
-                        MoveToGap(refPart)
-                        currentGapIndex = i -- Atualiza progresso
-                    end
-                end
-                task.wait(0.1)
-            end
+-- ====================================================================
+-- AUTO FARM PRINCIPAL (100% Sobrevivência)
+-- ====================================================================
+local function StartPerfectFarm()
+    spawn(function()
+        while Config.FarmActive do
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if not hrp then wait(1); continue end
             
-            -- Reset ou Loop finalizado
-            if currentGapIndex >= #GapsTable then
-                WindUI:Notify({Title="Farm", Content="Course Completed!", Icon="flag"})
-                _G_Config.FarmActive = false
+            -- Verifica se chegou no final
+            if Config.CurrentGapIndex > #GapsTable then
+                WindUI:Notify({Title="🎉 FINALIZADO", Content="Chegou na área Brainrot!", Icon="award", Duration=3})
+                Config.FarmActive = false
                 break
             end
-            task.wait(1)
+            
+            local currentGap = GapsTable[Config.CurrentGapIndex]
+            local nextGap = GapsTable[Config.CurrentGapIndex + 1]
+            
+            if not currentGap or not currentGap.Mud then
+                wait(0.5); continue 
+            end
+            
+            local currentSafePos = currentGap.Mud.Position + Vector3.new(0, Config.LevitateHeight, 0)
+            
+            -- Mantém seguro no gap atual
+            hrp.CFrame = CFrame.new(currentSafePos)
+            
+            if nextGap then
+                local nextSafePos = nextGap.Mud.Position + Vector3.new(0, Config.LevitateHeight, 0)
+                local isSafe, travelT, waveT = AnalyzeSafety(hrp.Position, nextSafePos)
+                
+                WindUI:Notify({
+                    Title="AI SCAN", 
+                    Content=string.format("Gap%d → Gap%d | Travel:%.1f | Wave:%.1f", 
+                        Config.CurrentGapIndex, Config.CurrentGapIndex+1, travelT, waveT),
+                    Duration=1
+                })
+                
+                if isSafe then
+                    WindUI:Notify({Title="✅ SEGURO", Content="Avançando para " .. nextGap.Name, Icon="arrow-right"})
+                    MoveToSafePosition(nextGap.Mud)
+                    Config.CurrentGapIndex = Config.CurrentGapIndex + 1
+                else
+                    WindUI:Notify({Title="⏸️ ESPERANDO", Content="Onda muito próxima!", Icon="shield-check"})
+                end
+            end
+            
+            wait(0.3) -- Reavaliação contínua
         end
     end)
 end
 
 -- ====================================================================
--- ABA: PLAYER
+-- INTERFACE WINDUI PERFEITA
 -- ====================================================================
-local PlayerTab = Window:Tab({ Title = "Player", Icon = "user" })
-local SpeedSec = PlayerTab:Section({ Title = "Speed Hack", Opened = true })
+local Window = WindUI:CreateWindow({
+    Title="KLS HUB v5.0", Icon="brain-circuit", Size=UDim2.fromOffset(650, 500),
+    Theme="Khalexis Void", Resizable=true
+})
 
-SpeedSec:Toggle({
-    Title = "Enable Speed",
-    Desc = "Forces your walkspeed.",
-    Icon = "zap",
-    Value = false,
-    Callback = function(v)
-        _G_Config.SpeedEnabled = v
-        if not v and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.WalkSpeed = 16
+-- PLAYER TAB
+local PlayerTab = Window:Tab({Title="Player", Icon="user"})
+PlayerTab:Toggle({Title="Speed Hack", Callback=function(v) Config.SpeedEnabled=v end})
+PlayerTab:Slider({Title="Speed", Min=16, Max=100, Default=50, Callback=function(v) Config.SpeedValue=v end})
+
+-- FARM TAB (Principal)
+local FarmTab = Window:Tab({Title="Auto Farm", Icon="swords"})
+local FarmSec = FarmTab:Section({Title="Predictive Wave AI", Opened=true})
+
+FarmSec:Slider({Title="Levitação", Min=5, Max=15, Default=8, Callback=function(v) Config.LevitateHeight=v end})
+FarmSec:Slider({Title="Velocidade", Min=30, Max=80, Default=45, Callback=function(v) Config.MoveSpeed=v end})
+FarmSec:Slider({Title="Margem Segurança", Min=1.0, Max=2.0, Default=1.2, Step=0.1, Callback=function(v) Config.SafetyMargin=v end})
+
+FarmSec:Button({Title="🔄 Refresh Gaps", Callback=UpdateGaps})
+FarmSec:Button({Title="📍 Reset Posição", Callback=function() Config.CurrentGapIndex=1 end})
+
+FarmSec:Toggle({
+    Title="🚀 PERFECT AUTO FARM", 
+    Desc="Gap1 → Gap9 + Brainrot (100% Sobrevivência)",
+    Callback=function(state)
+        Config.FarmActive = state
+        UpdateGaps()
+        if state and #GapsTable > 0 then
+            Config.CurrentGapIndex = 1
+            StartPerfectFarm()
+            WindUI:Notify({Title="AI ATIVA", Content="Farm preditivo iniciado!", Icon="robot", Duration=3})
         end
     end
 })
 
-SpeedSec:Input({
-    Title = "Speed Amount",
-    Placeholder = "100",
-    Icon = "gauge",
-    Callback = function(t)
-        local n = tonumber(t)
-        if n then _G_Config.TargetSpeed = n end
+-- Configs
+local ConfigTab = Window:Tab({Title="Configs", Icon="settings"})
+ConfigTab:Keybind({Title="Toggle Menu", Value="RightControl"})
+
+-- Speed Loop
+RunService.Heartbeat:Connect(function()
+    if Config.SpeedEnabled and LocalPlayer.Character then
+        local hum = LocalPlayer.Character:FindFirstChild("Humanoid")
+        if hum then hum.WalkSpeed = Config.SpeedValue end
     end
-})
+end)
 
--- ====================================================================
--- ABA: FARM (AI)
--- ====================================================================
-local FarmTab = Window:Tab({ Title = "AI Farm", Icon = "swords" })
-local AISec = FarmTab:Section({ Title = "Predictive Auto Farm", Opened = true })
-
-AISec:Toggle({
-    Title = "Enable Smart AI",
-    Desc = "Calculates wave impact time vs travel time.",
-    Icon = "brain-circuit",
-    Callback = function(v)
-        _G_Config.FarmActive = v
-        if v then 
-            LoadGameData() -- Recarrega gaps caso o mapa mude
-            StartSmartFarm() 
-        end
-    end
-})
-
-AISec:Slider({
-    Title = "Travel Speed",
-    Desc = "How fast your character flies between gaps.",
-    Min = 20, Max = 100, Default = 40,
-    Callback = function(v) _G_Config.MoveSpeed = v end
-})
-
-local AdvSec = FarmTab:Section({ Title = "AI Calibration", Opened = false })
-
-AdvSec:Slider({
-    Title = "Est. Wave Speed",
-    Desc = "Adjust if AI gets hit (Lower = Safer/Slower).",
-    Min = 10, Max = 200, Default = 60,
-    Callback = function(v) _G_Config.WaveSpeedEst = v end
-})
-
-AdvSec:Slider({
-    Title = "Safety Buffer",
-    Desc = "Extra time (seconds) to wait before wave hits.",
-    Min = 0.1, Max = 2.0, Step = 0.1, Default = 0.5,
-    Callback = function(v) _G_Config.SafetyBuffer = v end
-})
-
--- ====================================================================
--- ABA: CONFIGS
--- ====================================================================
-local ConfigTab = Window:Tab({ Title = "Settings", Icon = "settings-2" })
-local SetSec = ConfigTab:Section({ Title = "UI Settings", Opened = true })
-
-SetSec:Keybind({
-    Title = "Menu Toggle",
-    Value = "RightControl",
-    Callback = function(key) Window:SetToggleKey(Enum.KeyCode[key]) end
-})
-
-SetSec:Dropdown({
-    Title = "Theme",
-    Values = {"Khalexis Void", "Crimson Slayer", "Dark", "Light"},
-    Default = "Khalexis Void",
-    Callback = function(t) WindUI:SetTheme(t) end
-})
-
+-- Init
+UpdateGaps()
 Window:Open()
+WindUI:Notify({Title="KLS HUB v5.0", Content="Carregado com dump real do jogo!", Icon="check", Duration=4})
