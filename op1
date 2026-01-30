@@ -1,7 +1,7 @@
 --[[
     KLS HUB - Developed by: Khalexis Team
     UI Library: WindUI
-    Version: 2.5 (Player & Configs Update)
+    Version: 3.0 (Brainrot Auto Farm Update)
 ]]
 
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
@@ -10,10 +10,49 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
--- 1. Configurações Básicas
+-- Configurações Globais
 WindUI:SetNotificationLower(true)
 
--- 2. CRIANDO OS TEMAS
+-- ====================================================================
+-- SISTEMA DE DETECÇÃO AUTOMÁTICA (AUTO-UPDATE LISTS)
+-- ====================================================================
+local BrainrotList = {}
+local GapsList = {}
+
+-- 1. Pega os nomes dos Brainrots direto do Menu do jogo (conforme seu dump)
+local function UpdateBrainrotList()
+    BrainrotList = {} -- Limpa lista
+    local menuFrame = LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("Menus"):WaitForChild("Index"):WaitForChild("ScrollingFrame")
+    
+    for _, item in pairs(menuFrame:GetChildren()) do
+        if item:IsA("Frame") or item:IsA("ImageButton") then
+            -- Tenta pegar o nome do item. As vezes o nome da Frame é o nome do bicho
+            table.insert(BrainrotList, item.Name)
+        end
+    end
+    table.sort(BrainrotList) -- Organiza alfabeticamente
+end
+
+-- 2. Pega os Gaps seguros do Workspace
+local function UpdateGapsList()
+    GapsList = {}
+    if workspace:FindFirstChild("Misc") and workspace.Misc:FindFirstChild("Gaps") then
+        for _, gap in pairs(workspace.Misc.Gaps:GetChildren()) do
+            table.insert(GapsList, gap.Name)
+        end
+        table.sort(GapsList)
+    else
+        table.insert(GapsList, "Gap1") -- Fallback se não achar
+    end
+end
+
+-- Executa a atualização inicial
+pcall(UpdateBrainrotList)
+pcall(UpdateGapsList)
+
+-- ====================================================================
+-- CONFIGURAÇÃO DO TEMA
+-- ====================================================================
 WindUI:AddTheme({
     Name = "Khalexis Void",
     Accent = Color3.fromHex("#8b5cf6"),
@@ -24,17 +63,14 @@ WindUI:AddTheme({
     Button = Color3.fromHex("#18181b"),
     Icon = Color3.fromHex("#a1a1aa"),
 })
--- (Adicionei apenas o principal para economizar linhas, o seletor usará os padrões também)
-
 WindUI:SetTheme("Khalexis Void")
 
--- 3. CRIANDO A JANELA
 local Window = WindUI:CreateWindow({
     Title = "KLS HUB",
     Icon = "crown",
     Author = "by Khalexis Team",
     Folder = "KLSHub",
-    Size = UDim2.fromOffset(600, 420),
+    Size = UDim2.fromOffset(620, 450),
     Transparent = true,
     Theme = "Khalexis Void",
     Resizable = true,
@@ -43,100 +79,38 @@ local Window = WindUI:CreateWindow({
 })
 
 -- ====================================================================
--- VARIÁVEIS DE CONTROLE DE VOO
+-- VARIÁVEIS DE CONTROLE
 -- ====================================================================
-local FlightState = {
-    Enabled = false,
-    Speed = 50,
-    BodyGyro = nil,
-    BodyVelocity = nil
+local FarmConfig = {
+    Active = false,
+    TargetMob = nil,
+    SelectedGap = "Gap1", -- Padrão
+    LevitateHeight = 6 -- Altura para não tocar no chão (Mud)
 }
 
--- Função de Voo
-local function ToggleFlight(state)
-    FlightState.Enabled = state
-    local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-    
-    local hrp = char.HumanoidRootPart
-    
-    if state then
-        -- Ativar Voo
-        local bg = Instance.new("BodyGyro", hrp)
-        bg.P = 9e4
-        bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
-        bg.cframe = hrp.CFrame
-        
-        local bv = Instance.new("BodyVelocity", hrp)
-        bv.velocity = Vector3.new(0, 0.1, 0)
-        bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
-        
-        FlightState.BodyGyro = bg
-        FlightState.BodyVelocity = bv
-        
-        -- Loop de Movimento do Voo
-        task.spawn(function()
-            while FlightState.Enabled and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 do
-                if not FlightState.BodyGyro or not FlightState.BodyVelocity then break end
-                
-                char.Humanoid.PlatformStand = true
-                FlightState.BodyGyro.cframe = workspace.CurrentCamera.CFrame
-                
-                local direction = Vector3.new()
-                if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                    direction = direction + workspace.CurrentCamera.CFrame.LookVector
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                    direction = direction - workspace.CurrentCamera.CFrame.LookVector
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                    direction = direction - workspace.CurrentCamera.CFrame.RightVector
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                    direction = direction + workspace.CurrentCamera.CFrame.RightVector
-                end
-                
-                FlightState.BodyVelocity.velocity = direction * FlightState.Speed
-                task.wait()
-            end
-            -- Limpeza se o loop quebrar
-            if char:FindFirstChild("Humanoid") then
-                char.Humanoid.PlatformStand = false
-            end
-        end)
-    else
-        -- Desativar Voo
-        if FlightState.BodyGyro then FlightState.BodyGyro:Destroy() end
-        if FlightState.BodyVelocity then FlightState.BodyVelocity:Destroy() end
-        if char:FindFirstChild("Humanoid") then char.Humanoid.PlatformStand = false end
-    end
-end
+local FlightState = { Enabled = false, Speed = 50, BodyGyro = nil, BodyVelocity = nil }
 
 -- ====================================================================
--- ABA: PLAYER
+-- ABA 1: PLAYER (Mantida conforme pedido anterior)
 -- ====================================================================
 local PlayerTab = Window:Tab({ Title = "Player", Icon = "user" })
 local MoveSec = PlayerTab:Section({ Title = "Movement", Opened = true })
 
--- 1. WalkSpeed (Input)
 MoveSec:Input({
-    Title = "Set WalkSpeed",
-    Desc = "Type the speed amount (e.g. 100)",
+    Title = "WalkSpeed Input",
+    Desc = "Set exact speed amount",
     Placeholder = "Default: 16",
     Icon = "footprints",
     Callback = function(text)
         local num = tonumber(text)
         if num and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.WalkSpeed = num
-            WindUI:Notify({ Title="Player", Content="Speed set to "..num, Icon="check"})
         end
     end
 })
 
--- 2. JumpPower (Slider 0 - 300)
 MoveSec:Slider({
     Title = "Jump Power",
-    Desc = "Adjust jump height",
     Step = 1,
     Value = { Min = 50, Max = 300, Default = 50 },
     Callback = function(v)
@@ -147,76 +121,168 @@ MoveSec:Slider({
     end
 })
 
--- 3. Double Speed (Button)
 MoveSec:Button({
     Title = "Double Speed (2x)",
-    Desc = "Multiplies current speed by 2",
     Icon = "fast-forward",
     Callback = function()
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            local current = LocalPlayer.Character.Humanoid.WalkSpeed
-            LocalPlayer.Character.Humanoid.WalkSpeed = current * 2
-            WindUI:Notify({ Title="Speed", Content="Speed doubled to "..(current*2), Icon="zap"})
+            LocalPlayer.Character.Humanoid.WalkSpeed = LocalPlayer.Character.Humanoid.WalkSpeed * 2
+            WindUI:Notify({Title="Speed", Content="Speed doubled!", Icon="zap"})
         end
     end
 })
 
-local FlySec = PlayerTab:Section({ Title = "Flight", Opened = true })
+local FlySec = PlayerTab:Section({ Title = "Flight V3", Opened = true })
 
--- 4. Fly (Toggle)
 FlySec:Toggle({
-    Title = "Enable Fly",
-    Desc = "Fly around the map (WASD)",
+    Title = "Enable Flight",
     Icon = "plane",
     Value = false,
     Callback = function(state)
-        ToggleFlight(state)
-    end
-})
-
-FlySec:Slider({
-    Title = "Fly Speed",
-    Desc = "Adjust flying velocity",
-    Step = 10,
-    Value = { Min = 20, Max = 200, Default = 50 },
-    Callback = function(v)
-        FlightState.Speed = v
+        FlightState.Enabled = state
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        
+        if state then
+            local bg = Instance.new("BodyGyro", hrp)
+            bg.P = 9e4; bg.maxTorque = Vector3.new(9e9,9e9,9e9); bg.cframe = hrp.CFrame
+            local bv = Instance.new("BodyVelocity", hrp)
+            bv.velocity = Vector3.zero; bv.maxForce = Vector3.new(9e9,9e9,9e9)
+            FlightState.BodyGyro = bg; FlightState.BodyVelocity = bv
+            
+            task.spawn(function()
+                while FlightState.Enabled and char:FindFirstChild("Humanoid") do
+                    char.Humanoid.PlatformStand = true
+                    bg.cframe = workspace.CurrentCamera.CFrame
+                    local dir = Vector3.zero
+                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir += workspace.CurrentCamera.CFrame.LookVector end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir -= workspace.CurrentCamera.CFrame.LookVector end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir -= workspace.CurrentCamera.CFrame.RightVector end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir += workspace.CurrentCamera.CFrame.RightVector end
+                    bv.velocity = dir * FlightState.Speed
+                    task.wait()
+                end
+                char.Humanoid.PlatformStand = false
+            end)
+        else
+            if FlightState.BodyGyro then FlightState.BodyGyro:Destroy() end
+            if FlightState.BodyVelocity then FlightState.BodyVelocity:Destroy() end
+        end
     end
 })
 
 -- ====================================================================
--- ABA: FARM (Vazia por enquanto)
+-- ABA 2: FARM (Lógica dos Gaps e Brainrot)
 -- ====================================================================
 local FarmTab = Window:Tab({ Title = "Farm", Icon = "swords" })
-local FarmSec = FarmTab:Section({ Title = "Automation", Opened = true })
+local BrainrotSec = FarmTab:Section({ Title = "Target Selection", Opened = true })
 
--- ====================================================================
--- ABA: CONFIGS (Com Keybind)
--- ====================================================================
-local SettingsTab = Window:Tab({ Title = "Configs", Icon = "settings-2" })
-local UIConfig = SettingsTab:Section({ Title = "Interface Settings", Opened = true })
-
--- Keybind para o Toggle do Menu
-UIConfig:Keybind({
-    Title = "Menu Toggle Key",
-    Desc = "Click to bind a new key to open/close menu",
-    Value = "RightControl", -- Tecla Padrão
-    Callback = function(key)
-        Window:SetToggleKey(Enum.KeyCode[key])
-        WindUI:Notify({ Title="Config", Content="Toggle key changed to "..tostring(key), Icon="keyboard"})
+BrainrotSec:Dropdown({
+    Title = "Select Brainrot",
+    Desc = "Choose which mob you want to farm.",
+    Values = BrainrotList, -- Lista automática
+    Multi = false,
+    Callback = function(val)
+        FarmConfig.TargetMob = val
     end
 })
 
--- Seletor de Temas
-local ThemeSec = SettingsTab:Section({ Title = "Themes", Opened = true })
+BrainrotSec:Dropdown({
+    Title = "Select Safe Gap",
+    Desc = "Where to hide from waves/walls.",
+    Values = GapsList, -- Lista automática (Gap1, Gap2...)
+    Default = "Gap1",
+    Multi = false,
+    Callback = function(val)
+        FarmConfig.SelectedGap = val
+    end
+})
+
+local AutoSec = FarmTab:Section({ Title = "Automation", Opened = true })
+
+AutoSec:Toggle({
+    Title = "Auto Farm (Levitate in Gap)",
+    Desc = "Teleports to Gap and hovers to survive waves.",
+    Icon = "crosshair",
+    Value = false,
+    Callback = function(state)
+        FarmConfig.Active = state
+        
+        task.spawn(function()
+            while FarmConfig.Active do
+                local char = LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                local humanoid = char and char:FindFirstChild("Humanoid")
+                
+                if hrp and humanoid and FarmConfig.SelectedGap then
+                    -- 1. Encontrar o Gap Físico no Workspace
+                    local gapFolder = workspace.Misc.Gaps:FindFirstChild(FarmConfig.SelectedGap)
+                    
+                    if gapFolder then
+                        -- Tenta achar uma parte de referência no Gap (pode ser 'Mud' ou uma parte filha)
+                        local referencePart = gapFolder:FindFirstChild("Mud") or gapFolder:GetChildren()[1]
+                        
+                        if referencePart and referencePart:IsA("BasePart") then
+                            -- 2. Calcular Posição Segura (CFrame do Gap + Altura)
+                            local safeCFrame = referencePart.CFrame * CFrame.new(0, FarmConfig.LevitateHeight, 0)
+                            
+                            -- 3. Teleporte / Levitação
+                            hrp.CFrame = safeCFrame
+                            
+                            -- Congela a velocidade de queda para não cair no "Mud" (chão perigoso)
+                            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0) 
+                            hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                        end
+                    end
+                end
+                task.wait() -- Executa muito rápido para "travar" o player lá
+            end
+        end)
+    end
+})
+
+AutoSec:Slider({
+    Title = "Levitation Height",
+    Desc = "How high above the gap floor to float.",
+    Step = 1,
+    Value = { Min = 3, Max = 20, Default = 6 },
+    Callback = function(v)
+        FarmConfig.LevitateHeight = v
+    end
+})
+
+-- ====================================================================
+-- ABA 3: CONFIGS (Toggle Key)
+-- ====================================================================
+local SettingsTab = Window:Tab({ Title = "Configs", Icon = "settings-2" })
+local ConfigSec = SettingsTab:Section({ Title = "Menu Settings", Opened = true })
+
+ConfigSec:Keybind({
+    Title = "Menu Toggle Key",
+    Desc = "Click to set a new keybind.",
+    Value = "RightControl",
+    Callback = function(key)
+        Window:SetToggleKey(Enum.KeyCode[key])
+        WindUI:Notify({ Title="Config", Content="Keybind set to "..tostring(key), Icon="keyboard" })
+    end
+})
+
+local ThemeSec = SettingsTab:Section({ Title = "Visuals", Opened = true })
 ThemeSec:Dropdown({
-    Title = "Select Visual Style",
-    Values = { "Khalexis Void", "Dark", "Light" },
+    Title = "Theme Selector",
+    Values = {"Khalexis Void", "Dark", "Light"},
     Default = "Khalexis Void",
-    Callback = function(selectedTheme)
-        WindUI:SetTheme(selectedTheme)
+    Callback = function(theme)
+        WindUI:SetTheme(theme)
     end
 })
 
 -- Inicializa
 Window:Open()
+WindUI:Notify({
+    Title = "KLS HUB Loaded",
+    Content = "Brainrot Lists & Gaps updated automatically.",
+    Duration = 5,
+    Icon = "check"
+})
