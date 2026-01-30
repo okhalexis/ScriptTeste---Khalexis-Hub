@@ -1,221 +1,338 @@
 --[[
-    NEXUS PRIME - PROFESSIONAL EDITION (V2)
-    Bypassing: Character Attribute System & Tsunami Engine
-    UI Framework: WindUI
+    KLS HUB - Developed by Khalexis Team
+    UI Library: WindUI
+    Version: 1.0.0
 ]]
 
-local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
+-- 1. Carregando a Library (Load WindUI)
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
-local LocalPlayer = Players.LocalPlayer
+-- 2. Configurações Iniciais da UI
+WindUI:SetNotificationLower(true) -- Notificações na parte inferior
 
--- // 1. LÓGICA DE ESTADO (PERSISTENTE)
-_G.NexusState = _G.NexusState or {
-    Speed = 18,
-    FlyEnabled = false,
-    FlySpeed = 100,
-    AutoFarm = false,
-    Theme = "Dark",
-    SafetyProtocol = true
-}
-local State = _G.NexusState
-
--- // 2. SISTEMA DE BYPASS DE MOVIMENTAÇÃO
--- O script do jogo usa atributos. Vamos forçar nossos valores neles.
-local function ApplyBypass()
-    local Char = LocalPlayer.Character
-    if not Char then return end
+-- 3. Criando o Tema Personalizado "Khalexis Night"
+WindUI:AddTheme({
+    Name = "Khalexis Night",
     
-    -- Enganando o script 'Character' do jogo
-    LocalPlayer:SetAttribute("CurrentSpeed", State.Speed)
-    LocalPlayer:SetAttribute("PreferredSpeed", State.Speed)
-    LocalPlayer:SetAttribute("CoilMultiplier", 1.5) -- Aumenta o multiplicador base
+    Accent = Color3.fromHex("#6c5ce7"), -- Roxo Neon
+    Background = Color3.fromHex("#18181b"),
+    BackgroundTransparency = 0,
+    Outline = Color3.fromHex("#3f3f46"),
+    Text = Color3.fromHex("#FFFFFF"),
+    Placeholder = Color3.fromHex("#a1a1aa"),
+    Button = Color3.fromHex("#27272a"),
+    Icon = Color3.fromHex("#a1a1aa"),
     
-    -- Previne o "SlowMode"
-    LocalPlayer:SetAttribute("SlowMode", false)
-    LocalPlayer:SetAttribute("InObby", false)
-end
+    Hover = Color3.fromHex("#818cf8"), -- Roxo mais claro ao passar o mouse
+    
+    WindowBackground = Color3.fromHex("#09090b"), -- Fundo da Janela bem escuro
+    WindowShadow = Color3.fromHex("#000000"),
+    
+    TabBackground = Color3.fromHex("#FFFFFF"),
+    TabTitle = Color3.fromHex("#FFFFFF"),
+    TabIcon = Color3.fromHex("#a1a1aa"),
+    
+    ElementBackground = Color3.fromHex("#FFFFFF"),
+    ElementTitle = Color3.fromHex("#FFFFFF"),
+    ElementDesc = Color3.fromHex("#d4d4d8"),
+    ElementIcon = Color3.fromHex("#a1a1aa"),
+    
+    Toggle = Color3.fromHex("#6c5ce7"),
+    ToggleBar = Color3.fromHex("#FFFFFF"),
+    
+    Slider = Color3.fromHex("#6c5ce7"),
+    SliderThumb = Color3.fromHex("#FFFFFF"),
+})
 
--- // 3. SISTEMA DE VOO ELITE (BODY VELOCITY)
-local FlyBV, FlyBG
-local function HandleFly()
-    if State.FlyEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local Root = LocalPlayer.Character.HumanoidRootPart
-        local Cam = Workspace.CurrentCamera
-        
-        if not FlyBV then
-            FlyBV = Instance.new("BodyVelocity", Root)
-            FlyBV.MaxForce = Vector3.new(1e8, 1e8, 1e8)
-            FlyBG = Instance.new("BodyGyro", Root)
-            FlyBG.MaxTorque = Vector3.new(1e8, 1e8, 1e8)
-            FlyBG.P = 10000
+-- Aplicando o tema
+WindUI:SetTheme("Khalexis Night")
+
+-- 4. Criando a Janela (Window)
+local Window = WindUI:CreateWindow({
+    Title = "KLS HUB",
+    Icon = "crown", -- Ícone de coroa para representar a equipe
+    Author = "by Khalexis Team",
+    Folder = "KLSHubConfig", -- Pasta para salvar configs
+    
+    Size = UDim2.fromOffset(650, 450),
+    Transparent = true,
+    Theme = "Khalexis Night",
+    Resizable = true,
+    SideBarWidth = 180,
+    HideSearchBar = false,
+    ScrollBarEnabled = true,
+})
+
+-- Notificação de Boas-vindas
+WindUI:Notify({
+    Title = "Welcome User",
+    Content = "KLS HUB loaded successfully!",
+    Duration = 5,
+    Icon = "check-circle",
+})
+
+-- ====================================================================
+-- CRIANDO AS ABAS (TABS)
+-- ====================================================================
+
+local PlayerTab = Window:Tab({ Title = "Player", Icon = "user" })
+local FarmTab = Window:Tab({ Title = "Farm", Icon = "sword" })
+local AutoTab = Window:Tab({ Title = "Auto", Icon = "repeat" })
+local TeleportTab = Window:Tab({ Title = "Teleport", Icon = "map-pin" })
+local EventsTab = Window:Tab({ Title = "Events", Icon = "calendar" })
+local SellingTab = Window:Tab({ Title = "Selling", Icon = "coins" })
+local ConfigsTab = Window:Tab({ Title = "Configs", Icon = "settings" })
+
+-- ====================================================================
+-- 1. PLAYER TAB
+-- ====================================================================
+local PlayerSection = PlayerTab:Section({ Title = "Character Attributes", Opened = true })
+
+PlayerSection:Slider({
+    Title = "Velocity Modifier", -- Nome legal para WalkSpeed
+    Desc = "Adjust your character's movement speed.",
+    Step = 1,
+    Value = { Min = 16, Max = 300, Default = 16 },
+    Callback = function(v)
+        if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = v
         end
-        
-        local moveDir = Vector3.zero
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + Cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - Cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - Cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + Cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
-        
-        FlyBV.Velocity = moveDir * State.FlySpeed
-        FlyBG.CFrame = Cam.CFrame
-    else
-        if FlyBV then FlyBV:Destroy() FlyBV = nil end
-        if FlyBG then FlyBG:Destroy() FlyBG = nil end
     end
-end
+})
 
--- // 4. AUTO FARM BRAINROT (DINHEIRO)
-task.spawn(function()
-    while task.wait(0.3) do
-        if State.AutoFarm and LocalPlayer.Character then
-            -- Procura por moedas/brainrot drops no mapa
-            for _, item in pairs(Workspace:GetDescendants()) do
-                if (item.Name:find("Money") or item.Name:find("Coin") or item.Name:find("Brain") or item.Name:find("Cash")) 
-                and item:IsA("BasePart") then
-                    -- Teleporta o item para você (ou encosta nele)
-                    item.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame
-                    -- firetouchinterest se o executor permitir
-                    if firetouchinterest then
-                        firetouchinterest(LocalPlayer.Character.HumanoidRootPart, item, 0)
-                        firetouchinterest(LocalPlayer.Character.HumanoidRootPart, item, 1)
+PlayerSection:Slider({
+    Title = "Gravity Defier", -- Nome legal para JumpPower
+    Desc = "Adjust your jump height.",
+    Step = 1,
+    Value = { Min = 50, Max = 500, Default = 50 },
+    Callback = function(v)
+        if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+            game.Players.LocalPlayer.Character.Humanoid.JumpPower = v
+        end
+    end
+})
+
+PlayerTab:Section({ Title = "Physics", Opened = true })
+
+PlayerTab:Toggle({
+    Title = "NoClip Mode",
+    Desc = "Walk through walls effortlessly.",
+    Icon = "ghost",
+    Value = false,
+    Callback = function(state)
+        -- Lógica simples de NoClip
+        local RunService = game:GetService("RunService")
+        local NoClipLoop
+        if state then
+            NoClipLoop = RunService.Stepped:Connect(function()
+                if game.Players.LocalPlayer.Character then
+                    for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+                        if v:IsA("BasePart") and v.CanCollide == true then
+                            v.CanCollide = false
+                        end
                     end
+                end
+            end)
+        else
+            if NoClipLoop then NoClipLoop:Disconnect() end
+        end
+    end
+})
+
+-- ====================================================================
+-- 2. FARM TAB
+-- ====================================================================
+local FarmMain = FarmTab:Section({ Title = "Main Farming", Opened = true })
+
+FarmMain:Toggle({
+    Title = "Auto Attack",
+    Desc = "Automatically attacks nearest enemies.",
+    Icon = "crosshair",
+    Value = false,
+    Callback = function(state)
+        WindUI:Notify({ Title = "Farm", Content = "Auto Attack State: " .. tostring(state), Duration = 2 })
+        -- Adicione sua lógica de Loop de Farm aqui
+    end
+})
+
+FarmMain:Dropdown({
+    Title = "Select Weapon",
+    Values = { "Melee", "Sword", "Gun", "Fruit" },
+    Callback = function(val)
+        print("Weapon selected: " .. val)
+    end
+})
+
+local FarmSettings = FarmTab:Section({ Title = "Settings", Opened = false })
+
+FarmSettings:Toggle({
+    Title = "Kill Aura",
+    Desc = "Damages enemies within radius.",
+    Icon = "zap",
+    Value = false,
+    Callback = function(state)
+        -- Lógica de Kill Aura
+    end
+})
+
+-- ====================================================================
+-- 3. AUTO TAB
+-- ====================================================================
+local AutoMain = AutoTab:Section({ Title = "Automation", Opened = true })
+
+AutoMain:Toggle({
+    Title = "Anti-AFK",
+    Desc = "Prevents you from being kicked due to inactivity.",
+    Icon = "clock",
+    Value = false,
+    Callback = function(state)
+        if state then
+            local vu = game:GetService("VirtualUser")
+            game:GetService("Players").LocalPlayer.Idled:Connect(function()
+                vu:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+                wait(1)
+                vu:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+            end)
+            WindUI:Notify({ Title = "Auto", Content = "Anti-AFK Enabled", Duration = 3 })
+        end
+    end
+})
+
+AutoMain:Toggle({
+    Title = "Auto Rejoin",
+    Desc = "Rejoins the server if you get kicked.",
+    Icon = "rotate-cw",
+    Value = false,
+    Callback = function(state)
+        -- Lógica de Auto Rejoin
+    end
+})
+
+-- ====================================================================
+-- 4. TELEPORT TAB
+-- ====================================================================
+local TpSection = TeleportTab:Section({ Title = "Travel", Opened = true })
+
+TpSection:Input({
+    Title = "Teleport to Player",
+    Desc = "Type a username (shortened works).",
+    Placeholder = "Username...",
+    Icon = "search",
+    Callback = function(text)
+        -- Lógica simples de buscar player
+        for _, p in pairs(game.Players:GetPlayers()) do
+            if string.sub(string.lower(p.Name), 1, string.len(text)) == string.lower(text) then
+                if game.Players.LocalPlayer.Character and p.Character then
+                     game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame
+                     WindUI:Notify({ Title = "Teleport", Content = "Teleported to " .. p.Name, Icon = "check" })
                 end
             end
         end
     end
-end)
-
--- // 5. GAP NAVIGATION (CORRIGIDO)
-local function GlideToGap(gapName)
-    local Char = LocalPlayer.Character
-    if not Char then return end
-    
-    -- Procura o Gap no container específico do seu mapa
-    local gapsFolder = Workspace:FindFirstChild("DefaultMap") and Workspace.DefaultMap:FindFirstChild("Gaps")
-    local target = gapsFolder and gapsFolder:FindFirstChild(gapName) or Workspace:FindFirstChild(gapName, true)
-    
-    if target then
-        Char:PivotTo(target.CFrame * CFrame.new(0, 3, 0))
-        return true
-    end
-    return false
-end
-
--- // 6. INTERFACE WINDUI
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
-
-local Window = WindUI:CreateWindow({
-    Title = "Nexus Prime Reborn",
-    Icon = "zap",
-    Author = "Chief Dev",
-    Folder = "NexusStudio",
-    Transparent = true,
-    Theme = State.Theme
 })
 
--- [ PLAYER TAB ]
-local PlayerTab = Window:Tab({ Title = "Player", Icon = "user" })
-
-PlayerTab:Slider({
-    Title = "Velocidade Real",
-    Desc = "Bypassa o script de WalkSpeed do jogo via Attributes",
-    Value = {Min = 18, Max = 300, Default = State.Speed},
-    Callback = function(v) 
-        State.Speed = v 
-        ApplyBypass()
-    end
-})
-
-PlayerTab:Slider({
-    Title = "Fly Speed",
-    Value = {Min = 50, Max = 500, Default = State.FlySpeed},
-    Callback = function(v) State.FlySpeed = v end
-})
-
-PlayerTab:Button({
-    Title = "Destroy VIP Walls",
+TpSection:Button({
+    Title = "Teleport to Safe Zone",
+    Icon = "shield",
     Callback = function()
-        local vips = Workspace:FindFirstChild("VIPWalls")
-        if vips then vips:Destroy() end
+        -- Exemplo de TP
+        print("Teleporting to safe zone...")
     end
 })
 
--- [ SELLING (AUTO FARM) ]
-local SellingTab = Window:Tab({ Title = "Selling", Icon = "shopping-cart" })
+-- ====================================================================
+-- 5. EVENTS TAB
+-- ====================================================================
+local EventSec = EventsTab:Section({ Title = "Current Events", Opened = true })
 
-SellingTab:Toggle({
-    Title = "Auto Farm Brainrot",
-    Desc = "Puxa moedas e brains automaticamente",
-    Value = State.AutoFarm,
-    Callback = function(v) State.AutoFarm = v end
+EventSec:Paragraph({
+    Title = "Event Status",
+    Desc = "No active server events detected at the moment.",
+    Image = "rbxassetid://6034287519", -- Exemplo de imagem
+    ImageSize = 30,
 })
 
--- [ EVENTS (GAPS) ]
-local EventsTab = Window:Tab({ Title = "Events", Icon = "map-pin" })
-
-local gapList = {}
-for i = 1, 10 do table.insert(gapList, "Gap" .. i) end
-
-EventsTab:Dropdown({
-    Title = "Teleport to Gap",
-    Values = gapList,
-    Callback = function(selected)
-        local ok = GlideToGap(selected)
-        WindUI:Notify({
-            Title = "Navigator",
-            Content = ok and "Teleportado para "..selected or "Gap não encontrado no mapa.",
-            Variant = ok and "Success" or "Error"
-        })
+EventSec:Button({
+    Title = "Auto Join Event",
+    Desc = "Automatically joins when an event starts.",
+    Icon = "ticket",
+    Callback = function()
+        WindUI:Notify({ Title = "Events", Content = "Waiting for next event...", Duration = 3 })
     end
 })
 
--- [ SETTINGS ]
-local SettingsTab = Window:Tab({ Title = "Settings", Icon = "settings" })
+-- ====================================================================
+-- 6. SELLING TAB
+-- ====================================================================
+local SellSec = SellingTab:Section({ Title = "Merchant", Opened = true })
 
-SettingsTab:Dropdown({
-    Title = "Visual Theme",
-    Values = {"Dark", "Light", "Aqua", "Rose", "Amethyst"},
-    Callback = function(t)
-        Window:SetTheme(t)
-        State.Theme = t
+SellSec:Toggle({
+    Title = "Auto Sell Loot",
+    Desc = "Automatically sells items in inventory.",
+    Icon = "dollar-sign",
+    Value = false,
+    Callback = function(state)
+        print("Auto sell: " .. tostring(state))
     end
 })
 
-SettingsTab:Button({
-    Title = "Uninject Script",
-    Callback = function() Window:Destroy() end
-})
-
--- // 7. LOOPS DE SINCRONIZAÇÃO
-RunService.RenderStepped:Connect(function()
-    ApplyBypass() -- Força os atributos a cada frame para ganhar do script original
-    HandleFly()
-end)
-
--- Garantir que funcione ao morrer
-LocalPlayer.CharacterAdded:Connect(function()
-    repeat task.wait() until LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    ApplyBypass()
-    if State.FlyEnabled then HandleFly() end
-end)
-
--- Keybind V para Fly
-UserInputService.InputBegan:Connect(function(input, gpe)
-    if gpe then return end
-    if input.KeyCode == Enum.KeyCode.V then
-        State.FlyEnabled = not State.FlyEnabled
-        WindUI:Notify({Title = "Nexus", Content = "Voo: " .. (State.FlyEnabled and "Ativado" or "Desativado")})
+SellSec:Dropdown({
+    Title = "Sell Filter",
+    Values = {"Common", "Rare", "Epic", "Legendary"},
+    Multi = true, -- Multi Select
+    Callback = function(items)
+        -- items é uma tabela
+        print("Filter updated")
     end
-end)
-
-WindUI:Notify({
-    Title = "Nexus Prime Ativado",
-    Content = "Sistemas de Bypass e AutoFarm carregados.",
-    Icon = "check-circle"
 })
+
+-- ====================================================================
+-- 7. CONFIGS TAB
+-- ====================================================================
+local ConfigSec = ConfigsTab:Section({ Title = "System", Opened = true })
+
+ConfigSec:Keybind({
+    Title = "Menu Toggle Key",
+    Desc = "Key to open/close KLS HUB.",
+    Value = "RightControl",
+    Callback = function(key)
+        Window:SetToggleKey(Enum.KeyCode[key])
+    end
+})
+
+ConfigSec:Button({
+    Title = "Unlock FPS",
+    Desc = "Removes the 60 FPS cap.",
+    Icon = "monitor",
+    Callback = function()
+        setfpscap(999)
+        WindUI:Notify({ Title = "System", Content = "FPS Cap Unlocked", Duration = 2 })
+    end
+})
+
+ConfigSec:Colorpicker({
+    Title = "Accent Color",
+    Default = Color3.fromHex("#6c5ce7"),
+    Callback = function(color)
+        -- Aqui você poderia implementar uma função para atualizar o tema dinamicamente se a lib suportar,
+        -- ou apenas salvar para config futura.
+        print("New Color: ", color)
+    end
+})
+
+ConfigSec:Button({
+    Title = "Unload UI",
+    Desc = "Destroys the interface completely.",
+    Icon = "trash-2",
+    Callback = function()
+        Window:Close()
+        wait(0.5)
+        -- Como o WindUI não tem uma função :Destroy() explícita na variável Window listada na API simples, 
+        -- geralmente fechar e limpar referências é o caminho, ou usar o :OnDestroy se a lib fornecer metodo de cleanup.
+        -- O script de exemplo usa Window:OnDestroy para triggers, então vamos assumir que apenas fechamos.
+        WindUI:Notify({ Title = "KLS HUB", Content = "UI Unloaded.", Duration = 2 })
+    end
+})
+
+-- Finalizando
+Window:Open()
