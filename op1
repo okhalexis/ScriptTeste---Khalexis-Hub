@@ -2,6 +2,7 @@
     KLS HUB - Official Release
     Developed by: Khalexis Team
     UI Library: WindUI
+    Version: 1.2 (With Theme Selector)
 ]]
 
 -- 1. Carregando a Library e Serviços
@@ -38,6 +39,7 @@ WindUI:AddTheme({
     SliderThumb = Color3.fromHex("#ffffff"),
 })
 
+-- Define o tema padrão inicial
 WindUI:SetTheme("Khalexis Night")
 
 -- 4. Criando a Janela
@@ -55,7 +57,7 @@ local Window = WindUI:CreateWindow({
 })
 
 -- ====================================================================
--- VARIÁVEIS DE CONTROLE
+-- VARIÁVEIS DE CONTROLE GLOBAL
 -- ====================================================================
 local _G = {
     NoClip = false,
@@ -148,12 +150,13 @@ MainFarm:Toggle({
     Value = false,
     Callback = function(state)
         _G.AutoClick = state
-        while _G.AutoClick do
-            -- Universal Click
-            VirtualUser:CaptureController()
-            VirtualUser:ClickButton1(Vector2.new(851, 158), workspace.CurrentCamera.CFrame)
-            task.wait(0.1)
-        end
+        task.spawn(function()
+            while _G.AutoClick do
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton1(Vector2.new(851, 158), workspace.CurrentCamera.CFrame)
+                task.wait(0.1)
+            end
+        end)
     end
 })
 
@@ -162,7 +165,6 @@ MainFarm:Dropdown({
     Values = {"Fast Mode", "Safe Mode", "AFK Mode"},
     Callback = function(val)
         print("Farm method selected: " .. val)
-        -- [LÓGICA DO FARM AQUI]
     end
 })
 
@@ -212,27 +214,11 @@ TpSec:Input({
     end
 })
 
-TpSec:Keybind({
-    Title = "Click TP Keybind",
-    Desc = "Hold this key and click to teleport (Requires Tool).",
-    Value = "LeftControl",
-    Callback = function(key)
-        -- Lógica de Click TP depende do Mouse.Hit, geralmente usada com Tool
-        print("Key set to: " .. key)
-    end
-})
-
 -- ====================================================================
 -- TAB 5: EVENTS
 -- ====================================================================
 local EventsTab = Window:Tab({ Title = "Events", Icon = "calendar" })
 local EventSec = EventsTab:Section({ Title = "Live Events", Opened = true })
-
-EventSec:Paragraph({
-    Title = "Status",
-    Desc = "Waiting for game events...",
-    ImageSize = 25,
-})
 
 EventSec:Button({
     Title = "Check Active Events",
@@ -254,16 +240,34 @@ SellSec:Toggle({
     Icon = "dollar-sign",
     Value = false,
     Callback = function(state)
-        -- [LÓGICA DE VENDA AQUI]
         print("Auto sell: " .. tostring(state))
     end
 })
 
 -- ====================================================================
--- TAB 7: CONFIGS
+-- TAB 7: CONFIGS (Com Seletor de Temas)
 -- ====================================================================
 local ConfigTab = Window:Tab({ Title = "Configs", Icon = "settings-2" })
-local SysSec = ConfigTab:Section({ Title = "System", Opened = true })
+
+-- Seção de Temas
+local ThemeSec = ConfigTab:Section({ Title = "Interface Theme", Opened = true })
+
+-- Pega todos os temas da Lib (Incluindo o nosso Khalexis Night)
+local AvailableThemes = WindUI:GetThemes()
+
+ThemeSec:Dropdown({
+    Title = "Select Theme",
+    Desc = "Choose the visual style of KLS HUB.",
+    Values = AvailableThemes, -- Lista automática de temas
+    Multi = false,
+    Default = "Khalexis Night", -- Seleciona o nosso por padrão
+    Callback = function(selectedTheme)
+        WindUI:SetTheme(selectedTheme)
+    end
+})
+
+-- Seção de Sistema
+local SysSec = ConfigTab:Section({ Title = "System Settings", Opened = true })
 
 SysSec:Keybind({
     Title = "Menu Toggle",
@@ -286,7 +290,7 @@ SysSec:Button({
 })
 
 SysSec:Button({
-    Title = "Destroy UI",
+    Title = "Unload UI",
     Icon = "trash-2",
     Callback = function()
         Window:Close()
@@ -295,9 +299,3 @@ SysSec:Button({
 
 -- Inicializar
 Window:Open()
-WindUI:Notify({
-    Title = "Welcome",
-    Content = "KLS HUB Loaded Successfully!",
-    Duration = 5,
-    Icon = "crown"
-})
