@@ -1,338 +1,303 @@
 --[[
-    KLS HUB - Developed by Khalexis Team
+    KLS HUB - Official Release
+    Developed by: Khalexis Team
     UI Library: WindUI
-    Version: 1.0.0
 ]]
 
--- 1. Carregando a Library (Load WindUI)
+-- 1. Carregando a Library e Serviços
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local VirtualUser = game:GetService("VirtualUser")
 
--- 2. Configurações Iniciais da UI
-WindUI:SetNotificationLower(true) -- Notificações na parte inferior
+-- 2. Configurações da Interface
+WindUI:SetNotificationLower(true)
 
--- 3. Criando o Tema Personalizado "Khalexis Night"
+-- 3. Tema Personalizado "Khalexis Night"
 WindUI:AddTheme({
     Name = "Khalexis Night",
-    
-    Accent = Color3.fromHex("#6c5ce7"), -- Roxo Neon
+    Accent = Color3.fromHex("#8b5cf6"), -- Roxo Vibrante
     Background = Color3.fromHex("#18181b"),
     BackgroundTransparency = 0,
-    Outline = Color3.fromHex("#3f3f46"),
-    Text = Color3.fromHex("#FFFFFF"),
-    Placeholder = Color3.fromHex("#a1a1aa"),
+    Outline = Color3.fromHex("#27272a"),
+    Text = Color3.fromHex("#f4f4f5"),
+    Placeholder = Color3.fromHex("#71717a"),
     Button = Color3.fromHex("#27272a"),
     Icon = Color3.fromHex("#a1a1aa"),
-    
-    Hover = Color3.fromHex("#818cf8"), -- Roxo mais claro ao passar o mouse
-    
-    WindowBackground = Color3.fromHex("#09090b"), -- Fundo da Janela bem escuro
+    Hover = Color3.fromHex("#3f3f46"),
+    WindowBackground = Color3.fromHex("#09090b"),
     WindowShadow = Color3.fromHex("#000000"),
-    
-    TabBackground = Color3.fromHex("#FFFFFF"),
-    TabTitle = Color3.fromHex("#FFFFFF"),
+    TabBackground = Color3.fromHex("#18181b"),
+    TabTitle = Color3.fromHex("#e4e4e7"),
     TabIcon = Color3.fromHex("#a1a1aa"),
-    
-    ElementBackground = Color3.fromHex("#FFFFFF"),
-    ElementTitle = Color3.fromHex("#FFFFFF"),
-    ElementDesc = Color3.fromHex("#d4d4d8"),
-    ElementIcon = Color3.fromHex("#a1a1aa"),
-    
-    Toggle = Color3.fromHex("#6c5ce7"),
-    ToggleBar = Color3.fromHex("#FFFFFF"),
-    
-    Slider = Color3.fromHex("#6c5ce7"),
-    SliderThumb = Color3.fromHex("#FFFFFF"),
+    Toggle = Color3.fromHex("#8b5cf6"),
+    ToggleBar = Color3.fromHex("#ffffff"),
+    Slider = Color3.fromHex("#8b5cf6"),
+    SliderThumb = Color3.fromHex("#ffffff"),
 })
 
--- Aplicando o tema
 WindUI:SetTheme("Khalexis Night")
 
--- 4. Criando a Janela (Window)
+-- 4. Criando a Janela
 local Window = WindUI:CreateWindow({
     Title = "KLS HUB",
-    Icon = "crown", -- Ícone de coroa para representar a equipe
+    Icon = "crown", 
     Author = "by Khalexis Team",
-    Folder = "KLSHubConfig", -- Pasta para salvar configs
-    
-    Size = UDim2.fromOffset(650, 450),
+    Folder = "KLSHub_Config",
+    Size = UDim2.fromOffset(620, 420),
     Transparent = true,
     Theme = "Khalexis Night",
     Resizable = true,
     SideBarWidth = 180,
     HideSearchBar = false,
-    ScrollBarEnabled = true,
-})
-
--- Notificação de Boas-vindas
-WindUI:Notify({
-    Title = "Welcome User",
-    Content = "KLS HUB loaded successfully!",
-    Duration = 5,
-    Icon = "check-circle",
 })
 
 -- ====================================================================
--- CRIANDO AS ABAS (TABS)
+-- VARIÁVEIS DE CONTROLE
 -- ====================================================================
+local _G = {
+    NoClip = false,
+    InfJump = false,
+    AutoClick = false,
+    ClickTP = false
+}
 
+-- ====================================================================
+-- TAB 1: PLAYER (Universal)
+-- ====================================================================
 local PlayerTab = Window:Tab({ Title = "Player", Icon = "user" })
-local FarmTab = Window:Tab({ Title = "Farm", Icon = "sword" })
-local AutoTab = Window:Tab({ Title = "Auto", Icon = "repeat" })
-local TeleportTab = Window:Tab({ Title = "Teleport", Icon = "map-pin" })
-local EventsTab = Window:Tab({ Title = "Events", Icon = "calendar" })
-local SellingTab = Window:Tab({ Title = "Selling", Icon = "coins" })
-local ConfigsTab = Window:Tab({ Title = "Configs", Icon = "settings" })
+local MovementSec = PlayerTab:Section({ Title = "Movement", Opened = true })
 
--- ====================================================================
--- 1. PLAYER TAB
--- ====================================================================
-local PlayerSection = PlayerTab:Section({ Title = "Character Attributes", Opened = true })
-
-PlayerSection:Slider({
-    Title = "Velocity Modifier", -- Nome legal para WalkSpeed
-    Desc = "Adjust your character's movement speed.",
+MovementSec:Slider({
+    Title = "Walk Velocity",
+    Desc = "Increase your movement speed.",
     Step = 1,
     Value = { Min = 16, Max = 300, Default = 16 },
     Callback = function(v)
-        if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
-            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = v
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.WalkSpeed = v
         end
     end
 })
 
-PlayerSection:Slider({
-    Title = "Gravity Defier", -- Nome legal para JumpPower
-    Desc = "Adjust your jump height.",
+MovementSec:Slider({
+    Title = "Jump Height",
+    Desc = "Defy gravity.",
     Step = 1,
     Value = { Min = 50, Max = 500, Default = 50 },
     Callback = function(v)
-        if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
-            game.Players.LocalPlayer.Character.Humanoid.JumpPower = v
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.JumpPower = v
         end
     end
 })
 
-PlayerTab:Section({ Title = "Physics", Opened = true })
+local PhysicsSec = PlayerTab:Section({ Title = "Physics", Opened = true })
 
-PlayerTab:Toggle({
-    Title = "NoClip Mode",
-    Desc = "Walk through walls effortlessly.",
+PhysicsSec:Toggle({
+    Title = "Ghost Mode (Noclip)",
+    Desc = "Walk through walls.",
     Icon = "ghost",
     Value = false,
     Callback = function(state)
-        -- Lógica simples de NoClip
-        local RunService = game:GetService("RunService")
-        local NoClipLoop
+        _G.NoClip = state
         if state then
-            NoClipLoop = RunService.Stepped:Connect(function()
-                if game.Players.LocalPlayer.Character then
-                    for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
-                        if v:IsA("BasePart") and v.CanCollide == true then
+            RunService:BindToRenderStep("NoClip", 100, function()
+                if LocalPlayer.Character then
+                    for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
+                        if v:IsA("BasePart") and v.CanCollide then
                             v.CanCollide = false
                         end
                     end
                 end
             end)
         else
-            if NoClipLoop then NoClipLoop:Disconnect() end
+            RunService:UnbindFromRenderStep("NoClip")
         end
     end
 })
 
--- ====================================================================
--- 2. FARM TAB
--- ====================================================================
-local FarmMain = FarmTab:Section({ Title = "Main Farming", Opened = true })
-
-FarmMain:Toggle({
-    Title = "Auto Attack",
-    Desc = "Automatically attacks nearest enemies.",
-    Icon = "crosshair",
+PhysicsSec:Toggle({
+    Title = "Infinite Jump",
+    Desc = "Jump in the air repeatedly.",
+    Icon = "arrow-up-circle",
     Value = false,
     Callback = function(state)
-        WindUI:Notify({ Title = "Farm", Content = "Auto Attack State: " .. tostring(state), Duration = 2 })
-        -- Adicione sua lógica de Loop de Farm aqui
+        _G.InfJump = state
     end
 })
 
-FarmMain:Dropdown({
-    Title = "Select Weapon",
-    Values = { "Melee", "Sword", "Gun", "Fruit" },
+UserInputService.JumpRequest:Connect(function()
+    if _G.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
+
+-- ====================================================================
+-- TAB 2: FARM (Modelo)
+-- ====================================================================
+local FarmTab = Window:Tab({ Title = "Farm", Icon = "swords" })
+local MainFarm = FarmTab:Section({ Title = "Main Farm", Opened = true })
+
+MainFarm:Toggle({
+    Title = "Auto Clicker",
+    Desc = "Simulates mouse clicks rapidly.",
+    Icon = "mouse-pointer-2",
+    Value = false,
+    Callback = function(state)
+        _G.AutoClick = state
+        while _G.AutoClick do
+            -- Universal Click
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton1(Vector2.new(851, 158), workspace.CurrentCamera.CFrame)
+            task.wait(0.1)
+        end
+    end
+})
+
+MainFarm:Dropdown({
+    Title = "Select Method",
+    Values = {"Fast Mode", "Safe Mode", "AFK Mode"},
     Callback = function(val)
-        print("Weapon selected: " .. val)
-    end
-})
-
-local FarmSettings = FarmTab:Section({ Title = "Settings", Opened = false })
-
-FarmSettings:Toggle({
-    Title = "Kill Aura",
-    Desc = "Damages enemies within radius.",
-    Icon = "zap",
-    Value = false,
-    Callback = function(state)
-        -- Lógica de Kill Aura
+        print("Farm method selected: " .. val)
+        -- [LÓGICA DO FARM AQUI]
     end
 })
 
 -- ====================================================================
--- 3. AUTO TAB
+-- TAB 3: AUTO (Universal)
 -- ====================================================================
-local AutoMain = AutoTab:Section({ Title = "Automation", Opened = true })
+local AutoTab = Window:Tab({ Title = "Auto", Icon = "bot" })
+local Automation = AutoTab:Section({ Title = "Utilities", Opened = true })
 
-AutoMain:Toggle({
+Automation:Toggle({
     Title = "Anti-AFK",
-    Desc = "Prevents you from being kicked due to inactivity.",
-    Icon = "clock",
+    Desc = "Prevents disconnection after 20 mins.",
+    Icon = "timer-off",
     Value = false,
     Callback = function(state)
         if state then
-            local vu = game:GetService("VirtualUser")
-            game:GetService("Players").LocalPlayer.Idled:Connect(function()
-                vu:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
-                wait(1)
-                vu:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
-            end)
-            WindUI:Notify({ Title = "Auto", Content = "Anti-AFK Enabled", Duration = 3 })
+            for i,v in pairs(getconnections(LocalPlayer.Idled)) do
+                v:Disable()
+            end
+            WindUI:Notify({ Title = "System", Content = "Anti-AFK Activated", Icon = "check" })
+        else
+            for i,v in pairs(getconnections(LocalPlayer.Idled)) do
+                v:Enable()
+            end
         end
     end
 })
 
-AutoMain:Toggle({
-    Title = "Auto Rejoin",
-    Desc = "Rejoins the server if you get kicked.",
-    Icon = "rotate-cw",
-    Value = false,
-    Callback = function(state)
-        -- Lógica de Auto Rejoin
-    end
-})
-
 -- ====================================================================
--- 4. TELEPORT TAB
+-- TAB 4: TELEPORT (Universal)
 -- ====================================================================
-local TpSection = TeleportTab:Section({ Title = "Travel", Opened = true })
+local TpTab = Window:Tab({ Title = "Teleport", Icon = "map-pin" })
+local TpSec = TpTab:Section({ Title = "Travel", Opened = true })
 
-TpSection:Input({
-    Title = "Teleport to Player",
-    Desc = "Type a username (shortened works).",
+TpSec:Input({
+    Title = "Goto Player",
     Placeholder = "Username...",
     Icon = "search",
     Callback = function(text)
-        -- Lógica simples de buscar player
-        for _, p in pairs(game.Players:GetPlayers()) do
+        for _, p in pairs(Players:GetPlayers()) do
             if string.sub(string.lower(p.Name), 1, string.len(text)) == string.lower(text) then
-                if game.Players.LocalPlayer.Character and p.Character then
-                     game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame
-                     WindUI:Notify({ Title = "Teleport", Content = "Teleported to " .. p.Name, Icon = "check" })
+                if LocalPlayer.Character and p.Character then
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame
                 end
             end
         end
     end
 })
 
-TpSection:Button({
-    Title = "Teleport to Safe Zone",
-    Icon = "shield",
-    Callback = function()
-        -- Exemplo de TP
-        print("Teleporting to safe zone...")
+TpSec:Keybind({
+    Title = "Click TP Keybind",
+    Desc = "Hold this key and click to teleport (Requires Tool).",
+    Value = "LeftControl",
+    Callback = function(key)
+        -- Lógica de Click TP depende do Mouse.Hit, geralmente usada com Tool
+        print("Key set to: " .. key)
     end
 })
 
 -- ====================================================================
--- 5. EVENTS TAB
+-- TAB 5: EVENTS
 -- ====================================================================
-local EventSec = EventsTab:Section({ Title = "Current Events", Opened = true })
+local EventsTab = Window:Tab({ Title = "Events", Icon = "calendar" })
+local EventSec = EventsTab:Section({ Title = "Live Events", Opened = true })
 
 EventSec:Paragraph({
-    Title = "Event Status",
-    Desc = "No active server events detected at the moment.",
-    Image = "rbxassetid://6034287519", -- Exemplo de imagem
-    ImageSize = 30,
+    Title = "Status",
+    Desc = "Waiting for game events...",
+    ImageSize = 25,
 })
 
 EventSec:Button({
-    Title = "Auto Join Event",
-    Desc = "Automatically joins when an event starts.",
-    Icon = "ticket",
+    Title = "Check Active Events",
+    Icon = "refresh-cw",
     Callback = function()
-        WindUI:Notify({ Title = "Events", Content = "Waiting for next event...", Duration = 3 })
+        WindUI:Notify({ Title = "Events", Content = "No active events found.", Duration = 2 })
     end
 })
 
 -- ====================================================================
--- 6. SELLING TAB
+-- TAB 6: SELLING
 -- ====================================================================
-local SellSec = SellingTab:Section({ Title = "Merchant", Opened = true })
+local SellingTab = Window:Tab({ Title = "Selling", Icon = "coins" })
+local SellSec = SellingTab:Section({ Title = "Shop", Opened = true })
 
 SellSec:Toggle({
-    Title = "Auto Sell Loot",
-    Desc = "Automatically sells items in inventory.",
+    Title = "Auto Sell Inventory",
+    Desc = "Sells everything not equipped.",
     Icon = "dollar-sign",
     Value = false,
     Callback = function(state)
+        -- [LÓGICA DE VENDA AQUI]
         print("Auto sell: " .. tostring(state))
     end
 })
 
-SellSec:Dropdown({
-    Title = "Sell Filter",
-    Values = {"Common", "Rare", "Epic", "Legendary"},
-    Multi = true, -- Multi Select
-    Callback = function(items)
-        -- items é uma tabela
-        print("Filter updated")
-    end
-})
-
 -- ====================================================================
--- 7. CONFIGS TAB
+-- TAB 7: CONFIGS
 -- ====================================================================
-local ConfigSec = ConfigsTab:Section({ Title = "System", Opened = true })
+local ConfigTab = Window:Tab({ Title = "Configs", Icon = "settings-2" })
+local SysSec = ConfigTab:Section({ Title = "System", Opened = true })
 
-ConfigSec:Keybind({
-    Title = "Menu Toggle Key",
-    Desc = "Key to open/close KLS HUB.",
+SysSec:Keybind({
+    Title = "Menu Toggle",
+    Desc = "Key to open/close the GUI",
     Value = "RightControl",
     Callback = function(key)
         Window:SetToggleKey(Enum.KeyCode[key])
     end
 })
 
-ConfigSec:Button({
+SysSec:Button({
     Title = "Unlock FPS",
-    Desc = "Removes the 60 FPS cap.",
     Icon = "monitor",
     Callback = function()
-        setfpscap(999)
-        WindUI:Notify({ Title = "System", Content = "FPS Cap Unlocked", Duration = 2 })
+        if setfpscap then 
+            setfpscap(999) 
+            WindUI:Notify({ Title = "Performance", Content = "FPS Unlocked!", Icon = "check" })
+        end
     end
 })
 
-ConfigSec:Colorpicker({
-    Title = "Accent Color",
-    Default = Color3.fromHex("#6c5ce7"),
-    Callback = function(color)
-        -- Aqui você poderia implementar uma função para atualizar o tema dinamicamente se a lib suportar,
-        -- ou apenas salvar para config futura.
-        print("New Color: ", color)
-    end
-})
-
-ConfigSec:Button({
-    Title = "Unload UI",
-    Desc = "Destroys the interface completely.",
+SysSec:Button({
+    Title = "Destroy UI",
     Icon = "trash-2",
     Callback = function()
         Window:Close()
-        wait(0.5)
-        -- Como o WindUI não tem uma função :Destroy() explícita na variável Window listada na API simples, 
-        -- geralmente fechar e limpar referências é o caminho, ou usar o :OnDestroy se a lib fornecer metodo de cleanup.
-        -- O script de exemplo usa Window:OnDestroy para triggers, então vamos assumir que apenas fechamos.
-        WindUI:Notify({ Title = "KLS HUB", Content = "UI Unloaded.", Duration = 2 })
     end
 })
 
--- Finalizando
+-- Inicializar
 Window:Open()
+WindUI:Notify({
+    Title = "Welcome",
+    Content = "KLS HUB Loaded Successfully!",
+    Duration = 5,
+    Icon = "crown"
+})
