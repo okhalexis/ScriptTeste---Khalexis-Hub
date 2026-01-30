@@ -1,357 +1,230 @@
 --[[
-    NEXUS PRIME ENTERPRISE HUB
-    Architected by: Chief Software Engineer (15 YOE, Ivy League)
-    Framework: WindUI vLatest
-    Build: Production-Ready Alpha
-    
-    "Complexity is the luxury of the expert."
+    NEXUS PRIME - PROFESSIONAL EDITION
+    Desenvolvido por: Chief Script Architect (15 anos de exp.)
+    Target: Roblox Engine v.2024
+    UI Framework: WindUI
 ]]
 
 --------------------------------------------------------------------------------
--- // 1. ENVIRONMENT SAFEGUARDS & SERVICES
+-- // 1. SERVIÇOS E VARIÁVEIS GLOBAIS
 --------------------------------------------------------------------------------
--- Prevenção de múltiplas execuções para evitar conflitos de memória
-if getgenv().NexusRunning then return end
-getgenv().NexusRunning = true
-
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local VirtualUser = game:GetService("VirtualUser")
 local Workspace = game:GetService("Workspace")
-local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
-local Camera = Workspace.CurrentCamera
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+local RootPart = Character:WaitForChild("HumanoidRootPart")
+
+-- Localização das Propriedades do Jogo
+local GapsContainer = Workspace:WaitForChild("DefaultMap"):WaitForChild("Gaps")
+local VIPWalls = Workspace:WaitForChild("VIPWalls")
+local AllowedSpaces = Workspace:WaitForChild("AllowedSpaces")
 
 --------------------------------------------------------------------------------
--- // 2. LIBRARY INITIALIZATION & CONFIGURATION
+-- // 2. LÓGICA DE ESTADO (ENGINE)
+--------------------------------------------------------------------------------
+local State = {
+    Speed = 16,
+    Jump = 50,
+    FlyEnabled = false,
+    FlySpeed = 50,
+    AutoGap = false,
+    SafetyProtocol = true,
+    CurrentFlyVelocity = Vector3.zero
+}
+
+-- [ SISTEMA DE VOO ELITE ]
+local function HandleFlight()
+    RunService.Heartbeat:Connect(function()
+        if State.FlyEnabled and Character and RootPart then
+            local moveDir = Humanoid.MoveDirection
+            local camera = Workspace.CurrentCamera
+            local flyVec = Vector3.zero
+            
+            if moveDir.Magnitude > 0 then
+                flyVec = moveDir * State.FlySpeed
+            end
+            
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                flyVec = flyVec + Vector3.new(0, State.FlySpeed, 0)
+            elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+                flyVec = flyVec + Vector3.new(0, -State.FlySpeed, 0)
+            end
+            
+            RootPart.Velocity = flyVec
+            -- Mantém o player estabilizado no ar
+            if flyVec == Vector3.zero then
+                RootPart.Velocity = Vector3.new(0, 0, 0)
+            end
+        end
+    end)
+end
+
+-- [ CÁLCULO DE SEGURANÇA DE WAVE ]
+local function IsSafeToTeleport(targetPos)
+    if not State.SafetyProtocol then return true end
+    
+    -- Analisa se há partes ativas em Waves1 ou Waves2 que podem interceptar o player
+    for _, waveFolder in pairs({AllowedSpaces.Waves1, AllowedSpaces.Waves2}) do
+        for _, obj in pairs(waveFolder:GetDescendants()) do
+            if obj:IsA("BasePart") and obj.Transparency < 1 then
+                -- Se a distância entre o objeto mortal e o destino for curta, aborta
+                local dist = (obj.Position - targetPos).Magnitude
+                if dist < 15 then return false end
+            end
+        end
+    end
+    return true
+end
+
+-- [ SISTEMA DE DESLOCAMENTO FLUTUANTE (GLIDE) ]
+local function GlideToGap(targetGapName)
+    local targetObj = GapsContainer:FindFirstChild(targetGapName)
+    if not targetObj then return end
+    
+    local destination = targetObj.Position + Vector3.new(0, 3, 0)
+    
+    if not IsSafeToTeleport(destination) then
+        return "DANGER"
+    end
+
+    local glideTween = TweenService:Create(RootPart, 
+        TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
+        {CFrame = CFrame.new(destination)}
+    )
+    glideTween:Play()
+    return "SUCCESS"
+end
+
+--------------------------------------------------------------------------------
+-- // 3. INTERFACE WindUI
 --------------------------------------------------------------------------------
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
--- Otimização de renderização da UI
-WindUI:SetNotificationLower(true)
-
--- Definição de Tema Customizado "Obsidian Elite" com Gradientes Complexos
-WindUI:AddTheme({
-    Name = "Obsidian Elite",
-    Accent = Color3.fromHex("#4f46e5"), -- Indigo profundo
-    Background = Color3.fromHex("#09090b"), 
-    BackgroundTransparency = 0.05,
-    Outline = Color3.fromHex("#27272a"),
-    Text = Color3.fromHex("#fafafa"),
-    Placeholder = Color3.fromHex("#52525b"),
-    Button = Color3.fromHex("#18181b"),
-    Icon = Color3.fromHex("#a1a1aa"),
-    
-    Hover = Color3.fromHex("#818cf8"),
-    
-    WindowBackground = Color3.fromHex("000000"),
-    WindowShadow = Color3.fromHex("4f46e5"), -- Sombra colorida para efeito neon
-    
-    Toggle = Color3.fromHex("#4f46e5"),
-    ToggleBar = Color3.fromHex("#ffffff"),
-})
-
--- Aplicação de Gradiente para dar profundidade visual (High-End UX)
-WindUI:Gradient({                                                      
-    ["0"] = { Color = Color3.fromHex("#0f172a"), Transparency = 0 },            
-    ["100"] = { Color = Color3.fromHex("#020617"), Transparency = 0.1 },      
-}, {                                                                            
-    Rotation = 45,                                                               
-})
-
-WindUI:SetTheme("Obsidian Elite")
-
---------------------------------------------------------------------------------
--- // 3. WINDOW CREATION
---------------------------------------------------------------------------------
 local Window = WindUI:CreateWindow({
-    Title = "Nexus Prime",
-    Icon = "cpu", -- Iconografia técnica
-    Author = "Dev. Lead",
-    Folder = "NexusPrime",
-    Size = UDim2.fromOffset(620, 500), -- Tamanho widescreen otimizado
+    Title = "Nexus Prime Hub",
+    Icon = "shield",
+    Author = "Chief Dev",
+    Folder = "NexusStudio",
     Transparent = true,
-    Resizable = true,
-    SideBarWidth = 220,
-    HideSearchBar = false,
-    
-    -- Sistema de Usuário Premium
-    User = {
-        Enabled = true,
-        Anonymous = false, -- Mostra o avatar do usuário para personalização
-        Callback = function()
-            WindUI:Notify({ Title = "Profile", Content = "User ID: " .. LocalPlayer.UserId, Duration = 3 })
-        end,
-    }
+    Theme = "Dark"
 })
 
--- Botão de abertura flutuante com gradiente
-Window:EditOpenButton({
-    Title = "Open Nexus",
-    Icon = "command",
-    CornerRadius = UDim.new(0,12),
-    StrokeThickness = 2,
-    Color = ColorSequence.new(
-        Color3.fromHex("4f46e5"), 
-        Color3.fromHex("9333ea")
-    ),
-    Draggable = true,
-})
+-- [ CATEGORIA: PLAYER ]
+local PlayerTab = Window:Tab({ Title = "Player", Icon = "user" })
 
--- Gerenciador de Configurações (Essencial para scripts complexos)
-local ConfigManager = Window.ConfigManager
-local MainConfig = ConfigManager:CreateConfig("MainProfile")
+PlayerTab:Section({ Title = "Movement Physics" })
 
---------------------------------------------------------------------------------
--- // 4. FUNCTIONAL LOGIC (STATE MANAGEMENT)
---------------------------------------------------------------------------------
-local State = {
-    AutoSell = false,
-    Noclip = false,
-    SpeedHack = false,
-    SpeedVal = 16,
-    AutoFarmEvent = false
-}
-
--- Loop de Noclip Otimizado (Stepped Physics)
-RunService.Stepped:Connect(function()
-    if State.Noclip and LocalPlayer.Character then
-        for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
-            if v:IsA("BasePart") and v.CanCollide then
-                v.CanCollide = false
-            end
-        end
-    end
-end)
-
--- Loop de Velocidade (Heartbeat) - Burlar resets de velocidade básicos
-RunService.Heartbeat:Connect(function()
-    if State.SpeedHack and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        local hum = LocalPlayer.Character.Humanoid
-        if hum.WalkSpeed ~= State.SpeedVal then
-            hum.WalkSpeed = State.SpeedVal
-        end
-    end
-end)
-
--- Anti-AFK Enterprise Grade
-LocalPlayer.Idled:Connect(function()
-    VirtualUser:Button2Down(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
-    task.wait(1)
-    VirtualUser:Button2Up(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
-end)
-
---------------------------------------------------------------------------------
--- // 5. UI CONSTRUCTION
---------------------------------------------------------------------------------
-
--- [[ TAB: PLAYER ]] --
-local PlayerTab = Window:Tab({ Title = "Player Attributes", Icon = "user" })
-
-local MovementSection = PlayerTab:Section({ Title = "Physics Manipulation", Icon = "move", Opened = true })
-
-local WalkSpeedSlider = MovementSection:Slider({
-    Title = "Walk Speed Modifier",
-    Desc = "Bypasses standard humanoid limits",
-    Step = 1,
-    Value = { Min = 16, Max = 500, Default = 16 },
-    Callback = function(val)
-        State.SpeedVal = val
-    end
-})
-MainConfig:Register("WalkSpeed", WalkSpeedSlider)
-
-local ToggleSpeed = MovementSection:Toggle({
-    Title = "Enable Speed Hack",
-    Callback = function(bool)
-        State.SpeedHack = bool
-        if not bool and LocalPlayer.Character then
-            LocalPlayer.Character.Humanoid.WalkSpeed = 16
-        end
-    end
-})
-MainConfig:Register("ToggleSpeed", ToggleSpeed)
-
-local ToggleNoclip = MovementSection:Toggle({
-    Title = "Phase Through Walls (Noclip)",
-    Icon = "ghost",
-    Callback = function(bool)
-        State.Noclip = bool
+PlayerTab:Slider({
+    Title = "Walk Speed",
+    Value = {Min = 16, Max = 300, Default = 16},
+    Callback = function(v) 
+        State.Speed = v 
+        Humanoid.WalkSpeed = v
     end
 })
 
-PlayerTab:Divider()
+PlayerTab:Slider({
+    Title = "Jump Power",
+    Value = {Min = 50, Max = 500, Default = 50},
+    Callback = function(v) 
+        State.Jump = v 
+        Humanoid.JumpPower = v
+        Humanoid.UseJumpPower = true
+    end
+})
 
-local UtilsSection = PlayerTab:Section({ Title = "Utilities", Icon = "wrench" })
+PlayerTab:Toggle({
+    Title = "Enable Flight (V)",
+    Callback = function(bool) State.FlyEnabled = bool end
+})
 
-UtilsSection:Button({
-    Title = "Force Reset Character",
-    Desc = "Clean memory garbage collection",
-    IconAlign = "Right",
-    Icon = "refresh-cw",
+PlayerTab:Section({ Title = "World Interaction" })
+
+PlayerTab:Button({
+    Title = "Destroy VIP Walls",
+    Desc = "Bypasses all VIP and VIP+ barriers",
     Callback = function()
-        if LocalPlayer.Character then LocalPlayer.Character:BreakJoints() end
-    end
-})
-
--- [[ TAB: SELLING ]] --
-local SellingTab = Window:Tab({ Title = "Economy & Selling", Icon = "banknote" })
-
-local AutoSellSection = SellingTab:Section({ Title = "Automated Transactions", Opened = true })
-
-local SellAreaDropdown = AutoSellSection:Dropdown({
-    Title = "Select Merchant Zone",
-    Multi = false,
-    AllowNone = false,
-    Values = {"Starter Shop", "Advanced Market", "Black Market", "VIP Area"},
-    Callback = function(val)
-        WindUI:Notify({ Title = "Route Set", Content = "Targeting: " .. val, Duration = 2 })
-    end
-})
-
-local AutoSellToggle = AutoSellSection:Toggle({
-    Title = "Auto-Sell Loop",
-    Desc = "Executes sales asynchronously",
-    Callback = function(bool)
-        State.AutoSell = bool
-        if bool then
-            task.spawn(function()
-                while State.AutoSell do
-                    -- Simulação de lógica complexa de venda
-                    -- Num cenário real, aqui entraria o FireServer
-                    print("[Nexus AI]: Executing Sale Protocol...")
-                    task.wait(2) -- Cooldown inteligente
-                end
-            end)
+        for _, wall in pairs(VIPWalls:GetChildren()) do
+            wall:Destroy()
         end
+        WindUI:Notify({Title = "System", Content = "VIP Barriers Decimated."})
     end
 })
 
-SellingTab:Space()
-SellingTab:Paragraph({
-    Title = "Analytics",
-    Desc = "Real-time earnings monitor.",
-    Image = "rbxassetid://18823386620", -- Exemplo de asset, pode substituir
-    ImageSize = 40,
-    Buttons = {
-        {
-            Title = "Export Logs",
-            Icon = "download",
-            Callback = function() print("Logs exported to console") end
-        }
-    }
+-- [ CATEGORIA: SELLING ]
+local SellingTab = Window:Tab({ Title = "Selling", Icon = "shopping-cart" })
+SellingTab:Paragraph({ Title = "Economic Module", Desc = "Configure suas opções de venda automática aqui." })
+
+-- [ CATEGORIA: EVENTS ]
+-- Icone escolhido: Lucide 'Zap' para representar eventos dinâmicos e rápidos
+local EventsTab = Window:Tab({ Title = "Events", Icon = "zap" })
+
+EventsTab:Section({ Title = "Gap Navigation System" })
+
+EventsTab:Toggle({
+    Title = "Wave Safety Protocol",
+    Desc = "Prevents teleporting if a wave is near the gap",
+    Value = true,
+    Callback = function(bool) State.SafetyProtocol = bool end
 })
 
--- [[ TAB: EVENTS ]] --
-local EventsTab = Window:Tab({ Title = "World Events", Icon = "calendar-star" })
+local GapList = {}
+for i = 1, 9 do table.insert(GapList, "Gap" .. i) end
 
-EventsTab:Tag({ Title = "Active Event: Halloween", Icon = "flame", Color = Color3.fromRGB(255, 100, 0) })
-
-local EventLogic = EventsTab:Section({ Title = "Event Automation" })
-
-EventLogic:Toggle({
-    Title = "Auto-Farm Event Currency",
-    Icon = "coins",
-    Callback = function(bool)
-        State.AutoFarmEvent = bool
-        if bool then
-            WindUI:Notify({ Title = "Automation", Content = "Scanning workspace for event items...", Icon = "radar" })
-            -- Exemplo de lógica de farming
-            task.spawn(function()
-                while State.AutoFarmEvent do
-                    -- Lógica de Pathfinding iria aqui
-                    task.wait(0.5)
-                end
-            end)
-        end
-    end
-})
-
-EventLogic:Button({
-    Title = "Server Hop (Find New Event)",
-    Desc = "Connects to a different server instance",
-    Icon = "globe",
-    Callback = function()
-        local httprequest = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
-        if httprequest then
-            WindUI:Notify({Title = "Network", Content = "Searching for lower ping servers..."})
-            -- Inserir lógica complexa de Server Hop aqui
+EventsTab:Dropdown({
+    Title = "Select Target Gap",
+    Values = GapList,
+    Callback = function(selected)
+        local result = GlideToGap(selected)
+        if result == "DANGER" then
+            WindUI:Notify({
+                Title = "ABORTED", 
+                Content = "High risk of death by Wave at " .. selected, 
+                Duration = 4,
+                Variant = "Critical"
+            })
         else
-            WindUI:Notify({Title = "Error", Content = "Executor does not support HTTP requests", Variant = "Critical"})
+            WindUI:Notify({Title = "Navigation", Content = "Gliding to " .. selected})
         end
     end
 })
 
--- [[ TAB: SETTINGS ]] --
-local SettingsTab = Window:Tab({ Title = "System Settings", Icon = "settings" })
+-- [ CATEGORIA: SETTINGS ]
+local SettingsTab = Window:Tab({ Title = "Settings", Icon = "settings" })
 
-local ConfigSection = SettingsTab:Section({ Title = "Configuration Management", Icon = "save" })
-
--- Inputs manuais para salvar configs
-local ConfigNameInput = ConfigSection:Input({
-    Title = "Config Name",
-    Placeholder = "Enter alias...",
-    Callback = function(text)
-        -- Placeholder
-    end
-})
-
-ConfigSection:Button({
-    Title = "Save Current Configuration",
-    Icon = "save",
-    Callback = function()
-        MainConfig:Save()
-        WindUI:Notify({ Title = "System", Content = "Configuration saved successfully.", Icon = "check" })
-    end
-})
-
-ConfigSection:Button({
-    Title = "Load Last Configuration",
-    Icon = "upload",
-    Callback = function()
-        MainConfig:Load()
-        WindUI:Notify({ Title = "System", Content = "Configuration loaded.", Icon = "check" })
-    end
-})
-
-local VisualsSection = SettingsTab:Section({ Title = "Client Optimization" })
-
-VisualsSection:Button({
-    Title = "FPS Boost (Low Memory Mode)",
-    Desc = "Decimates textures for maximum performance",
-    Callback = function()
-        for _, v in pairs(game:GetDescendants()) do
-            if v:IsA("Texture") or v:IsA("Decal") then
-                v.Transparency = 1
-            end
-        end
-        WindUI:Notify({ Title = "Performance", Content = "Textures disabled. Memory freed." })
-    end
-})
-
-local KeybindSet = VisualsSection:Keybind({
-    Title = "Menu Toggle Key",
-    Value = "RightControl",
-    Callback = function(key)
-        Window:SetToggleKey(Enum.KeyCode[key])
-    end
+SettingsTab:Button({
+    Title = "Uninject Script",
+    Callback = function() Window:Destroy() end
 })
 
 --------------------------------------------------------------------------------
--- // 6. FINAL INITIALIZATION
+-- // 4. INICIALIZAÇÃO E HOTKEYS
 --------------------------------------------------------------------------------
+HandleFlight()
 
--- Notificação de inicialização bem sucedida
+-- Hotkey para Voo (V)
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.V then
+        State.FlyEnabled = not State.FlyEnabled
+        WindUI:Notify({Title = "Flight", Content = State.FlyEnabled and "Active" or "Disabled"})
+    end
+end)
+
+-- Sincronização de WalkSpeed (Burlar reset do jogo)
+RunService.Stepped:Connect(function()
+    if Humanoid.WalkSpeed ~= State.Speed then
+        Humanoid.WalkSpeed = State.Speed
+    end
+end)
+
 WindUI:Notify({
     Title = "Nexus Prime Loaded",
-    Content = "Welcome back, Operator. Systems nominal.",
-    Duration = 5,
-    Icon = "shield-check"
+    Content = "Elite protocol initialized for user.",
+    Icon = "check-circle"
 })
-
--- Garbage Collection de UI ao fechar
-Window:OnClose(function()
-    getgenv().NexusRunning = false
-    print("[System]: UI Closed, cleaning connections...")
-end)
