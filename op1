@@ -1,519 +1,451 @@
--- ╔══════════════════════════════════════════════════════╗
--- ║                 BASE HUB - WINDUI STRUCTURE          ║
--- ╚══════════════════════════════════════════════════════╝
+--[[
+    KLS HUB - Roblox Script Hub
+    Desenvolvido por: Khalexis Team
+    UI Library: WindUI (Footagesus)
+]]
 
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
+-- // Carregar WindUI (última versão)
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))() -- [web:18]
 
--- WindUI latest [web:4]
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))() [web:4]
+-- // Configuração básica da library
+WindUI:SetNotificationLower(true) -- notificações embaixo [web:18]
+WindUI:SetFont("rbxassetid://12187371879") -- fonte clean (pode trocar o id)
 
-WindUI:SetNotificationLower(true)
-
--- ▓▓ Temas básicos + anime
-
+-- // Tema principal do KLS HUB
 WindUI:AddTheme({
-    Name = "EliteDark",
-    Accent = Color3.fromHex("#6366f1"),
-    Background = Color3.fromHex("#0a0a0f"),
+    Name = "KLS Midnight",
+    Accent = Color3.fromHex("#3B82F6"),
+    Background = Color3.fromHex("#050816"),
     BackgroundTransparency = 0,
-    Outline = Color3.fromHex("#6366f1"),
-    Text = Color3.fromHex("#e5e7eb"),
-    Placeholder = Color3.fromHex("#6b7280"),
-    Button = Color3.fromHex("#1e1e2e"),
-    Icon = Color3.fromHex("#818cf8"),
-    Hover = Color3.fromHex("#ffffff"),
-    WindowBackground = Color3.fromHex("#0a0a0f"),
-    WindowShadow = Color3.fromHex("#000000"),
-    DialogBackground = Color3.fromHex("#0a0a0f"),
-    DialogBackgroundTransparency = 0.05,
-    DialogTitle = Color3.fromHex("#e5e7eb"),
-    DialogContent = Color3.fromHex("#d1d5db"),
-    DialogIcon = Color3.fromHex("#818cf8"),
-    WindowTopbarButtonIcon = Color3.fromHex("#818cf8"),
-    WindowTopbarTitle = Color3.fromHex("#ffffff"),
-    WindowTopbarAuthor = Color3.fromHex("#9ca3af"),
-    WindowTopbarIcon = Color3.fromHex("#6366f1"),
-    TabBackground = Color3.fromHex("#1e1e2e"),
-    TabTitle = Color3.fromHex("#e5e7eb"),
-    TabIcon = Color3.fromHex("#818cf8"),
-    ElementBackground = Color3.fromHex("#1e1e2e"),
-    ElementTitle = Color3.fromHex("#e5e7eb"),
-    ElementDesc = Color3.fromHex("#9ca3af"),
-    ElementIcon = Color3.fromHex("#818cf8"),
-    PopupBackground = Color3.fromHex("#0a0a0f"),
-    PopupBackgroundTransparency = 0.05,
-    PopupTitle = Color3.fromHex("#e5e7eb"),
-    PopupContent = Color3.fromHex("#d1d5db"),
-    PopupIcon = Color3.fromHex("#818cf8"),
-    Toggle = Color3.fromHex("#1e1e2e"),
-    ToggleBar = Color3.fromHex("#6366f1"),
-    Checkbox = Color3.fromHex("#1e1e2e"),
-    CheckboxIcon = Color3.fromHex("#6366f1"),
-    Slider = Color3.fromHex("#1e1e2e"),
-    SliderThumb = Color3.fromHex("#6366f1"),
-})
 
-WindUI:AddTheme({
-    Name = "CrimsonNight",
-    Accent = Color3.fromHex("#f97373"),
-    Background = Color3.fromHex("#09030a"),
-    BackgroundTransparency = 0,
-    Outline = Color3.fromHex("#f97373"),
-    Text = Color3.fromHex("#f9fafb"),
-    Placeholder = Color3.fromHex("#6b7280"),
+    Outline = Color3.fromHex("#FFFFFF"),
+    Text = Color3.fromHex("#FFFFFF"),
+    Placeholder = Color3.fromHex("#6B7280"),
     Button = Color3.fromHex("#111827"),
-    Icon = Color3.fromHex("#fecaca"),
-    Hover = Color3.fromHex("#ffffff"),
-    WindowBackground = Color3.fromHex("#09030a"),
+    Icon = Color3.fromHex("#E5E7EB"),
+
+    Hover = Color3.fromHex("#60A5FA"),
+    WindowBackground = Color3.fromHex("#020617"),
     WindowShadow = Color3.fromHex("#000000"),
-    DialogBackground = Color3.fromHex("#09030a"),
-    DialogBackgroundTransparency = 0.05,
-    DialogTitle = Color3.fromHex("#f9fafb"),
-    DialogContent = Color3.fromHex("#e5e7eb"),
-    DialogIcon = Color3.fromHex("#fecaca"),
-    WindowTopbarButtonIcon = Color3.fromHex("#fecaca"),
-    WindowTopbarTitle = Color3.fromHex("#f9fafb"),
-    WindowTopbarAuthor = Color3.fromHex("#e5e7eb"),
-    WindowTopbarIcon = Color3.fromHex("#f97373"),
-    TabBackground = Color3.fromHex("#111827"),
-    TabTitle = Color3.fromHex("#f9fafb"),
-    TabIcon = Color3.fromHex("#fecaca"),
-    ElementBackground = Color3.fromHex("#111827"),
-    ElementTitle = Color3.fromHex("#f9fafb"),
-    ElementDesc = Color3.fromHex("#e5e7eb"),
-    ElementIcon = Color3.fromHex("#fecaca"),
-    PopupBackground = Color3.fromHex("#09030a"),
-    PopupBackgroundTransparency = 0.05,
-    PopupTitle = Color3.fromHex("#f9fafb"),
-    PopupContent = Color3.fromHex("#e5e7eb"),
-    PopupIcon = Color3.fromHex("#fecaca"),
-    Toggle = Color3.fromHex("#111827"),
-    ToggleBar = Color3.fromHex("#f97373"),
+
+    DialogBackground = Color3.fromHex("#020617"),
+    DialogBackgroundTransparency = 0,
+    DialogTitle = Color3.fromHex("#FFFFFF"),
+    DialogContent = Color3.fromHex("#E5E7EB"),
+    DialogIcon = Color3.fromHex("#E5E7EB"),
+
+    WindowTopbarButtonIcon = Color3.fromHex("#E5E7EB"),
+    WindowTopbarTitle = Color3.fromHex("#FFFFFF"),
+    WindowTopbarAuthor = Color3.fromHex("#9CA3AF"),
+    WindowTopbarIcon = Color3.fromHex("#FFFFFF"),
+
+    TabBackground = Color3.fromHex("#020617"),
+    TabTitle = Color3.fromHex("#FFFFFF"),
+    TabIcon = Color3.fromHex("#E5E7EB"),
+
+    ElementBackground = Color3.fromHex("#020617"),
+    ElementTitle = Color3.fromHex("#FFFFFF"),
+    ElementDesc = Color3.fromHex("#9CA3AF"),
+    ElementIcon = Color3.fromHex("#E5E7EB"),
+
+    PopupBackground = Color3.fromHex("#020617"),
+    PopupBackgroundTransparency = 0,
+    PopupTitle = Color3.fromHex("#FFFFFF"),
+    PopupContent = Color3.fromHex("#E5E7EB"),
+    PopupIcon = Color3.fromHex("#E5E7EB"),
+
+    Toggle = Color3.fromHex("#3B82F6"),
+    ToggleBar = Color3.fromHex("#FFFFFF"),
+
     Checkbox = Color3.fromHex("#111827"),
-    CheckboxIcon = Color3.fromHex("#f97373"),
+    CheckboxIcon = Color3.fromHex("#3B82F6"),
+
     Slider = Color3.fromHex("#111827"),
-    SliderThumb = Color3.fromHex("#f97373"),
+    SliderThumb = Color3.fromHex("#3B82F6"),
 })
 
-local AnimeBackgrounds = {
-    ["AnimeGirlBlue"] = "rbxassetid://665326906309",
-    ["AnimePastel"]   = "rbxassetid://1096405055049",
-    ["AnimeBoyDark"]  = "rbxassetid://256579271238",
-}
-
+-- Tema alternativo mais claro
 WindUI:AddTheme({
-    Name = "AnimeBlue",
-    Accent = Color3.fromHex("#60a5fa"),
+    Name = "KLS Frost",
+    Accent = Color3.fromHex("#22D3EE"),
     Background = Color3.fromHex("#020617"),
     BackgroundTransparency = 0,
-    Outline = Color3.fromHex("#38bdf8"),
-    Text = Color3.fromHex("#e5e7eb"),
-    Placeholder = Color3.fromHex("#64748b"),
-    Button = Color3.fromHex("#020617"),
-    Icon = Color3.fromHex("#93c5fd"),
+
+    Outline = Color3.fromHex("#E5E7EB"),
+    Text = Color3.fromHex("#F9FAFB"),
+    Placeholder = Color3.fromHex("#6B7280"),
+    Button = Color3.fromHex("#111827"),
+    Icon = Color3.fromHex("#E5E7EB"),
+
+    Hover = Color3.fromHex("#38BDF8"),
+    WindowBackground = Color3.fromHex("#020617"),
+    WindowShadow = Color3.fromHex("#000000"),
+
+    DialogBackground = Color3.fromHex("#020617"),
+    DialogBackgroundTransparency = 0,
+    DialogTitle = Color3.fromHex("#F9FAFB"),
+    DialogContent = Color3.fromHex("#E5E7EB"),
+    DialogIcon = Color3.fromHex("#E5E7EB"),
+
+    WindowTopbarButtonIcon = Color3.fromHex("#E5E7EB"),
+    WindowTopbarTitle = Color3.fromHex("#F9FAFB"),
+    WindowTopbarAuthor = Color3.fromHex("#9CA3AF"),
+    WindowTopbarIcon = Color3.fromHex("#E5E7EB"),
+
+    TabBackground = Color3.fromHex("#020617"),
+    TabTitle = Color3.fromHex("#F9FAFB"),
+    TabIcon = Color3.fromHex("#E5E7EB"),
+
+    ElementBackground = Color3.fromHex("#020617"),
+    ElementTitle = Color3.fromHex("#F9FAFB"),
+    ElementDesc = Color3.fromHex("#9CA3AF"),
+    ElementIcon = Color3.fromHex("#E5E7EB"),
+
+    PopupBackground = Color3.fromHex("#020617"),
+    PopupBackgroundTransparency = 0,
+    PopupTitle = Color3.fromHex("#F9FAFB"),
+    PopupContent = Color3.fromHex("#E5E7EB"),
+    PopupIcon = Color3.fromHex("#E5E7EB"),
+
+    Toggle = Color3.fromHex("#22D3EE"),
+    ToggleBar = Color3.fromHex("#FFFFFF"),
+
+    Checkbox = Color3.fromHex("#0F172A"),
+    CheckboxIcon = Color3.fromHex("#22D3EE"),
+
+    Slider = Color3.fromHex("#0F172A"),
+    SliderThumb = Color3.fromHex("#22D3EE"),
 })
 
-WindUI:AddTheme({
-    Name = "AnimePastel",
-    Accent = Color3.fromHex("#f9a8d4"),
-    Background = Color3.fromHex("#0f172a"),
-    BackgroundTransparency = 0,
-    Outline = Color3.fromHex("#fb7185"),
-    Text = Color3.fromHex("#fde68a"),
-    Placeholder = Color3.fromHex("#f9a8d4"),
-    Button = Color3.fromHex("#1e293b"),
-    Icon = Color3.fromHex("#fda4af"),
+-- Gradiente de fundo suave
+WindUI:Gradient({
+    ["0"]   = { Color = Color3.fromHex("#020617"), Transparency = 0 },
+    ["100"] = { Color = Color3.fromHex("#020617"), Transparency = 0 },
+}, {
+    Rotation = 90,
 })
 
-WindUI:AddTheme({
-    Name = "AnimeDarkBoy",
-    Accent = Color3.fromHex("#a855f7"),
-    Background = Color3.fromHex("#020617"),
-    BackgroundTransparency = 0,
-    Outline = Color3.fromHex("#7e22ce"),
-    Text = Color3.fromHex("#e5e7eb"),
-    Placeholder = Color3.fromHex("#6b7280"),
-    Button = Color3.fromHex("#020617"),
-    Icon = Color3.fromHex("#a855f7"),
-})
+-- Define tema inicial
+WindUI:SetTheme("KLS Midnight")
 
-WindUI:SetTheme("EliteDark")
-
--- ▓▓ Janela principal
-
+-- // Criar janela principal do hub [web:24]
 local Window = WindUI:CreateWindow({
-    Title = "My Super Hub",
-    Icon = "lucide:crown",
-    Author = "by você",
-    Folder = "MySuperHub",
-    Size = UDim2.fromOffset(580, 460),
-    Theme = "EliteDark",
+    Title = "KLS HUB",
+    Icon = "lucide:radar",
+    Author = "by Khalexis Team",
+    Folder = "KLS_HUB",
+
+    Size = UDim2.fromOffset(600, 470),
+    MinSize = Vector2.new(560, 350),
+    MaxSize = Vector2.new(860, 580),
+    Transparent = false,
+    Theme = "KLS Midnight",
     Resizable = true,
-    SideBarWidth = 200,
+    SideBarWidth = 210,
+    BackgroundImageTransparency = 0.45,
     HideSearchBar = false,
     ScrollBarEnabled = true,
+    HidePanelBackground = false,
+
+    -- Sem User / KeySystem por enquanto
+    User = {
+        Enabled = false,
+        Anonymous = true,
+    },
 })
 
-Window:SetToggleKey(Enum.KeyCode.RightShift)
+-- Key para abrir/fechar (G)
+Window:SetToggleKey(Enum.KeyCode.G)
 
--- ▓▓ Tabs
+-- Ícone da janela um pouco maior
+Window:SetIconSize(26)
 
-local PlayerTab = Window:Tab({
-    Title = "Player",
-    Icon = "lucide:user",
+-- Botão flutuante para abrir
+Window:EditOpenButton({
+    Title = "Open KLS HUB",
+    Icon = "lucide:menu",
+    CornerRadius = UDim.new(0, 14),
+    StrokeThickness = 2,
+    Color = ColorSequence.new(
+        Color3.fromHex("6366F1"),
+        Color3.fromHex("22D3EE")
+    ),
+    OnlyMobile = false,
+    Enabled = true,
+    Draggable = true,
 })
 
-local SellingTab = Window:Tab({
-    Title = "Selling",
-    Icon = "lucide:shopping-cart",
+-- Tag de versão
+Window:Tag({
+    Title = "v1.0.0",
+    Icon = "lucide:github",
+    Color = Color3.fromHex("#22C55E"),
+    Radius = 10,
 })
 
-local EventsTab = Window:Tab({
-    Title = "Events",
-    Icon = "lucide:calendar-days",
-})
+----------------------------------------------------------------
+--                      TABS PRINCIPAIS
+----------------------------------------------------------------
 
-local SettingsTab = Window:Tab({
-    Title = "Settings",
-    Icon = "lucide:settings",
-})
+local Tabs = {
+    Player   = Window:Tab({ Title = "Player",   Icon = "lucide:user" }),
+    Farm     = Window:Tab({ Title = "Farm",     Icon = "lucide:wheat" }),
+    Auto     = Window:Tab({ Title = "Auto",     Icon = "lucide:bot" }),
+    Teleport = Window:Tab({ Title = "Teleport", Icon = "lucide:map-pin" }),
+    Events   = Window:Tab({ Title = "Events",   Icon = "lucide:sparkles" }),
+    Selling  = Window:Tab({ Title = "Selling",  Icon = "lucide:shopping-bag" }),
+    Configs  = Window:Tab({ Title = "Configs",  Icon = "lucide:settings-2" }),
+}
 
--- ══════════════════════════════════════════════════════
--- Util: pegar Character / Humanoid / HRP
--- ══════════════════════════════════════════════════════
+-- Seleciona a aba inicial
+Tabs.Player:Select()
 
-local function getCharacter()
-    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    return char, hum, hrp
+----------------------------------------------------------------
+--                      PLAYER TAB (vazio por enquanto)
+----------------------------------------------------------------
+
+do
+    local SectionInfo = Tabs.Player:Section({
+        Title = "Player Utilities",
+        Opened = true,
+    })
+
+    SectionInfo:Paragraph({
+        Title = "Coming soon",
+        Desc  = "All player features will be here: movement, stats, visuals and more.",
+        Color = "Blue",
+        Icon  = "lucide:info",
+    })
 end
 
--- ══════════════════════════════════════════════════════
--- PLAYER: Farm (speed, double speed, super jump, fly)
--- ══════════════════════════════════════════════════════
+----------------------------------------------------------------
+--                      FARM TAB (vazio por enquanto)
+----------------------------------------------------------------
 
-local FarmSection = PlayerTab:Section({
-    Title = "Farm",
-    Box = true,
-    Opened = true,
-    FontWeight = "SemiBold",
-})
+do
+    local SectionInfo = Tabs.Farm:Section({
+        Title = "Farming System",
+        Opened = true,
+    })
 
-FarmSection:Paragraph({
-    Title = "Farm System",
-    Desc = "Auto-farm + movement tweaks (speed, super jump, fly).",
-})
-
--- Speed base
-local BaseWalkSpeed = 16 -- default humanoid speed [web:2]
-local CurrentSpeed = 16
-
--- Input de Speed 16–1000
-local SpeedInput = FarmSection:Input({
-    Title = "Walk Speed",
-    Placeholder = "16 - 1000",
-    Numeric = true,
-    Callback = function(text)
-        local value = tonumber(text)
-        if not value then return end
-
-        value = math.clamp(value, 16, 1000)
-        CurrentSpeed = value
-
-        local _, hum = getCharacter()
-        if hum then
-            if BaseWalkSpeed == 16 then
-                BaseWalkSpeed = hum.WalkSpeed
-            end
-            hum.WalkSpeed = value
-        end
-    end,
-})
-
-FarmSection:Button({
-    Title = "Reset Speed",
-    Icon = "lucide:rotate-ccw",
-    Callback = function()
-        local _, hum = getCharacter()
-        if hum then
-            hum.WalkSpeed = BaseWalkSpeed
-            CurrentSpeed = BaseWalkSpeed
-        end
-    end,
-})
-
--- Double Speed (botão simples: aplica 2x do atual)
-FarmSection:Button({
-    Title = "Double Speed",
-    Icon = "lucide:zap",
-    Callback = function()
-        local _, hum = getCharacter()
-        if not hum then return end
-
-        -- atual como base
-        BaseWalkSpeed = hum.WalkSpeed
-        local newSpeed = math.clamp(BaseWalkSpeed * 2, 16, 1000)
-        hum.WalkSpeed = newSpeed
-        CurrentSpeed = newSpeed
-    end,
-})
-
--- Super Jump (impulso horizontal + vertical usando câmera) [web:6]
-local SuperJumpPower = 100
-
-FarmSection:Slider({
-    Title = "Super Jump Power",
-    Desc = "Força do impulso",
-    Value = {
-        Min = 50,
-        Max = 500,
-        Default = 100,
-    },
-    Step = 10,
-    Callback = function(v)
-        SuperJumpPower = v
-    end,
-})
-
-FarmSection:Button({
-    Title = "Super Jump",
-    Icon = "lucide:arrow-up-right",
-    Desc = "Impulso na direção da câmera",
-    Callback = function()
-        local _, hum, hrp = getCharacter()
-        if not (hum and hrp) then return end
-
-        local cam = workspace.CurrentCamera
-        if not cam then return end
-
-        local dir = cam.CFrame.LookVector
-        local horizontal = Vector3.new(dir.X, 0, dir.Z)
-        if horizontal.Magnitude == 0 then
-            horizontal = Vector3.new(1, 0, 0)
-        else
-            horizontal = horizontal.Unit
-        end
-
-        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-        hrp.AssemblyLinearVelocity =
-            horizontal * SuperJumpPower +
-            Vector3.new(0, SuperJumpPower / 2, 0)
-    end,
-})
-
--- Fly (sem toggle: ativa ao clicar e desliga com tecla X, por exemplo)
-
-local FlyActive = false
-local FlySpeed = 80
-local FlyConnections = {}
-
-local function disconnectFly()
-    for _, conn in ipairs(FlyConnections) do
-        conn:Disconnect()
-    end
-    table.clear(FlyConnections)
+    SectionInfo:Paragraph({
+        Title = "Farming suite",
+        Desc  = "Auto farm paths, target selectors and smart loops will be configured here.",
+        Color = "Green",
+        Icon  = "lucide:leaf",
+    })
 end
 
-local function startFly()
-    if FlyActive then return end
-    FlyActive = true
+----------------------------------------------------------------
+--                      AUTO TAB (vazio por enquanto)
+----------------------------------------------------------------
 
-    local _, hum, hrp = getCharacter()
-    if not (hum and hrp) then
-        FlyActive = false
-        return
-    end
+do
+    local SectionInfo = Tabs.Auto:Section({
+        Title = "Automation Core",
+        Opened = true,
+    })
 
-    hum.PlatformStand = true
-
-    local pressing = {
-        W = false,
-        A = false,
-        S = false,
-        D = false,
-        Space = false,
-        Shift = false,
-    }
-
-    FlyConnections[#FlyConnections + 1] =
-        UserInputService.InputBegan:Connect(function(input, gp)
-            if gp then return end
-            local kc = input.KeyCode
-            if kc == Enum.KeyCode.W then pressing.W = true end
-            if kc == Enum.KeyCode.S then pressing.S = true end
-            if kc == Enum.KeyCode.A then pressing.A = true end
-            if kc == Enum.KeyCode.D then pressing.D = true end
-            if kc == Enum.KeyCode.Space then pressing.Space = true end
-            if kc == Enum.KeyCode.LeftShift then pressing.Shift = true end
-            -- tecla para parar o fly
-            if kc == Enum.KeyCode.X then
-                FlyActive = false
-            end
-        end)
-
-    FlyConnections[#FlyConnections + 1] =
-        UserInputService.InputEnded:Connect(function(input, gp)
-            if gp then return end
-            local kc = input.KeyCode
-            if kc == Enum.KeyCode.W then pressing.W = false end
-            if kc == Enum.KeyCode.S then pressing.S = false end
-            if kc == Enum.KeyCode.A then pressing.A = false end
-            if kc == Enum.KeyCode.D then pressing.D = false end
-            if kc == Enum.KeyCode.Space then pressing.Space = false end
-            if kc == Enum.KeyCode.LeftShift then pressing.Shift = false end
-        end)
-
-    FlyConnections[#FlyConnections + 1] =
-        RunService.RenderStepped:Connect(function(dt)
-            if not FlyActive then
-                disconnectFly()
-                local _, hum2, hrp2 = getCharacter()
-                if hum2 then hum2.PlatformStand = false end
-                if hrp2 then
-                    hrp2.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                end
-                return
-            end
-
-            local _, hum3, hrp3 = getCharacter()
-            if not (hum3 and hrp3) then return end
-
-            local cam = workspace.CurrentCamera
-            if not cam then return end
-
-            local cf = cam.CFrame
-            local forward = cf.LookVector
-            local right = cf.RightVector
-
-            local move = Vector3.new()
-
-            if pressing.W then move += Vector3.new(forward.X, 0, forward.Z) end
-            if pressing.S then move -= Vector3.new(forward.X, 0, forward.Z) end
-            if pressing.D then move += Vector3.new(right.X, 0, right.Z) end
-            if pressing.A then move -= Vector3.new(right.X, 0, right.Z) end
-            if pressing.Space then move += Vector3.new(0, 1, 0) end
-            if pressing.Shift then move -= Vector3.new(0, 1, 0) end
-
-            if move.Magnitude > 0 then
-                move = move.Unit * FlySpeed
-            end
-
-            hrp3.AssemblyLinearVelocity = move
-        end)
+    SectionInfo:Paragraph({
+        Title = "Automation center",
+        Desc  = "Global auto systems like auto-rejoin, auto-buy and auto-upgrade will stay here.",
+        Color = "Orange",
+        Icon  = "lucide:cpu",
+    })
 end
 
-FarmSection:Slider({
-    Title = "Fly Speed",
-    Desc = "Velocidade do fly",
-    Value = {
-        Min = 20,
-        Max = 300,
-        Default = 80,
-    },
-    Step = 5,
-    Callback = function(v)
-        FlySpeed = v
-    end,
-})
+----------------------------------------------------------------
+--                      TELEPORT TAB (vazio por enquanto)
+----------------------------------------------------------------
 
-FarmSection:Button({
-    Title = "Fly (X para parar)",
-    Icon = "lucide:feather",
-    Desc = "Clique para começar a voar",
-    Callback = function()
-        startFly()
-        WindUI:Notify({
-            Title = "Fly",
-            Content = "Fly ativado. Aperte X para parar.",
-            Duration = 4,
-            Icon = "lucide:info",
-        })
-    end,
-})
+do
+    local SectionInfo = Tabs.Teleport:Section({
+        Title = "Teleport Hub",
+        Opened = true,
+    })
 
--- ══════════════════════════════════════════════════════
--- SETTINGS: Themes + Background anime
--- ══════════════════════════════════════════════════════
+    SectionInfo:Paragraph({
+        Title = "Teleport presets",
+        Desc  = "Map waypoints, safe spots and grind zones will be added in this section.",
+        Color = "Purple",
+        Icon  = "lucide:map",
+    })
+end
 
-local ThemeSection = SettingsTab:Section({
-    Title = "Theme",
-    Box = true,
-    Opened = true,
-})
+----------------------------------------------------------------
+--                      EVENTS TAB (vazio por enquanto)
+----------------------------------------------------------------
 
-local CurrentBackgroundKey = nil
+do
+    local SectionInfo = Tabs.Events:Section({
+        Title = "Events & Waves",
+        Opened = true,
+    })
 
-local ThemeDropdown = ThemeSection:Dropdown({
-    Title = "Select Theme",
-    Desc = "Choose your favorite UI style",
-    Values = {
-        "EliteDark",
-        "CrimsonNight",
-        "AnimeBlue",
-        "AnimePastel",
-        "AnimeDarkBoy",
-        "Dark",
-        "Light",
-    },
-    SearchBarEnabled = false,
-    Callback = function(value)
-        WindUI:SetTheme(value)
-    end,
-})
+    SectionInfo:Paragraph({
+        Title = "Dynamic events",
+        Desc  = "Boss timers, wave handlers and special events automations will live here.",
+        Color = "Red",
+        Icon  = "lucide:alarm-clock",
+    })
+end
 
-local AnimeBgDropdown = ThemeSection:Dropdown({
-    Title = "Anime Background",
-    Desc = "Select an anime background image",
-    Values = {
-        "None",
-        "AnimeGirlBlue",
-        "AnimePastel",
-        "AnimeBoyDark",
-    },
-    SearchBarEnabled = false,
-    Callback = function(choice)
-        if choice == "None" then
-            CurrentBackgroundKey = nil
-            Window:SetBackgroundImage("")
-            return
+----------------------------------------------------------------
+--                      SELLING TAB (vazio por enquanto)
+----------------------------------------------------------------
+
+do
+    local SectionInfo = Tabs.Selling:Section({
+        Title = "Selling & Economy",
+        Opened = true,
+    })
+
+    SectionInfo:Paragraph({
+        Title = "Smart selling",
+        Desc  = "Auto-sell filters, price rules and rarity protection will be configured here.",
+        Color = "Yellow",
+        Icon  = "lucide:coins",
+    })
+end
+
+----------------------------------------------------------------
+--                      CONFIGS TAB (com conteúdo)
+----------------------------------------------------------------
+
+do
+    local GeneralSection = Tabs.Configs:Section({
+        Title = "General Settings",
+        Opened = true,
+    })
+
+    GeneralSection:Paragraph({
+        Title = "KLS HUB",
+        Desc  = "Universal script hub crafted by Khalexis Team.",
+        Color = "White",
+        Icon  = "lucide:radar",
+    })
+
+    -- Seletor de tema
+    local ThemesSection = Tabs.Configs:Section({
+        Title = "Theme Manager",
+        Opened = true,
+    })
+
+    ThemesSection:Dropdown({
+        Title = "Select Theme",
+        Values = { "KLS Midnight", "KLS Frost", "Dark", "Light" },
+        Callback = function(themeName)
+            WindUI:SetTheme(themeName)
+            WindUI:Notify({
+                Title = "Theme applied",
+                Content = "Current theme: " .. themeName,
+                Duration = 3,
+                Icon = "lucide:palette",
+            })
         end
+    })
 
-        CurrentBackgroundKey = choice
-        local asset = AnimeBackgrounds[choice]
-        if asset then
-            Window:SetBackgroundImage(asset)
+    -- Transparência da janela [web:18]
+    ThemesSection:Slider({
+        Title = "Background Transparency",
+        Desc  = "Adjust the hub transparency in real-time.",
+        Step  = 0.1,
+        Value = { Min = 0, Max = 1, Default = 0.2 },
+        Callback = function(value)
+            local v = tonumber(string.format("%.1f", value))
+            Window:ToggleTransparency(v > 0)
         end
-    end,
-})
+    })
 
-ThemeSection:Slider({
-    Title = "Background Transparency",
-    Desc = "Adjust background opacity",
-    Value = {
-        Min = 0,
-        Max = 1,
-        Default = 0,
-    },
-    Step = 0.05,
-    Callback = function(v)
-        Window:SetBackgroundImageTransparency(v)
-    end,
-})
+    -- Toggle de resizable
+    ThemesSection:Toggle({
+        Title = "Resizable Window",
+        Desc  = "Enable or disable window resizing.",
+        Icon  = "lucide:stretch-horizontal",
+        Value = true,
+        Callback = function(state)
+            Window:IsResizable(state)
+        end
+    })
 
-ThemeSection:Button({
-    Title = "Show Current Theme",
-    Icon = "lucide:info",
-    Callback = function()
-        local t = WindUI:GetCurrentTheme()
-        WindUI:Notify({
-            Title = "Theme",
-            Content = "Current theme: " .. tostring(t),
-            Duration = 3,
-            Icon = "lucide:palette",
-        })
-    end,
-})
+    -- Keybind custom para abrir o hub
+    local KeybindSection = Tabs.Configs:Section({
+        Title = "Hotkeys",
+        Opened = true,
+    })
+
+    KeybindSection:Keybind({
+        Title = "Toggle Hub Key",
+        Desc  = "Press a key to set a new toggle key for KLS HUB.",
+        Value = "G",
+        Callback = function(key)
+            if Enum.KeyCode[key] then
+                Window:SetToggleKey(Enum.KeyCode[key])
+                WindUI:Notify({
+                    Title = "Keybind updated",
+                    Content = "New toggle key: " .. key,
+                    Duration = 3,
+                    Icon = "lucide:keyboard",
+                })
+            end
+        end
+    })
+
+    -- Info / créditos
+    local AboutSection = Tabs.Configs:Section({
+        Title = "About & Info",
+        Opened = true,
+    })
+
+    AboutSection:Paragraph({
+        Title = "KLS HUB Identity",
+        Desc  = "Built for flexibility: plug your game-specific logic inside Player, Farm, Auto, Teleport, Events and Selling tabs.",
+        Color = "Grey",
+        Icon  = "lucide:info",
+    })
+
+    AboutSection:Button({
+        Title = "Copy Loadstring",
+        Icon  = "lucide:copy",
+        Callback = function()
+            if setclipboard then
+                setclipboard('loadstring(game:HttpGet("YOUR_RAW_KLS_HUB_URL_HERE"))()')
+                WindUI:Notify({
+                    Title = "Copied!",
+                    Content = "Loadstring copied to clipboard.",
+                    Duration = 3,
+                    Icon = "lucide:check-circle-2",
+                })
+            else
+                WindUI:Notify({
+                    Title = "Clipboard not available",
+                    Content = "Executor does not support setclipboard.",
+                    Duration = 4,
+                    Icon = "lucide:alert-triangle",
+                })
+            end
+        end
+    })
+end
+
+----------------------------------------------------------------
+--                      EVENTOS DA JANELA
+----------------------------------------------------------------
+
+Window:OnOpen(function()
+    print("[KLS HUB] Window opened.")
+end)
+
+Window:OnClose(function()
+    print("[KLS HUB] Window closed.")
+end)
+
+Window:OnDestroy(function()
+    print("[KLS HUB] Window destroyed.")
+end)
+
+----------------------------------------------------------------
+--                      ABRIR HUB DIRETO
+----------------------------------------------------------------
+
+Window:Open()
