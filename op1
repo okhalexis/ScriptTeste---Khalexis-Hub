@@ -1,1295 +1,197 @@
---[[
-    ╔═══════════════════════════════════════════════════════════════╗
-    ║                         KLS HUB                               ║
-    ║              Universal Roblox Script Hub                      ║
-    ║                                                               ║
-    ║  Desenvolvido por: Khalexis Team                             ║
-    ║  UI Library: WindUI (Footagesus)                             ║
-    ║  Versão: 1.0.0                                               ║
-    ║  Data: 30/01/2026                                            ║
-    ╚═══════════════════════════════════════════════════════════════╝
-]]
+-- ╔══════════════════════════════════════════════════════════════╗
+-- ║                 BASE HUB - WINDUI STRUCTURE                  ║
+-- ╚══════════════════════════════════════════════════════════════╝
 
--- ========================================
--- SERVIÇOS E INICIALIZAÇÃO
--- ========================================
+-- Services básicos
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
-local Lighting = game:GetService("Lighting")
-
 local LocalPlayer = Players.LocalPlayer
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local Humanoid = Character:WaitForChild("Humanoid")
-local RootPart = Character:WaitForChild("HumanoidRootPart")
 
--- ========================================
--- VARIÁVEIS GLOBAIS DO HUB
--- ========================================
-local KLS = {
-    Version = "1.0.0",
-    Loaded = false,
-    Settings = {
-        -- Player Settings
-        WalkSpeed = 16,
-        JumpPower = 50,
-        Gravity = 196.2,
-        InfiniteJump = false,
-        NoClip = false,
-        Fly = false,
-        FlySpeed = 50,
-        
-        -- Farm Settings
-        AutoFarm = false,
-        FarmDistance = 50,
-        FarmDelay = 0.5,
-        
-        -- Auto Settings
-        AutoCollectCoins = false,
-        AutoCollectChests = false,
-        AutoRebirth = false,
-        
-        -- Teleport Settings
-        TeleportType = "Instant", -- Instant, Tween
-        TweenSpeed = 200,
-    },
-    
-    Connections = {},
-    Loops = {},
-    
-    -- Estados internos
-    States = {
-        Flying = false,
-        NoClipping = false,
-        InfiniteJumping = false,
-    }
-}
-
--- ========================================
--- FUNÇÕES UTILITÁRIAS
--- ========================================
-
--- Função para notificar no hub
-function KLS:Notify(title, content, duration, icon)
-    WindUI:Notify({
-        Title = title or "KLS HUB",
-        Content = content or "",
-        Duration = duration or 3,
-        Icon = icon or "lucide:info",
-    })
-end
-
--- Função para logging com timestamp
-function KLS:Log(message, type)
-    local timestamp = os.date("%H:%M:%S")
-    local prefix = "[KLS HUB]"
-    
-    if type == "success" then
-        print(string.format("%s [✓] %s - %s", prefix, timestamp, message))
-    elseif type == "error" then
-        warn(string.format("%s [✗] %s - %s", prefix, timestamp, message))
-    elseif type == "warning" then
-        warn(string.format("%s [!] %s - %s", prefix, timestamp, message))
-    else
-        print(string.format("%s [ℹ] %s - %s", prefix, timestamp, message))
-    end
-end
-
--- Função para salvar configurações
-function KLS:SaveSettings()
-    local success, err = pcall(function()
-        writefile("KLS_HUB/settings.json", game:GetService("HttpService"):JSONEncode(self.Settings))
-    end)
-    
-    if success then
-        self:Log("Configurações salvas com sucesso!", "success")
-    else
-        self:Log("Erro ao salvar configurações: " .. tostring(err), "error")
-    end
-end
-
--- Função para carregar configurações
-function KLS:LoadSettings()
-    local success, result = pcall(function()
-        if isfile("KLS_HUB/settings.json") then
-            local data = readfile("KLS_HUB/settings.json")
-            return game:GetService("HttpService"):JSONDecode(data)
-        end
-        return nil
-    end)
-    
-    if success and result then
-        for key, value in pairs(result) do
-            if self.Settings[key] ~= nil then
-                self.Settings[key] = value
-            end
-        end
-        self:Log("Configurações carregadas com sucesso!", "success")
-        return true
-    else
-        self:Log("Nenhuma configuração salva encontrada, usando padrões.", "info")
-        return false
-    end
-end
-
--- Atualizar referências de personagem
-function KLS:UpdateCharacter()
-    Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    Humanoid = Character:WaitForChild("Humanoid")
-    RootPart = Character:WaitForChild("HumanoidRootPart")
-    self:Log("Referências de personagem atualizadas", "info")
-end
-
--- ========================================
--- FUNÇÕES DE PLAYER
--- ========================================
-
--- WalkSpeed
-function KLS:SetWalkSpeed(speed)
-    if Humanoid then
-        Humanoid.WalkSpeed = speed
-        self.Settings.WalkSpeed = speed
-        self:Log(string.format("WalkSpeed definido para: %d", speed), "success")
-    end
-end
-
--- JumpPower
-function KLS:SetJumpPower(power)
-    if Humanoid then
-        Humanoid.JumpPower = power
-        self.Settings.JumpPower = power
-        self:Log(string.format("JumpPower definido para: %d", power), "success")
-    end
-end
-
--- Gravity
-function KLS:SetGravity(gravity)
-    Workspace.Gravity = gravity
-    self.Settings.Gravity = gravity
-    self:Log(string.format("Gravidade definida para: %.1f", gravity), "success")
-end
-
--- Infinite Jump
-function KLS:ToggleInfiniteJump(state)
-    self.Settings.InfiniteJump = state
-    self.States.InfiniteJumping = state
-    
-    if state then
-        if not self.Connections.InfiniteJump then
-            self.Connections.InfiniteJump = UserInputService.JumpRequest:Connect(function()
-                if self.States.InfiniteJumping and Humanoid then
-                    Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                end
-            end)
-            self:Log("Infinite Jump ativado", "success")
-        end
-    else
-        if self.Connections.InfiniteJump then
-            self.Connections.InfiniteJump:Disconnect()
-            self.Connections.InfiniteJump = nil
-            self:Log("Infinite Jump desativado", "success")
-        end
-    end
-end
-
--- NoClip
-function KLS:ToggleNoClip(state)
-    self.Settings.NoClip = state
-    self.States.NoClipping = state
-    
-    if state then
-        if not self.Loops.NoClip then
-            self.Loops.NoClip = RunService.Stepped:Connect(function()
-                if self.States.NoClipping and Character then
-                    for _, part in pairs(Character:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = false
-                        end
-                    end
-                end
-            end)
-            self:Log("NoClip ativado", "success")
-        end
-    else
-        if self.Loops.NoClip then
-            self.Loops.NoClip:Disconnect()
-            self.Loops.NoClip = nil
-            
-            -- Restaurar colisão
-            if Character then
-                for _, part in pairs(Character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = true
-                    end
-                end
-            end
-            self:Log("NoClip desativado", "success")
-        end
-    end
-end
-
--- Fly
-function KLS:ToggleFly(state)
-    self.Settings.Fly = state
-    self.States.Flying = state
-    
-    if state then
-        if not self.Loops.Fly then
-            local bodyVelocity = Instance.new("BodyVelocity")
-            bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-            bodyVelocity.Parent = RootPart
-            
-            local bodyGyro = Instance.new("BodyGyro")
-            bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-            bodyGyro.P = 9e4
-            bodyGyro.Parent = RootPart
-            
-            self.Loops.Fly = RunService.Heartbeat:Connect(function()
-                if self.States.Flying and RootPart then
-                    local camera = Workspace.CurrentCamera
-                    local moveDirection = Vector3.new(0, 0, 0)
-                    
-                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                        moveDirection = moveDirection + camera.CFrame.LookVector
-                    end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                        moveDirection = moveDirection - camera.CFrame.LookVector
-                    end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                        moveDirection = moveDirection - camera.CFrame.RightVector
-                    end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                        moveDirection = moveDirection + camera.CFrame.RightVector
-                    end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                        moveDirection = moveDirection + Vector3.new(0, 1, 0)
-                    end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-                        moveDirection = moveDirection - Vector3.new(0, 1, 0)
-                    end
-                    
-                    bodyVelocity.Velocity = moveDirection * self.Settings.FlySpeed
-                    bodyGyro.CFrame = camera.CFrame
-                else
-                    if bodyVelocity then bodyVelocity:Destroy() end
-                    if bodyGyro then bodyGyro:Destroy() end
-                    if self.Loops.Fly then
-                        self.Loops.Fly:Disconnect()
-                        self.Loops.Fly = nil
-                    end
-                end
-            end)
-            
-            self:Log("Fly ativado (WASD para mover, Space/Shift para subir/descer)", "success")
-        end
-    else
-        if self.Loops.Fly then
-            self.Loops.Fly:Disconnect()
-            self.Loops.Fly = nil
-            
-            -- Remover BodyVelocity e BodyGyro
-            if RootPart then
-                for _, obj in pairs(RootPart:GetChildren()) do
-                    if obj:IsA("BodyVelocity") or obj:IsA("BodyGyro") then
-                        obj:Destroy()
-                    end
-                end
-            end
-            
-            self:Log("Fly desativado", "success")
-        end
-    end
-end
-
--- Reset Character
-function KLS:ResetCharacter()
-    if Humanoid then
-        Humanoid.Health = 0
-        self:Log("Personagem resetado", "info")
-    end
-end
-
--- ========================================
--- FUNÇÕES DE FARM
--- ========================================
-
--- Auto Farm (exemplo genérico - customizar por jogo)
-function KLS:ToggleAutoFarm(state)
-    self.Settings.AutoFarm = state
-    
-    if state then
-        if not self.Loops.AutoFarm then
-            self.Loops.AutoFarm = RunService.Heartbeat:Connect(function()
-                if self.Settings.AutoFarm then
-                    -- Exemplo: buscar NPCs ou mobs próximos
-                    local enemies = Workspace:FindFirstChild("Enemies")
-                    if enemies then
-                        for _, enemy in pairs(enemies:GetChildren()) do
-                            if enemy:IsA("Model") and enemy:FindFirstChild("Humanoid") then
-                                local enemyHumanoid = enemy.Humanoid
-                                local enemyRoot = enemy:FindFirstChild("HumanoidRootPart")
-                                
-                                if enemyHumanoid.Health > 0 and enemyRoot then
-                                    local distance = (RootPart.Position - enemyRoot.Position).Magnitude
-                                    
-                                    if distance <= self.Settings.FarmDistance then
-                                        -- Teleportar para o inimigo
-                                        RootPart.CFrame = enemyRoot.CFrame * CFrame.new(0, 0, 5)
-                                        
-                                        -- Simular ataque (ajustar conforme o jogo)
-                                        -- game:GetService("ReplicatedStorage").Combat.Attack:FireServer(enemy)
-                                        
-                                        wait(self.Settings.FarmDelay)
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
-            self:Log("Auto Farm ativado", "success")
-            self:Notify("Auto Farm", "Sistema de farm automático iniciado", 3, "lucide:zap")
-        end
-    else
-        if self.Loops.AutoFarm then
-            self.Loops.AutoFarm:Disconnect()
-            self.Loops.AutoFarm = nil
-            self:Log("Auto Farm desativado", "success")
-            self:Notify("Auto Farm", "Sistema de farm automático pausado", 3, "lucide:pause")
-        end
-    end
-end
-
--- ========================================
--- FUNÇÕES AUTO
--- ========================================
-
--- Auto Collect Coins
-function KLS:ToggleAutoCollectCoins(state)
-    self.Settings.AutoCollectCoins = state
-    
-    if state then
-        if not self.Loops.AutoCollectCoins then
-            self.Loops.AutoCollectCoins = RunService.Heartbeat:Connect(function()
-                if self.Settings.AutoCollectCoins then
-                    local coins = Workspace:FindFirstChild("Coins")
-                    if coins then
-                        for _, coin in pairs(coins:GetChildren()) do
-                            if coin:IsA("BasePart") or coin:IsA("Model") then
-                                local coinRoot = coin:IsA("Model") and coin:FindFirstChild("HumanoidRootPart") or coin
-                                
-                                if coinRoot then
-                                    -- Teleportar para a moeda
-                                    if (RootPart.Position - coinRoot.Position).Magnitude <= 100 then
-                                        RootPart.CFrame = coinRoot.CFrame
-                                        wait(0.1)
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
-            self:Log("Auto Collect Coins ativado", "success")
-        end
-    else
-        if self.Loops.AutoCollectCoins then
-            self.Loops.AutoCollectCoins:Disconnect()
-            self.Loops.AutoCollectCoins = nil
-            self:Log("Auto Collect Coins desativado", "success")
-        end
-    end
-end
-
--- Auto Collect Chests
-function KLS:ToggleAutoCollectChests(state)
-    self.Settings.AutoCollectChests = state
-    
-    if state then
-        if not self.Loops.AutoCollectChests then
-            self.Loops.AutoCollectChests = RunService.Heartbeat:Connect(function()
-                if self.Settings.AutoCollectChests then
-                    local chests = Workspace:FindFirstChild("Chests")
-                    if chests then
-                        for _, chest in pairs(chests:GetChildren()) do
-                            if chest:IsA("Model") then
-                                local chestRoot = chest:FindFirstChild("HumanoidRootPart") or chest.PrimaryPart
-                                
-                                if chestRoot then
-                                    if (RootPart.Position - chestRoot.Position).Magnitude <= 150 then
-                                        RootPart.CFrame = chestRoot.CFrame
-                                        wait(0.5)
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
-            self:Log("Auto Collect Chests ativado", "success")
-        end
-    else
-        if self.Loops.AutoCollectChests then
-            self.Loops.AutoCollectChests:Disconnect()
-            self.Loops.AutoCollectChests = nil
-            self:Log("Auto Collect Chests desativado", "success")
-        end
-    end
-end
-
--- Auto Rebirth
-function KLS:ToggleAutoRebirth(state)
-    self.Settings.AutoRebirth = state
-    
-    if state then
-        if not self.Loops.AutoRebirth then
-            self.Loops.AutoRebirth = RunService.Heartbeat:Connect(function()
-                if self.Settings.AutoRebirth then
-                    -- Exemplo genérico - ajustar conforme o jogo
-                    -- game:GetService("ReplicatedStorage").Rebirth:FireServer()
-                    wait(5)
-                end
-            end)
-            self:Log("Auto Rebirth ativado", "success")
-        end
-    else
-        if self.Loops.AutoRebirth then
-            self.Loops.AutoRebirth:Disconnect()
-            self.Loops.AutoRebirth = nil
-            self:Log("Auto Rebirth desativado", "success")
-        end
-    end
-end
-
--- ========================================
--- FUNÇÕES DE TELEPORT
--- ========================================
-
--- Teleporte instantâneo
-function KLS:TeleportInstant(position)
-    if RootPart then
-        RootPart.CFrame = CFrame.new(position)
-        self:Log(string.format("Teleportado para: %.1f, %.1f, %.1f", position.X, position.Y, position.Z), "success")
-    end
-end
-
--- Teleporte com Tween
-function KLS:TeleportTween(position, speed)
-    if RootPart then
-        local distance = (RootPart.Position - position).Magnitude
-        local duration = distance / (speed or self.Settings.TweenSpeed)
-        
-        local tweenInfo = TweenInfo.new(
-            duration,
-            Enum.EasingStyle.Linear,
-            Enum.EasingDirection.Out
-        )
-        
-        local tween = TweenService:Create(RootPart, tweenInfo, {CFrame = CFrame.new(position)})
-        tween:Play()
-        
-        self:Log(string.format("Iniciando teleporte tween para: %.1f, %.1f, %.1f (%.1fs)", 
-            position.X, position.Y, position.Z, duration), "success")
-    end
-end
-
--- Teleporte universal
-function KLS:Teleport(position)
-    if self.Settings.TeleportType == "Instant" then
-        self:TeleportInstant(position)
-    else
-        self:TeleportTween(position)
-    end
-end
-
--- ========================================
--- LIMPEZA E DESCONEXÃO
--- ========================================
-
-function KLS:Cleanup()
-    -- Desconectar todos os loops
-    for name, connection in pairs(self.Loops) do
-        if connection then
-            connection:Disconnect()
-            self:Log(string.format("Loop '%s' desconectado", name), "info")
-        end
-    end
-    
-    -- Desconectar todas as conexões
-    for name, connection in pairs(self.Connections) do
-        if connection then
-            connection:Disconnect()
-            self:Log(string.format("Conexão '%s' desconectada", name), "info")
-        end
-    end
-    
-    -- Restaurar valores padrão
-    if Humanoid then
-        Humanoid.WalkSpeed = 16
-        Humanoid.JumpPower = 50
-    end
-    Workspace.Gravity = 196.2
-    
-    self:Log("Limpeza completa realizada", "success")
-end
-
--- ========================================
--- CARREGAR WINDUI
--- ========================================
-
+-- Carregar WindUI (última versão)
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
--- Configurações da library
-WindUI:SetNotificationLower(true)
-WindUI:SetFont("rbxassetid://12187371879")
-
--- ========================================
--- TEMA PERSONALIZADO KLS HUB
--- ========================================
-
+-- ▓▓ Temas customizados
 WindUI:AddTheme({
-    Name = "KLS Dark",
-    Accent = Color3.fromHex("#f97316"),
-    Background = Color3.fromHex("#050816"),
+    Name = "EliteDark",
+    Accent = Color3.fromHex("#6366f1"),
+    Background = Color3.fromHex("#0a0a0f"),
     BackgroundTransparency = 0,
-    Outline = Color3.fromHex("#f97316"),
-    Text = Color3.fromHex("#ffffff"),
-    Placeholder = Color3.fromHex("#64748b"),
-    Button = Color3.fromHex("#0f172a"),
-    Icon = Color3.fromHex("#f97316"),
-    
-    Hover = Color3.fromHex("#f97316"),
-    WindowBackground = Color3.fromHex("#020617"),
+    Outline = Color3.fromHex("#6366f1"),
+    Text = Color3.fromHex("#e5e7eb"),
+    Placeholder = Color3.fromHex("#6b7280"),
+    Button = Color3.fromHex("#1e1e2e"),
+    Icon = Color3.fromHex("#818cf8"),
+
+    Hover = Color3.fromHex("#ffffff"),
+
+    WindowBackground = Color3.fromHex("#0a0a0f"),
     WindowShadow = Color3.fromHex("#000000"),
-    
-    DialogBackground = Color3.fromHex("#020617"),
-    DialogBackgroundTransparency = 0,
-    DialogTitle = Color3.fromHex("#ffffff"),
-    DialogContent = Color3.fromHex("#e2e8f0"),
-    DialogIcon = Color3.fromHex("#f97316"),
-    
-    WindowTopbarButtonIcon = Color3.fromHex("#f97316"),
+
+    DialogBackground = Color3.fromHex("#0a0a0f"),
+    DialogBackgroundTransparency = 0.05,
+    DialogTitle = Color3.fromHex("#e5e7eb"),
+    DialogContent = Color3.fromHex("#d1d5db"),
+    DialogIcon = Color3.fromHex("#818cf8"),
+
+    WindowTopbarButtonIcon = Color3.fromHex("#818cf8"),
     WindowTopbarTitle = Color3.fromHex("#ffffff"),
-    WindowTopbarAuthor = Color3.fromHex("#e2e8f0"),
-    WindowTopbarIcon = Color3.fromHex("#f97316"),
-    
-    TabBackground = Color3.fromHex("#020617"),
+    WindowTopbarAuthor = Color3.fromHex("#9ca3af"),
+    WindowTopbarIcon = Color3.fromHex("#6366f1"),
+
+    TabBackground = Color3.fromHex("#1e1e2e"),
     TabTitle = Color3.fromHex("#e5e7eb"),
-    TabIcon = Color3.fromHex("#f97316"),
-    
-    ElementBackground = Color3.fromHex("#020617"),
+    TabIcon = Color3.fromHex("#818cf8"),
+
+    ElementBackground = Color3.fromHex("#1e1e2e"),
     ElementTitle = Color3.fromHex("#e5e7eb"),
     ElementDesc = Color3.fromHex("#9ca3af"),
-    ElementIcon = Color3.fromHex("#f97316"),
-    
-    PopupBackground = Color3.fromHex("#020617"),
-    PopupBackgroundTransparency = 0,
-    PopupTitle = Color3.fromHex("#ffffff"),
-    PopupContent = Color3.fromHex("#e5e7eb"),
-    PopupIcon = Color3.fromHex("#f97316"),
-    
-    Toggle = Color3.fromHex("#0f172a"),
-    ToggleBar = Color3.fromHex("#f97316"),
-    
-    Checkbox = Color3.fromHex("#0f172a"),
-    CheckboxIcon = Color3.fromHex("#f97316"),
-    
-    Slider = Color3.fromHex("#0f172a"),
-    SliderThumb = Color3.fromHex("#f97316"),
+    ElementIcon = Color3.fromHex("#818cf8"),
+
+    PopupBackground = Color3.fromHex("#0a0a0f"),
+    PopupBackgroundTransparency = 0.05,
+    PopupTitle = Color3.fromHex("#e5e7eb"),
+    PopupContent = Color3.fromHex("#d1d5db"),
+    PopupIcon = Color3.fromHex("#818cf8"),
+
+    Toggle = Color3.fromHex("#1e1e2e"),
+    ToggleBar = Color3.fromHex("#6366f1"),
+
+    Checkbox = Color3.fromHex("#1e1e2e"),
+    CheckboxIcon = Color3.fromHex("#6366f1"),
+
+    Slider = Color3.fromHex("#1e1e2e"),
+    SliderThumb = Color3.fromHex("#6366f1"),
 })
 
 WindUI:AddTheme({
-    Name = "KLS Light",
-    Accent = Color3.fromHex("#2563eb"),
-    Background = Color3.fromHex("#f9fafb"),
+    Name = "CrimsonNight",
+    Accent = Color3.fromHex("#f97373"),
+    Background = Color3.fromHex("#09030a"),
     BackgroundTransparency = 0,
-    Outline = Color3.fromHex("#2563eb"),
-    Text = Color3.fromHex("#020617"),
+    Outline = Color3.fromHex("#f97373"),
+    Text = Color3.fromHex("#f9fafb"),
     Placeholder = Color3.fromHex("#6b7280"),
-    Button = Color3.fromHex("#e5e7eb"),
-    Icon = Color3.fromHex("#2563eb"),
-    
-    Hover = Color3.fromHex("#2563eb"),
-    WindowBackground = Color3.fromHex("#ffffff"),
-    WindowShadow = Color3.fromHex("#94a3b8"),
-    
-    DialogBackground = Color3.fromHex("#ffffff"),
-    DialogBackgroundTransparency = 0,
-    DialogTitle = Color3.fromHex("#020617"),
-    DialogContent = Color3.fromHex("#334155"),
-    DialogIcon = Color3.fromHex("#2563eb"),
-    
-    WindowTopbarButtonIcon = Color3.fromHex("#2563eb"),
-    WindowTopbarTitle = Color3.fromHex("#020617"),
-    WindowTopbarAuthor = Color3.fromHex("#64748b"),
-    WindowTopbarIcon = Color3.fromHex("#2563eb"),
-    
-    TabBackground = Color3.fromHex("#ffffff"),
-    TabTitle = Color3.fromHex("#1e293b"),
-    TabIcon = Color3.fromHex("#2563eb"),
-    
-    ElementBackground = Color3.fromHex("#ffffff"),
-    ElementTitle = Color3.fromHex("#1e293b"),
-    ElementDesc = Color3.fromHex("#64748b"),
-    ElementIcon = Color3.fromHex("#2563eb"),
-    
-    PopupBackground = Color3.fromHex("#ffffff"),
-    PopupBackgroundTransparency = 0,
-    PopupTitle = Color3.fromHex("#020617"),
-    PopupContent = Color3.fromHex("#334155"),
-    PopupIcon = Color3.fromHex("#2563eb"),
-    
-    Toggle = Color3.fromHex("#e5e7eb"),
-    ToggleBar = Color3.fromHex("#2563eb"),
-    
-    Checkbox = Color3.fromHex("#e5e7eb"),
-    CheckboxIcon = Color3.fromHex("#2563eb"),
-    
-    Slider = Color3.fromHex("#e5e7eb"),
-    SliderThumb = Color3.fromHex("#2563eb"),
+    Button = Color3.fromHex("#111827"),
+    Icon = Color3.fromHex("#fecaca"),
+
+    Hover = Color3.fromHex("#ffffff"),
+
+    WindowBackground = Color3.fromHex("#09030a"),
+    WindowShadow = Color3.fromHex("#000000"),
+
+    DialogBackground = Color3.fromHex("#09030a"),
+    DialogBackgroundTransparency = 0.05,
+    DialogTitle = Color3.fromHex("#f9fafb"),
+    DialogContent = Color3.fromHex("#e5e7eb"),
+    DialogIcon = Color3.fromHex("#fecaca"),
+
+    WindowTopbarButtonIcon = Color3.fromHex("#fecaca"),
+    WindowTopbarTitle = Color3.fromHex("#f9fafb"),
+    WindowTopbarAuthor = Color3.fromHex("#e5e7eb"),
+    WindowTopbarIcon = Color3.fromHex("#f97373"),
+
+    TabBackground = Color3.fromHex("#111827"),
+    TabTitle = Color3.fromHex("#f9fafb"),
+    TabIcon = Color3.fromHex("#fecaca"),
+
+    ElementBackground = Color3.fromHex("#111827"),
+    ElementTitle = Color3.fromHex("#f9fafb"),
+    ElementDesc = Color3.fromHex("#e5e7eb"),
+    ElementIcon = Color3.fromHex("#fecaca"),
+
+    PopupBackground = Color3.fromHex("#09030a"),
+    PopupBackgroundTransparency = 0.05,
+    PopupTitle = Color3.fromHex("#f9fafb"),
+    PopupContent = Color3.fromHex("#e5e7eb"),
+    PopupIcon = Color3.fromHex("#fecaca"),
+
+    Toggle = Color3.fromHex("#111827"),
+    ToggleBar = Color3.fromHex("#f97373"),
+
+    Checkbox = Color3.fromHex("#111827"),
+    CheckboxIcon = Color3.fromHex("#f97373"),
+
+    Slider = Color3.fromHex("#111827"),
+    SliderThumb = Color3.fromHex("#f97373"),
 })
 
-WindUI:SetTheme("KLS Dark")
+WindUI:SetNotificationLower(true)
+WindUI:SetTheme("EliteDark")
 
--- ========================================
--- CRIAR JANELA PRINCIPAL
--- ========================================
-
+-- ▓▓ Janela principal
 local Window = WindUI:CreateWindow({
-    Title = "KLS HUB",
-    Icon = "lucide:flame",
-    Author = "by Khalexis Team",
-    Folder = "KLS_HUB",
-    
-    Size = UDim2.fromOffset(600, 480),
-    MinSize = Vector2.new(560, 350),
-    MaxSize = Vector2.new(850, 600),
-    Transparent = false,
-    Theme = "KLS Dark",
+    Title = "My Super Hub",
+    Icon = "lucide:crown",
+    Author = "by você",
+    Folder = "MySuperHub",
+    Size = UDim2.fromOffset(580, 460),
+    Theme = "EliteDark",
     Resizable = true,
     SideBarWidth = 200,
-    Background = "rbxassetid://13511292247",
-    BackgroundImageTransparency = 0.35,
     HideSearchBar = false,
     ScrollBarEnabled = true,
-    
-    User = {
-        Enabled = false,
-    },
 })
 
 Window:SetToggleKey(Enum.KeyCode.RightShift)
-Window:EditOpenButton({
-    Title = "Abrir KLS HUB",
-    Icon = "lucide:layout-dashboard",
-    CornerRadius = UDim.new(0, 16),
-    StrokeThickness = 2,
-    Color = ColorSequence.new(
-        Color3.fromHex("f97316"),
-        Color3.fromHex("22c55e")
-    ),
-    OnlyMobile = false,
-    Enabled = true,
-    Draggable = true,
+
+-- ▓▓ Tabs vazias (somente estrutura)
+
+local PlayerTab = Window:Tab({
+    Title = "Player",
+    Icon = "lucide:user",
 })
 
-Window:DisableTopbarButtons({ "Fullscreen" })
-Window.Icon:Disable()
+local SellingTab = Window:Tab({
+    Title = "Selling",
+    Icon = "lucide:shopping-cart",
+})
 
--- ========================================
--- CRIAR TABS
--- ========================================
+local EventsTab = Window:Tab({
+    Title = "Events",
+    Icon = "lucide:calendar-days",
+})
 
-local Tabs = {
-    Player   = Window:Tab({ Title = "Player",   Icon = "lucide:user" }),
-    Farm     = Window:Tab({ Title = "Farm",     Icon = "lucide:wheat" }),
-    Auto     = Window:Tab({ Title = "Auto",     Icon = "lucide:repeat" }),
-    Teleport = Window:Tab({ Title = "Teleport", Icon = "lucide:map-pin" }),
-    Config   = Window:Tab({ Title = "Config",   Icon = "lucide:settings-2" }),
-}
+local SettingsTab = Window:Tab({
+    Title = "Settings",
+    Icon = "lucide:settings",
+})
 
-Window:Divider()
+-- ══════════════════════════════════════════════════════
+-- SETTINGS: apenas tema (Theme Picker)
+-- ══════════════════════════════════════════════════════
 
--- ========================================
--- TAB: PLAYER
--- ========================================
-
-local PlayerMovementSection = Tabs.Player:Section({
-    Title = "Movimento",
+local ThemeSection = SettingsTab:Section({
+    Title = "Theme",
     Box = true,
     Opened = true,
 })
 
-local WalkSpeedSlider = PlayerMovementSection:Slider({
-    Title = "WalkSpeed",
-    Desc = "Ajuste a velocidade de caminhada do personagem",
-    Step = 1,
-    Value = { Min = 16, Max = 500, Default = 16 },
+local ThemeDropdown = ThemeSection:Dropdown({
+    Title = "Select Theme",
+    Desc = "Choose your favorite UI style",
+    Values = {
+        "EliteDark",
+        "CrimsonNight",
+        "Dark",
+        "Light",
+    },
+    SearchBarEnabled = false,
     Callback = function(value)
-        KLS:SetWalkSpeed(value)
-    end
+        WindUI:SetTheme(value)
+    end,
 })
 
-local JumpPowerSlider = PlayerMovementSection:Slider({
-    Title = "JumpPower",
-    Desc = "Ajuste a força do pulo do personagem",
-    Step = 1,
-    Value = { Min = 50, Max = 500, Default = 50 },
-    Callback = function(value)
-        KLS:SetJumpPower(value)
-    end
-})
-
-local GravitySlider = PlayerMovementSection:Slider({
-    Title = "Gravity",
-    Desc = "Ajuste a gravidade do jogo",
-    Step = 0.1,
-    Value = { Min = 0, Max = 196.2, Default = 196.2 },
-    Callback = function(value)
-        KLS:SetGravity(value)
-    end
-})
-
-local InfiniteJumpToggle = PlayerMovementSection:Toggle({
-    Title = "Infinite Jump",
-    Desc = "Permite pular infinitamente no ar",
-    Icon = "lucide:arrow-up",
-    Type = "Checkbox",
-    Value = false,
-    Callback = function(state)
-        KLS:ToggleInfiniteJump(state)
-    end
-})
-
-Tabs.Player:Space()
-
-local PlayerAbilitiesSection = Tabs.Player:Section({
-    Title = "Habilidades",
-    Box = true,
-    Opened = true,
-})
-
-local NoClipToggle = PlayerAbilitiesSection:Toggle({
-    Title = "NoClip",
-    Desc = "Atravesse paredes e objetos",
-    Icon = "lucide:ghost",
-    Type = "Checkbox",
-    Value = false,
-    Callback = function(state)
-        KLS:ToggleNoClip(state)
-    end
-})
-
-local FlyToggle = PlayerAbilitiesSection:Toggle({
-    Title = "Fly",
-    Desc = "Ative o modo de voo (WASD + Space/Shift)",
-    Icon = "lucide:plane",
-    Type = "Checkbox",
-    Value = false,
-    Callback = function(state)
-        KLS:ToggleFly(state)
-    end
-})
-
-local FlySpeedSlider = PlayerAbilitiesSection:Slider({
-    Title = "Fly Speed",
-    Desc = "Ajuste a velocidade do voo",
-    Step = 1,
-    Value = { Min = 10, Max = 200, Default = 50 },
-    Callback = function(value)
-        KLS.Settings.FlySpeed = value
-        KLS:Log(string.format("Fly Speed definido para: %d", value), "info")
-    end
-})
-
-Tabs.Player:Space()
-
-local PlayerActionsSection = Tabs.Player:Section({
-    Title = "Ações",
-    Box = true,
-    Opened = true,
-})
-
-PlayerActionsSection:Button({
-    Title = "Reset Character",
-    Desc = "Reseta o personagem (morte)",
-    Icon = "lucide:refresh-ccw",
+ThemeSection:Button({
+    Title = "Preview Theme",
+    Icon = "lucide:eye",
     Callback = function()
-        KLS:ResetCharacter()
-    end
+        local current = WindUI:GetCurrentTheme()
+        WindUI:Notify({
+            Title = "Theme Preview",
+            Content = "Current theme: " .. tostring(current),
+            Duration = 3,
+            Icon = "lucide:info",
+        })
+    end,
 })
 
-PlayerActionsSection:Button({
-    Title = "Atualizar Referências",
-    Desc = "Atualiza referências do personagem após reset",
-    Icon = "lucide:refresh-cw",
-    Callback = function()
-        KLS:UpdateCharacter()
-        KLS:Notify("Referências", "Referências atualizadas com sucesso!", 3, "lucide:check")
-    end
-})
-
--- ========================================
--- TAB: FARM
--- ========================================
-
-local FarmMainSection = Tabs.Farm:Section({
-    Title = "Sistema de Farm",
-    Box = true,
-    Opened = true,
-})
-
-local AutoFarmToggle = FarmMainSection:Toggle({
-    Title = "Auto Farm",
-    Desc = "Ativa o sistema de farm automático",
-    Icon = "lucide:zap",
-    Type = "Checkbox",
-    Value = false,
-    Callback = function(state)
-        KLS:ToggleAutoFarm(state)
-    end
-})
-
-local FarmDistanceSlider = FarmMainSection:Slider({
-    Title = "Farm Distance",
-    Desc = "Distância máxima para buscar alvos",
-    Step = 5,
-    Value = { Min = 10, Max = 200, Default = 50 },
-    Callback = function(value)
-        KLS.Settings.FarmDistance = value
-        KLS:Log(string.format("Farm Distance definido para: %d", value), "info")
-    end
-})
-
-local FarmDelaySlider = FarmMainSection:Slider({
-    Title = "Farm Delay",
-    Desc = "Delay entre ataques (em segundos)",
-    Step = 0.1,
-    Value = { Min = 0.1, Max = 5, Default = 0.5 },
-    Callback = function(value)
-        KLS.Settings.FarmDelay = value
-        KLS:Log(string.format("Farm Delay definido para: %.1fs", value), "info")
-    end
-})
-
-Tabs.Farm:Divider()
-
-FarmMainSection:Paragraph({
-    Title = "Informações do Farm",
-    Desc = "O sistema de farm é genérico e pode precisar de ajustes específicos para cada jogo. Edite a função ToggleAutoFarm() para adequar ao seu jogo.",
-    Color = "Orange",
-    Icon = "lucide:info",
-})
-
--- ========================================
--- TAB: AUTO
--- ========================================
-
-local AutoCollectSection = Tabs.Auto:Section({
-    Title = "Auto Coleta",
-    Box = true,
-    Opened = true,
-})
-
-local AutoCollectCoinsToggle = AutoCollectSection:Toggle({
-    Title = "Auto Collect Coins",
-    Desc = "Coleta moedas automaticamente",
-    Icon = "lucide:coins",
-    Type = "Checkbox",
-    Value = false,
-    Callback = function(state)
-        KLS:ToggleAutoCollectCoins(state)
-    end
-})
-
-local AutoCollectChestsToggle = AutoCollectSection:Toggle({
-    Title = "Auto Collect Chests",
-    Desc = "Coleta baús automaticamente",
-    Icon = "lucide:box",
-    Type = "Checkbox",
-    Value = false,
-    Callback = function(state)
-        KLS:ToggleAutoCollectChests(state)
-    end
-})
-
-Tabs.Auto:Space()
-
-local AutoActionsSection = Tabs.Auto:Section({
-    Title = "Ações Automáticas",
-    Box = true,
-    Opened = true,
-})
-
-local AutoRebirthToggle = AutoActionsSection:Toggle({
-    Title = "Auto Rebirth",
-    Desc = "Faz rebirth automaticamente quando possível",
-    Icon = "lucide:repeat-2",
-    Type = "Checkbox",
-    Value = false,
-    Callback = function(state)
-        KLS:ToggleAutoRebirth(state)
-    end
-})
-
-Tabs.Auto:Divider()
-
-AutoActionsSection:Paragraph({
-    Title = "Nota sobre Auto Features",
-    Desc = "As funções automáticas são exemplos genéricos. Ajuste conforme a estrutura do seu jogo específico.",
-    Color = "Blue",
-    Icon = "lucide:alert-circle",
-})
-
--- ========================================
--- TAB: TELEPORT
--- ========================================
-
-local TeleportSettingsSection = Tabs.Teleport:Section({
-    Title = "Configurações de Teleporte",
-    Box = true,
-    Opened = true,
-})
-
-local TeleportTypeDropdown = TeleportSettingsSection:Dropdown({
-    Title = "Tipo de Teleporte",
-    Desc = "Escolha entre teleporte instantâneo ou suave",
-    Values = { "Instant", "Tween" },
-    Value = "Instant",
-    Callback = function(v)
-        KLS.Settings.TeleportType = v
-        KLS:Log(string.format("Tipo de teleporte alterado para: %s", v), "info")
-    end
-})
-
-local TweenSpeedSlider = TeleportSettingsSection:Slider({
-    Title = "Tween Speed",
-    Desc = "Velocidade do teleporte suave (studs/segundo)",
-    Step = 10,
-    Value = { Min = 50, Max = 500, Default = 200 },
-    Callback = function(value)
-        KLS.Settings.TweenSpeed = value
-        KLS:Log(string.format("Tween Speed definido para: %d", value), "info")
-    end
-})
-
-Tabs.Teleport:Space()
-
-local TeleportLocationsSection = Tabs.Teleport:Section({
-    Title = "Locais de Teleporte",
-    Box = true,
-    Opened = true,
-})
-
--- Exemplo de teleportes (ajustar conforme o jogo)
-local teleportLocations = {
-    { Name = "Spawn", Position = Vector3.new(0, 50, 0) },
-    { Name = "Location 1", Position = Vector3.new(100, 50, 100) },
-    { Name = "Location 2", Position = Vector3.new(-100, 50, -100) },
-    { Name = "Location 3", Position = Vector3.new(200, 50, 200) },
-}
-
-for _, location in ipairs(teleportLocations) do
-    TeleportLocationsSection:Button({
-        Title = location.Name,
-        Desc = string.format("Teleportar para: %.0f, %.0f, %.0f", location.Position.X, location.Position.Y, location.Position.Z),
-        Icon = "lucide:map-pin",
-        Callback = function()
-            KLS:Teleport(location.Position)
-            KLS:Notify("Teleporte", string.format("Teleportado para %s", location.Name), 3, "lucide:map-pin")
-        end
-    })
-end
-
-Tabs.Teleport:Space()
-
-local TeleportCustomSection = Tabs.Teleport:Section({
-    Title = "Teleporte Customizado",
-    Box = true,
-    Opened = true,
-})
-
-local customX, customY, customZ = 0, 50, 0
-
-TeleportCustomSection:Input({
-    Title = "Coordenada X",
-    Desc = "Digite a coordenada X",
-    Value = "0",
-    Type = "Input",
-    Placeholder = "0",
-    Callback = function(txt)
-        customX = tonumber(txt) or 0
-    end
-})
-
-TeleportCustomSection:Input({
-    Title = "Coordenada Y",
-    Desc = "Digite a coordenada Y",
-    Value = "50",
-    Type = "Input",
-    Placeholder = "50",
-    Callback = function(txt)
-        customY = tonumber(txt) or 50
-    end
-})
-
-TeleportCustomSection:Input({
-    Title = "Coordenada Z",
-    Desc = "Digite a coordenada Z",
-    Value = "0",
-    Type = "Input",
-    Placeholder = "0",
-    Callback = function(txt)
-        customZ = tonumber(txt) or 0
-    end
-})
-
-TeleportCustomSection:Button({
-    Title = "Teleportar para Coordenadas",
-    Desc = "Teleporta para as coordenadas inseridas",
-    Icon = "lucide:crosshair",
-    Callback = function()
-        local position = Vector3.new(customX, customY, customZ)
-        KLS:Teleport(position)
-        KLS:Notify("Teleporte Custom", string.format("Teleportado para: %.1f, %.1f, %.1f", customX, customY, customZ), 3, "lucide:crosshair")
-    end
-})
-
--- ========================================
--- TAB: CONFIG
--- ========================================
-
-local ConfigThemeSection = Tabs.Config:Section({
-    Title = "Temas",
-    Box = true,
-    Opened = true,
-})
-
-local ThemeDropdown = ConfigThemeSection:Dropdown({
-    Title = "Tema do KLS HUB",
-    Desc = "Selecione o tema visual do hub",
-    Values = { "KLS Dark", "KLS Light" },
-    Value = "KLS Dark",
-    Callback = function(v)
-        WindUI:SetTheme(v)
-        KLS:Log(string.format("Tema alterado para: %s", v), "info")
-        KLS:Notify("Tema", string.format("Tema alterado para %s", v), 3, "lucide:palette")
-    end
-})
-
-local TransparencySlider = ConfigThemeSection:Slider({
-    Title = "Transparência da Janela",
-    Desc = "Ajuste a transparência da janela do hub",
-    Step = 0.1,
-    Value = { Min = 0, Max = 1, Default = 0 },
-    Callback = function(value)
-        local v = tonumber(string.format("%.1f", value))
-        Window:ToggleTransparency(v > 0)
-        KLS:Log(string.format("Transparência definida para: %.1f", v), "info")
-    end
-})
-
-local BackgroundTransparencySlider = ConfigThemeSection:Slider({
-    Title = "Transparência do Background",
-    Desc = "Ajuste a transparência da imagem de fundo",
-    Step = 0.05,
-    Value = { Min = 0, Max = 1, Default = 0.35 },
-    Callback = function(value)
-        Window:SetBackgroundImageTransparency(value)
-        KLS:Log(string.format("Transparência do background: %.2f", value), "info")
-    end
-})
-
-Tabs.Config:Space()
-
-local ConfigKeybindSection = Tabs.Config:Section({
-    Title = "Keybinds",
-    Box = true,
-    Opened = true,
-})
-
-local ToggleKeybind = ConfigKeybindSection:Keybind({
-    Title = "Abrir/Fechar Hub",
-    Desc = "Tecla para abrir ou fechar o hub",
-    Value = "RightShift",
-    Callback = function(v)
-        Window:SetToggleKey(Enum.KeyCode[v])
-        KLS:Log(string.format("Keybind alterada para: %s", v), "info")
-    end
-})
-
-Tabs.Config:Space()
-
-local ConfigSaveSection = Tabs.Config:Section({
-    Title = "Gerenciamento de Configurações",
-    Box = true,
-    Opened = true,
-})
-
-ConfigSaveSection:Button({
-    Title = "Salvar Configurações",
-    Desc = "Salva todas as configurações atuais",
-    Icon = "lucide:save",
-    Callback = function()
-        KLS:SaveSettings()
-        KLS:Notify("Configurações", "Configurações salvas com sucesso!", 3, "lucide:check")
-    end
-})
-
-ConfigSaveSection:Button({
-    Title = "Carregar Configurações",
-    Desc = "Carrega as configurações salvas",
-    Icon = "lucide:folder-open",
-    Callback = function()
-        local loaded = KLS:LoadSettings()
-        if loaded then
-            -- Aplicar configurações carregadas
-            WalkSpeedSlider:Set(KLS.Settings.WalkSpeed)
-            JumpPowerSlider:Set(KLS.Settings.JumpPower)
-            GravitySlider:Set(KLS.Settings.Gravity)
-            FlySpeedSlider:Set(KLS.Settings.FlySpeed)
-            FarmDistanceSlider:Set(KLS.Settings.FarmDistance)
-            FarmDelaySlider:Set(KLS.Settings.FarmDelay)
-            TweenSpeedSlider:Set(KLS.Settings.TweenSpeed)
-            TeleportTypeDropdown:Select(KLS.Settings.TeleportType)
-            
-            KLS:Notify("Configurações", "Configurações carregadas e aplicadas!", 3, "lucide:check-circle-2")
-        else
-            KLS:Notify("Configurações", "Nenhuma configuração salva encontrada", 3, "lucide:info")
-        end
-    end
-})
-
-ConfigSaveSection:Button({
-    Title = "Resetar para Padrões",
-    Desc = "Restaura todas as configurações para os valores padrão",
-    Icon = "lucide:refresh-ccw",
-    Callback = function()
-        -- Resetar para valores padrão
-        KLS:SetWalkSpeed(16)
-        KLS:SetJumpPower(50)
-        KLS:SetGravity(196.2)
-        KLS.Settings.FlySpeed = 50
-        KLS.Settings.FarmDistance = 50
-        KLS.Settings.FarmDelay = 0.5
-        KLS.Settings.TweenSpeed = 200
-        KLS.Settings.TeleportType = "Instant"
-        
-        -- Atualizar UI
-        WalkSpeedSlider:Set(16)
-        JumpPowerSlider:Set(50)
-        GravitySlider:Set(196.2)
-        FlySpeedSlider:Set(50)
-        FarmDistanceSlider:Set(50)
-        FarmDelaySlider:Set(0.5)
-        TweenSpeedSlider:Set(200)
-        TeleportTypeDropdown:Select("Instant")
-        
-        KLS:Notify("Configurações", "Configurações resetadas para os valores padrão", 3, "lucide:rotate-ccw")
-    end
-})
-
-Tabs.Config:Space()
-
-local ConfigInfoSection = Tabs.Config:Section({
-    Title = "Informações",
-    Box = true,
-    Opened = true,
-})
-
-ConfigInfoSection:Paragraph({
-    Title = "KLS HUB v" .. KLS.Version,
-    Desc = string.format([[
-Desenvolvido por: Khalexis Team
-UI Library: WindUI (Footagesus)
-Player: %s
-UserId: %d
-    ]], LocalPlayer.Name, LocalPlayer.UserId),
-    Color = "Orange",
-    Icon = "lucide:info",
-    ImageSize = 24,
-})
-
-ConfigInfoSection:Button({
-    Title = "Discord / Suporte",
-    Desc = "Clique para copiar o link do Discord",
-    Icon = "lucide:link-2",
-    Callback = function()
-        setclipboard("https://discord.gg/SEU_DISCORD_AQUI")
-        KLS:Notify("Discord", "Link do Discord copiado para a área de transferência!", 3, "lucide:clipboard-check")
-    end
-})
-
-ConfigInfoSection:Code({
-    Title = "Loadstring",
-    Code = [[loadstring(game:HttpGet("SUA_RAW_URL_AQUI"))()]],
-})
-
--- ========================================
--- EVENTOS DA JANELA
--- ========================================
-
-Window:OnOpen(function()
-    KLS:Log("Hub aberto", "info")
-end)
-
-Window:OnClose(function()
-    KLS:Log("Hub fechado", "info")
-end)
-
-Window:OnDestroy(function()
-    KLS:Log("Hub destruído, executando limpeza...", "warning")
-    KLS:Cleanup()
-end)
-
--- ========================================
--- HANDLE CHARACTER RESPAWN
--- ========================================
-
-LocalPlayer.CharacterAdded:Connect(function(char)
-    task.wait(1)
-    KLS:UpdateCharacter()
-    
-    -- Reaplicar configurações após respawn
-    if KLS.Settings.WalkSpeed ~= 16 then
-        KLS:SetWalkSpeed(KLS.Settings.WalkSpeed)
-    end
-    if KLS.Settings.JumpPower ~= 50 then
-        KLS:SetJumpPower(KLS.Settings.JumpPower)
-    end
-    
-    KLS:Notify("Respawn", "Personagem respawnou. Configurações reaplicadas!", 3, "lucide:user-check")
-end)
-
--- ========================================
--- INICIALIZAÇÃO FINAL
--- ========================================
-
--- Carregar configurações salvas (se existirem)
-KLS:LoadSettings()
-
--- Marcar como carregado
-KLS.Loaded = true
-
--- Notificação de inicialização
-KLS:Notify("KLS HUB", string.format("Hub carregado com sucesso! (v%s)", KLS.Version), 5, "lucide:check-circle-2")
-KLS:Log(string.format("KLS HUB v%s carregado com sucesso!", KLS.Version), "success")
-
--- Abrir janela
-Window:Open()
-
---[[
-    ╔═══════════════════════════════════════════════════════════════╗
-    ║                    FIM DO SCRIPT KLS HUB                      ║
-    ║                                                               ║
-    ║  Para customizar para jogos específicos:                     ║
-    ║  1. Ajuste a função ToggleAutoFarm()                         ║
-    ║  2. Modifique os locais de teleporte                         ║
-    ║  3. Adapte as funções Auto conforme necessário               ║
-    ║  4. Adicione seus próprios remotes e eventos                 ║
-    ╚═══════════════════════════════════════════════════════════════╝
-]]
+-- Você ainda pode adicionar mais coisas depois dentro de PlayerTab, SellingTab e EventsTab.
