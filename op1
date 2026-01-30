@@ -5,13 +5,13 @@
 ]]
 
 -- // Carregar WindUI (última versão)
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))() --[web:4]
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
 -- // Ajustes básicos da library
-WindUI:SetNotificationLower(true) --[web:8]
+WindUI:SetNotificationLower(true)
 
 -- Fonte custom (troque o id se quiser)
-WindUI:SetFont("rbxassetid://12187371879") --[web:8]
+WindUI:SetFont("rbxassetid://12187371879")
 
 -- // Tema personalizado KLS HUB
 WindUI:AddTheme({
@@ -63,7 +63,7 @@ WindUI:AddTheme({
 
     Slider = Color3.fromHex("#0f172a"),
     SliderThumb = Color3.fromHex("#f97316"),
-}) --[web:8]
+})
 
 -- Gradiente de fundo leve
 WindUI:Gradient({
@@ -71,9 +71,9 @@ WindUI:Gradient({
     ["100"] = { Color = Color3.fromHex("#111827"), Transparency = 0 },
 }, {
     Rotation = 0,
-}) --[web:8]
+})
 
-WindUI:SetTheme("KLS Dark") --[web:8]
+WindUI:SetTheme("KLS Dark")
 
 -- // (Opcional) Localização básica (en / pt-br)
 WindUI:Localization({
@@ -96,10 +96,10 @@ WindUI:Localization({
             ["KLS_LOGO"] = "rbxassetid://129260712070622",
         },
     }
-}) --[web:8]
+})
 
 -- Force language se quiser:
--- WindUI:SetLanguage("pt-br") --[web:8]
+-- WindUI:SetLanguage("pt-br")
 
 -- // Popup inicial
 WindUI:Popup({
@@ -113,7 +113,7 @@ WindUI:Popup({
             Callback = function() end,
         },
     }
-}) --[web:4]
+})
 
 -- // Janela principal
 local Window = WindUI:CreateWindow({
@@ -145,17 +145,10 @@ local Window = WindUI:CreateWindow({
             })
         end,
     },
-
-    KeySystem = {
-        Key = { "KLS-TEST", "KLS-FREE" },
-        Note = "Key System de exemplo (edite no script).",
-        URL = "https://discord.gg/SEU_DISCORD_AQUI",
-        SaveKey = false,
-    },
-}) --[web:8]
+})
 
 -- Atalhos da Window
-Window:SetToggleKey(Enum.KeyCode.RightShift) --[web:8]
+Window:SetToggleKey(Enum.KeyCode.RightShift)
 Window:EditOpenButton({
     Title = "Abrir KLS HUB",
     Icon = "lucide:layout-dashboard",
@@ -168,22 +161,22 @@ Window:EditOpenButton({
     OnlyMobile = false,
     Enabled = true,
     Draggable = true,
-}) --[web:8]
+})
 
-Window:DisableTopbarButtons({ "Fullscreen" }) --[web:8]
-Window.Icon:SetAnonymous(true) --[web:8]
+Window:DisableTopbarButtons({ "Fullscreen" })
+Window.Icon:SetAnonymous(true)
 
 Window:OnOpen(function()
     print("[KLS HUB] Window Opened")
-end) --[web:8]
+end)
 
 Window:OnClose(function()
     print("[KLS HUB] Window Closed")
-end) --[web:8]
+end)
 
 Window:OnDestroy(function()
     print("[KLS HUB] Window Destroyed")
-end) --[web:8]
+end)
 
 -- // Tabs principais
 local Tabs = {
@@ -192,9 +185,9 @@ local Tabs = {
     Visual = Window:Tab({ Title = "Visual", Icon = "lucide:monitor" }),
     Misc = Window:Tab({ Title = "Misc", Icon = "lucide:settings-2" }),
     Config = Window:Tab({ Title = "Configs", Icon = "lucide:folder" }),
-} --[web:4]
+}
 
-Window:Divider() --[web:8]
+Window:Divider()
 
 --------------------------------------------------------------------
 -- HOME TAB
@@ -204,7 +197,7 @@ local HomeSection = Tabs.Home:Section({
     Box = true,
     FontWeight = "SemiBold",
     Opened = true,
-}) --[web:8]
+})
 
 HomeSection:Paragraph({
     Title = "Sobre",
@@ -212,7 +205,7 @@ HomeSection:Paragraph({
     Color = "Orange",
     Image = "rbxassetid://129260712070622",
     ImageSize = 32,
-}) --[web:8]
+})
 
 HomeSection:Button({
     Title = "Discord / Suporte",
@@ -227,19 +220,19 @@ HomeSection:Button({
             Icon = "lucide:check",
         })
     end
-}) --[web:8]
+})
 
-Tabs.Home:Space() --[web:8]
+Tabs.Home:Space()
 
 local InfoCode = Tabs.Home:Code({
     Title = "Info de Uso",
     Code = [[-- Example:
 loadstring(game:HttpGet("SUA_RAW_URL_AQUI"))()]],
-}) --[web:8]
+})
 
 InfoCode:OnCopy(function()
     print("[KLS HUB] Código copiado")
-end) --[web:8]
+end)
 
 --------------------------------------------------------------------
 -- MAIN TAB (onde você pluga scripts por jogo)
@@ -248,7 +241,7 @@ local MainSection = Tabs.Main:Section({
     Title = "Scripts Principais",
     Box = true,
     Opened = true,
-}) --[web:8]
+})
 
 local DropdownGame = MainSection:Dropdown({
     Title = "Selecionar Jogo",
@@ -258,7 +251,7 @@ local DropdownGame = MainSection:Dropdown({
     Callback = function(v)
         print("[KLS HUB] Jogo selecionado:", v)
     end
-}) --[web:8]
+})
 
 MainSection:Button({
     Title = "Executar Script",
@@ -277,7 +270,7 @@ MainSection:Button({
         --     loadstring(game:HttpGet("URL_DO_SCRIPT"))()
         -- end
     end
-}) --[web:4]
+})
 
 local MainToggle = MainSection:Toggle({
     Title = "Auto Farm (Exemplo)",
@@ -288,7 +281,7 @@ local MainToggle = MainSection:Toggle({
     Callback = function(state)
         print("[KLS HUB] Auto Farm:", state)
     end
-}) --[web:8]
+})
 
 local SpeedSlider = MainSection:Slider({
     Title = "Speed (Exemplo)",
@@ -298,7 +291,7 @@ local SpeedSlider = MainSection:Slider({
     Callback = function(value)
         print("[KLS HUB] Speed slider:", value)
     end
-}) --[web:8]
+})
 
 --------------------------------------------------------------------
 -- VISUAL TAB
@@ -307,7 +300,7 @@ local VisualSection = Tabs.Visual:Section({
     Title = "Visual & UI",
     Box = true,
     Opened = true,
-}) --[web:8]
+})
 
 local ColorpickerAccent = VisualSection:Colorpicker({
     Title = "Cor de Accent",
@@ -318,7 +311,7 @@ local ColorpickerAccent = VisualSection:Colorpicker({
         print("[KLS HUB] Accent color:", tostring(color))
         -- aqui você pode re-aplicar tema dinamicamente se tiver um sistema próprio
     end
-}) --[web:8]
+})
 
 local TransparencySlider = VisualSection:Slider({
     Title = "Transparência da Janela",
@@ -330,7 +323,7 @@ local TransparencySlider = VisualSection:Slider({
         Window:ToggleTransparency(v > 0)
         print("[KLS HUB] Transparency:", v)
     end
-}) --[web:3]
+})
 
 local KeybindUI = VisualSection:Keybind({
     Title = "Keybind para abrir KLS",
@@ -339,7 +332,7 @@ local KeybindUI = VisualSection:Keybind({
     Callback = function(v)
         Window:SetToggleKey(Enum.KeyCode[v])
     end
-}) --[web:8]
+})
 
 --------------------------------------------------------------------
 -- MISC TAB
@@ -348,7 +341,7 @@ local MiscSection = Tabs.Misc:Section({
     Title = "Ferramentas Extras",
     Box = true,
     Opened = true,
-}) --[web:8]
+})
 
 MiscSection:Input({
     Title = "Executar Código",
@@ -360,7 +353,7 @@ MiscSection:Input({
         print("[KLS HUB] Código custom recebido")
         -- pcall(function() loadstring(txt)() end)
     end
-}) --[web:8]
+})
 
 MiscSection:Button({
     Title = "Notificação de Teste",
@@ -374,7 +367,7 @@ MiscSection:Button({
             Icon = "lucide:bell-ring",
         })
     end
-}) --[web:8]
+})
 
 MiscSection:Button({
     Title = "Mostrar Dialog Exemplo",
@@ -403,7 +396,7 @@ MiscSection:Button({
             }
         })
     end
-}) --[web:8]
+})
 
 --------------------------------------------------------------------
 -- CONFIGS TAB (usando ConfigManager do WindUI)
@@ -412,10 +405,10 @@ local ConfigSection = Tabs.Config:Section({
     Title = "Gerenciar Configs",
     Box = true,
     Opened = true,
-}) --[web:8]
+})
 
-local ConfigManager = Window.ConfigManager --[web:8]
-local currentConfig = ConfigManager:CreateConfig("kls_default") --[web:8]
+local ConfigManager = Window.ConfigManager
+local currentConfig = ConfigManager:CreateConfig("kls_default")
 
 -- Exemplos de elementos com Flag para configs
 local ConfigToggle = Tabs.Config:Toggle({
@@ -425,7 +418,7 @@ local ConfigToggle = Tabs.Config:Toggle({
     Callback = function(v)
         print("[KLS HUB][Config] Toggle:", v)
     end
-}) --[web:1]
+})
 
 local ConfigSlider = Tabs.Config:Slider({
     Title = "Exemplo Slider Config",
@@ -436,7 +429,7 @@ local ConfigSlider = Tabs.Config:Slider({
     Callback = function(v)
         print("[KLS HUB][Config] Slider:", v)
     end
-}) --[web:1]
+})
 
 local ConfigKeybind = Tabs.Config:Keybind({
     Title = "Exemplo Keybind Config",
@@ -446,7 +439,7 @@ local ConfigKeybind = Tabs.Config:Keybind({
     Callback = function(v)
         print("[KLS HUB][Config] Keybind:", v)
     end
-}) --[web:1]
+})
 
 local ConfigDropdown = Tabs.Config:Dropdown({
     Title = "Exemplo Dropdown Config",
@@ -457,7 +450,7 @@ local ConfigDropdown = Tabs.Config:Dropdown({
     Callback = function(v)
         print("[KLS HUB][Config] Dropdown:", v)
     end
-}) --[web:1]
+})
 
 -- Botões Save / Load básicos
 ConfigSection:Button({
@@ -472,7 +465,7 @@ ConfigSection:Button({
             Icon = "lucide:check",
         })
     end
-}) --[web:8]
+})
 
 ConfigSection:Button({
     Title = "Carregar Config (kls_default)",
@@ -486,15 +479,15 @@ ConfigSection:Button({
             Icon = "lucide:check-circle-2",
         })
     end
-}) --[web:8]
+})
 
 --------------------------------------------------------------------
 -- ABRIR JANELA NO FINAL
 --------------------------------------------------------------------
-Window:Open() --[web:8]
+Window:Open()
 
 --[[
     Observação:
     - Onde marquei comentários de exemplo, você pluga seus scripts reais.
-    - Troque URLs, keys, Discord etc. para os dados do seu projeto.
+    - Troque URLs, Discord etc. para os dados do seu projeto.
 ]]
