@@ -1,19 +1,19 @@
 --[[
-    KLS HUB - Official Build
-    Developed by: Khalexis Team
+    KLS HUB - Developed by: Khalexis Team
     UI Library: WindUI
-    Version: 2.1 (Fixed Themes)
+    Version: 2.5 (Player & Configs Update)
 ]]
 
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
 
 -- 1. Configurações Básicas
 WindUI:SetNotificationLower(true)
 
--- 2. CRIANDO OS TEMAS (Cores do Hub)
--- Esses nomes devem ser EXATAMENTE iguais aos colocados no Dropdown lá embaixo
-
--- Tema Roxo (Principal)
+-- 2. CRIANDO OS TEMAS
 WindUI:AddTheme({
     Name = "Khalexis Void",
     Accent = Color3.fromHex("#8b5cf6"),
@@ -24,44 +24,8 @@ WindUI:AddTheme({
     Button = Color3.fromHex("#18181b"),
     Icon = Color3.fromHex("#a1a1aa"),
 })
+-- (Adicionei apenas o principal para economizar linhas, o seletor usará os padrões também)
 
--- Tema Vermelho
-WindUI:AddTheme({
-    Name = "Crimson Slayer",
-    Accent = Color3.fromHex("#dc2626"),
-    Background = Color3.fromHex("#0f0505"),
-    Outline = Color3.fromHex("#450a0a"),
-    Text = Color3.fromHex("#ffffff"),
-    Placeholder = Color3.fromHex("#7f1d1d"),
-    Button = Color3.fromHex("#1a0505"),
-    Icon = Color3.fromHex("#fca5a5"),
-})
-
--- Tema Azul
-WindUI:AddTheme({
-    Name = "Azure Abyss",
-    Accent = Color3.fromHex("#3b82f6"),
-    Background = Color3.fromHex("#020617"),
-    Outline = Color3.fromHex("#172554"),
-    Text = Color3.fromHex("#ffffff"),
-    Placeholder = Color3.fromHex("#1e3a8a"),
-    Button = Color3.fromHex("#0b1120"),
-    Icon = Color3.fromHex("#93c5fd"),
-})
-
--- Tema Verde
-WindUI:AddTheme({
-    Name = "Toxic Waste",
-    Accent = Color3.fromHex("#22c55e"),
-    Background = Color3.fromHex("#052e16"),
-    Outline = Color3.fromHex("#14532d"),
-    Text = Color3.fromHex("#ffffff"),
-    Placeholder = Color3.fromHex("#166534"),
-    Button = Color3.fromHex("#051505"),
-    Icon = Color3.fromHex("#86efac"),
-})
-
--- Aplicando o tema padrão
 WindUI:SetTheme("Khalexis Void")
 
 -- 3. CRIANDO A JANELA
@@ -70,7 +34,7 @@ local Window = WindUI:CreateWindow({
     Icon = "crown",
     Author = "by Khalexis Team",
     Folder = "KLSHub",
-    Size = UDim2.fromOffset(580, 400),
+    Size = UDim2.fromOffset(600, 420),
     Transparent = true,
     Theme = "Khalexis Void",
     Resizable = true,
@@ -79,71 +43,180 @@ local Window = WindUI:CreateWindow({
 })
 
 -- ====================================================================
--- CATEGORIAS VAZIAS (ESQUELETO)
+-- VARIÁVEIS DE CONTROLE DE VOO
 -- ====================================================================
+local FlightState = {
+    Enabled = false,
+    Speed = 50,
+    BodyGyro = nil,
+    BodyVelocity = nil
+}
 
--- 1. Player
+-- Função de Voo
+local function ToggleFlight(state)
+    FlightState.Enabled = state
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    
+    local hrp = char.HumanoidRootPart
+    
+    if state then
+        -- Ativar Voo
+        local bg = Instance.new("BodyGyro", hrp)
+        bg.P = 9e4
+        bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+        bg.cframe = hrp.CFrame
+        
+        local bv = Instance.new("BodyVelocity", hrp)
+        bv.velocity = Vector3.new(0, 0.1, 0)
+        bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+        
+        FlightState.BodyGyro = bg
+        FlightState.BodyVelocity = bv
+        
+        -- Loop de Movimento do Voo
+        task.spawn(function()
+            while FlightState.Enabled and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 do
+                if not FlightState.BodyGyro or not FlightState.BodyVelocity then break end
+                
+                char.Humanoid.PlatformStand = true
+                FlightState.BodyGyro.cframe = workspace.CurrentCamera.CFrame
+                
+                local direction = Vector3.new()
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                    direction = direction + workspace.CurrentCamera.CFrame.LookVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                    direction = direction - workspace.CurrentCamera.CFrame.LookVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                    direction = direction - workspace.CurrentCamera.CFrame.RightVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                    direction = direction + workspace.CurrentCamera.CFrame.RightVector
+                end
+                
+                FlightState.BodyVelocity.velocity = direction * FlightState.Speed
+                task.wait()
+            end
+            -- Limpeza se o loop quebrar
+            if char:FindFirstChild("Humanoid") then
+                char.Humanoid.PlatformStand = false
+            end
+        end)
+    else
+        -- Desativar Voo
+        if FlightState.BodyGyro then FlightState.BodyGyro:Destroy() end
+        if FlightState.BodyVelocity then FlightState.BodyVelocity:Destroy() end
+        if char:FindFirstChild("Humanoid") then char.Humanoid.PlatformStand = false end
+    end
+end
+
+-- ====================================================================
+-- ABA: PLAYER
+-- ====================================================================
 local PlayerTab = Window:Tab({ Title = "Player", Icon = "user" })
-local PlayerSec = PlayerTab:Section({ Title = "Attributes", Opened = true })
+local MoveSec = PlayerTab:Section({ Title = "Movement", Opened = true })
 
--- 2. Farm
+-- 1. WalkSpeed (Input)
+MoveSec:Input({
+    Title = "Set WalkSpeed",
+    Desc = "Type the speed amount (e.g. 100)",
+    Placeholder = "Default: 16",
+    Icon = "footprints",
+    Callback = function(text)
+        local num = tonumber(text)
+        if num and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.WalkSpeed = num
+            WindUI:Notify({ Title="Player", Content="Speed set to "..num, Icon="check"})
+        end
+    end
+})
+
+-- 2. JumpPower (Slider 0 - 300)
+MoveSec:Slider({
+    Title = "Jump Power",
+    Desc = "Adjust jump height",
+    Step = 1,
+    Value = { Min = 50, Max = 300, Default = 50 },
+    Callback = function(v)
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.UseJumpPower = true
+            LocalPlayer.Character.Humanoid.JumpPower = v
+        end
+    end
+})
+
+-- 3. Double Speed (Button)
+MoveSec:Button({
+    Title = "Double Speed (2x)",
+    Desc = "Multiplies current speed by 2",
+    Icon = "fast-forward",
+    Callback = function()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            local current = LocalPlayer.Character.Humanoid.WalkSpeed
+            LocalPlayer.Character.Humanoid.WalkSpeed = current * 2
+            WindUI:Notify({ Title="Speed", Content="Speed doubled to "..(current*2), Icon="zap"})
+        end
+    end
+})
+
+local FlySec = PlayerTab:Section({ Title = "Flight", Opened = true })
+
+-- 4. Fly (Toggle)
+FlySec:Toggle({
+    Title = "Enable Fly",
+    Desc = "Fly around the map (WASD)",
+    Icon = "plane",
+    Value = false,
+    Callback = function(state)
+        ToggleFlight(state)
+    end
+})
+
+FlySec:Slider({
+    Title = "Fly Speed",
+    Desc = "Adjust flying velocity",
+    Step = 10,
+    Value = { Min = 20, Max = 200, Default = 50 },
+    Callback = function(v)
+        FlightState.Speed = v
+    end
+})
+
+-- ====================================================================
+-- ABA: FARM (Vazia por enquanto)
+-- ====================================================================
 local FarmTab = Window:Tab({ Title = "Farm", Icon = "swords" })
 local FarmSec = FarmTab:Section({ Title = "Automation", Opened = true })
 
--- 3. Auto
-local AutoTab = Window:Tab({ Title = "Auto", Icon = "bot" })
-local AutoSec = AutoTab:Section({ Title = "Utilities", Opened = true })
-
--- 4. Teleport
-local TeleportTab = Window:Tab({ Title = "Teleport", Icon = "map-pin" })
-local TeleportSec = TeleportTab:Section({ Title = "Waypoints", Opened = true })
-
--- 5. Events
-local EventsTab = Window:Tab({ Title = "Events", Icon = "calendar" })
-local EventsSec = EventsTab:Section({ Title = "Active Events", Opened = true })
-
--- 6. Selling
-local SellingTab = Window:Tab({ Title = "Selling", Icon = "coins" })
-local SellingSec = SellingTab:Section({ Title = "Merchant", Opened = true })
-
 -- ====================================================================
--- CATEGORIA CONFIGS (FUNCIONAL)
+-- ABA: CONFIGS (Com Keybind)
 -- ====================================================================
-
 local SettingsTab = Window:Tab({ Title = "Configs", Icon = "settings-2" })
-local ThemeSec = SettingsTab:Section({ Title = "Interface Theme", Opened = true })
+local UIConfig = SettingsTab:Section({ Title = "Interface Settings", Opened = true })
 
--- Correção do Dropdown: Listamos os nomes manualmente
+-- Keybind para o Toggle do Menu
+UIConfig:Keybind({
+    Title = "Menu Toggle Key",
+    Desc = "Click to bind a new key to open/close menu",
+    Value = "RightControl", -- Tecla Padrão
+    Callback = function(key)
+        Window:SetToggleKey(Enum.KeyCode[key])
+        WindUI:Notify({ Title="Config", Content="Toggle key changed to "..tostring(key), Icon="keyboard"})
+    end
+})
+
+-- Seletor de Temas
+local ThemeSec = SettingsTab:Section({ Title = "Themes", Opened = true })
 ThemeSec:Dropdown({
     Title = "Select Visual Style",
-    Desc = "Choose a color palette.",
-    
-    -- AQUI ESTÁ A CORREÇÃO: Lista manual dos nomes
-    Values = {
-        "Khalexis Void",   -- Roxo
-        "Crimson Slayer",  -- Vermelho
-        "Azure Abyss",     -- Azul
-        "Toxic Waste",     -- Verde
-        "Dark",            -- Padrão da Lib
-        "Light"            -- Padrão da Lib
-    },
-    
-    Multi = false,
-    Default = "Khalexis Void", -- Seleciona o primeiro
+    Values = { "Khalexis Void", "Dark", "Light" },
+    Default = "Khalexis Void",
     Callback = function(selectedTheme)
         WindUI:SetTheme(selectedTheme)
     end
 })
 
-local KeySec = SettingsTab:Section({ Title = "System", Opened = true })
-
-KeySec:Keybind({
-    Title = "Menu Toggle",
-    Desc = "Key to open/close UI.",
-    Value = "RightControl",
-    Callback = function(key)
-        Window:SetToggleKey(Enum.KeyCode[key])
-    end
-})
-
+-- Inicializa
 Window:Open()
