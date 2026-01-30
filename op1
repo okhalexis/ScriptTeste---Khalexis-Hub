@@ -208,27 +208,31 @@ FarmSection:Paragraph({
     Desc = "Auto-farm + movement tweaks (speed, super jump, fly).",
 })
 
--- Speed base
-local BaseWalkSpeed = 16 -- default humanoid speed [web:2]
-local CurrentSpeed = 16
+local _, humInit = getCharacter()
+local BaseWalkSpeed = humInit and humInit.WalkSpeed or 16 -- padrão Roblox [web:2]
+local CurrentSpeed = BaseWalkSpeed
 
--- Input de Speed 16–1000
+-- helper clamp (caso math.clamp não exista no ambiente do exploit)
+local function clamp(v, minv, maxv)
+    if v < minv then return minv end
+    if v > maxv then return maxv end
+    return v
+end
+
+-- Input de Speed 16–1000 (WindUI Input usa campo Value, não Numeric) [web:4]
 local SpeedInput = FarmSection:Input({
     Title = "Walk Speed",
+    Value = tostring(CurrentSpeed),
     Placeholder = "16 - 1000",
-    Numeric = true,
     Callback = function(text)
         local value = tonumber(text)
         if not value then return end
 
-        value = math.clamp(value, 16, 1000)
+        value = clamp(value, 16, 1000)
         CurrentSpeed = value
 
         local _, hum = getCharacter()
         if hum then
-            if BaseWalkSpeed == 16 then
-                BaseWalkSpeed = hum.WalkSpeed
-            end
             hum.WalkSpeed = value
         end
     end,
@@ -246,7 +250,7 @@ FarmSection:Button({
     end,
 })
 
--- Double Speed (botão simples: aplica 2x do atual)
+-- Double Speed (multiplica o speed atual)
 FarmSection:Button({
     Title = "Double Speed",
     Icon = "lucide:zap",
@@ -254,9 +258,8 @@ FarmSection:Button({
         local _, hum = getCharacter()
         if not hum then return end
 
-        -- atual como base
-        BaseWalkSpeed = hum.WalkSpeed
-        local newSpeed = math.clamp(BaseWalkSpeed * 2, 16, 1000)
+        local current = hum.WalkSpeed
+        local newSpeed = clamp(current * 2, 16, 1000)
         hum.WalkSpeed = newSpeed
         CurrentSpeed = newSpeed
     end,
@@ -305,7 +308,7 @@ FarmSection:Button({
     end,
 })
 
--- Fly (sem toggle: ativa ao clicar e desliga com tecla X, por exemplo)
+-- Fly (sem toggle: botão ativa, tecla X desativa) [web:16]
 
 local FlyActive = false
 local FlySpeed = 80
@@ -349,7 +352,6 @@ local function startFly()
             if kc == Enum.KeyCode.D then pressing.D = true end
             if kc == Enum.KeyCode.Space then pressing.Space = true end
             if kc == Enum.KeyCode.LeftShift then pressing.Shift = true end
-            -- tecla para parar o fly
             if kc == Enum.KeyCode.X then
                 FlyActive = false
             end
