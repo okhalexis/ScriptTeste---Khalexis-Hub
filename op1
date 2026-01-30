@@ -4,448 +4,216 @@
     UI Library: WindUI (Footagesus)
 ]]
 
--- // Carregar WindUI (última versão)
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))() -- [web:18]
+-- // Carregar WindUI (última versão recomendada)
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))() --[web:11]
 
 -- // Configuração básica da library
-WindUI:SetNotificationLower(true) -- notificações embaixo [web:18]
-WindUI:SetFont("rbxassetid://12187371879") -- fonte clean (pode trocar o id)
+WindUI:SetNotificationLower(true) --[web:11]
 
--- // Tema principal do KLS HUB
+-- Fonte custom (troque o id se quiser)
+WindUI:SetFont("rbxassetid://12187371879") --[cite:4]
+
+-- // Tema personalizado de exemplo (pode editar depois)
 WindUI:AddTheme({
-    Name = "KLS Midnight",
-    Accent = Color3.fromHex("#3B82F6"),
-    Background = Color3.fromHex("#050816"),
+    Name = "KLS Dark",
+    Accent = Color3.fromHex("#18181b"),
+    Background = Color3.fromHex("#101010"),
     BackgroundTransparency = 0,
-
     Outline = Color3.fromHex("#FFFFFF"),
     Text = Color3.fromHex("#FFFFFF"),
-    Placeholder = Color3.fromHex("#6B7280"),
-    Button = Color3.fromHex("#111827"),
-    Icon = Color3.fromHex("#E5E7EB"),
+    Placeholder = Color3.fromHex("#7a7a7a"),
+    Button = Color3.fromHex("#52525b"),
+    Icon = Color3.fromHex("#a1a1aa"),
 
-    Hover = Color3.fromHex("#60A5FA"),
-    WindowBackground = Color3.fromHex("#020617"),
+    Hover = Color3.fromHex("#FFFFFF"),
+    WindowBackground = Color3.fromHex("#101010"),
     WindowShadow = Color3.fromHex("#000000"),
 
-    DialogBackground = Color3.fromHex("#020617"),
+    DialogBackground = Color3.fromHex("#101010"),
     DialogBackgroundTransparency = 0,
     DialogTitle = Color3.fromHex("#FFFFFF"),
-    DialogContent = Color3.fromHex("#E5E7EB"),
-    DialogIcon = Color3.fromHex("#E5E7EB"),
+    DialogContent = Color3.fromHex("#FFFFFF"),
+    DialogIcon = Color3.fromHex("#a1a1aa"),
 
-    WindowTopbarButtonIcon = Color3.fromHex("#E5E7EB"),
+    WindowTopbarButtonIcon = Color3.fromHex("#a1a1aa"),
     WindowTopbarTitle = Color3.fromHex("#FFFFFF"),
-    WindowTopbarAuthor = Color3.fromHex("#9CA3AF"),
+    WindowTopbarAuthor = Color3.fromHex("#FFFFFF"),
     WindowTopbarIcon = Color3.fromHex("#FFFFFF"),
 
-    TabBackground = Color3.fromHex("#020617"),
+    TabBackground = Color3.fromHex("#101010"),
     TabTitle = Color3.fromHex("#FFFFFF"),
-    TabIcon = Color3.fromHex("#E5E7EB"),
+    TabIcon = Color3.fromHex("#a1a1aa"),
 
-    ElementBackground = Color3.fromHex("#020617"),
+    ElementBackground = Color3.fromHex("#18181b"),
     ElementTitle = Color3.fromHex("#FFFFFF"),
-    ElementDesc = Color3.fromHex("#9CA3AF"),
-    ElementIcon = Color3.fromHex("#E5E7EB"),
+    ElementDesc = Color3.fromHex("#FFFFFF"),
+    ElementIcon = Color3.fromHex("#a1a1aa"),
 
-    PopupBackground = Color3.fromHex("#020617"),
+    PopupBackground = Color3.fromHex("#101010"),
     PopupBackgroundTransparency = 0,
     PopupTitle = Color3.fromHex("#FFFFFF"),
-    PopupContent = Color3.fromHex("#E5E7EB"),
-    PopupIcon = Color3.fromHex("#E5E7EB"),
+    PopupContent = Color3.fromHex("#FFFFFF"),
+    PopupIcon = Color3.fromHex("#a1a1aa"),
 
-    Toggle = Color3.fromHex("#3B82F6"),
+    Toggle = Color3.fromHex("#52525b"),
     ToggleBar = Color3.fromHex("#FFFFFF"),
 
-    Checkbox = Color3.fromHex("#111827"),
-    CheckboxIcon = Color3.fromHex("#3B82F6"),
+    Checkbox = Color3.fromHex("#52525b"),
+    CheckboxIcon = Color3.fromHex("#FFFFFF"),
 
-    Slider = Color3.fromHex("#111827"),
-    SliderThumb = Color3.fromHex("#3B82F6"),
-})
+    Slider = Color3.fromHex("#52525b"),
+    SliderThumb = Color3.fromHex("#FFFFFF"),
+}) --[web:11]
 
--- Tema alternativo mais claro
-WindUI:AddTheme({
-    Name = "KLS Frost",
-    Accent = Color3.fromHex("#22D3EE"),
-    Background = Color3.fromHex("#020617"),
-    BackgroundTransparency = 0,
+-- Definir tema inicial
+WindUI:SetTheme("KLS Dark") --[web:11]
 
-    Outline = Color3.fromHex("#E5E7EB"),
-    Text = Color3.fromHex("#F9FAFB"),
-    Placeholder = Color3.fromHex("#6B7280"),
-    Button = Color3.fromHex("#111827"),
-    Icon = Color3.fromHex("#E5E7EB"),
-
-    Hover = Color3.fromHex("#38BDF8"),
-    WindowBackground = Color3.fromHex("#020617"),
-    WindowShadow = Color3.fromHex("#000000"),
-
-    DialogBackground = Color3.fromHex("#020617"),
-    DialogBackgroundTransparency = 0,
-    DialogTitle = Color3.fromHex("#F9FAFB"),
-    DialogContent = Color3.fromHex("#E5E7EB"),
-    DialogIcon = Color3.fromHex("#E5E7EB"),
-
-    WindowTopbarButtonIcon = Color3.fromHex("#E5E7EB"),
-    WindowTopbarTitle = Color3.fromHex("#F9FAFB"),
-    WindowTopbarAuthor = Color3.fromHex("#9CA3AF"),
-    WindowTopbarIcon = Color3.fromHex("#E5E7EB"),
-
-    TabBackground = Color3.fromHex("#020617"),
-    TabTitle = Color3.fromHex("#F9FAFB"),
-    TabIcon = Color3.fromHex("#E5E7EB"),
-
-    ElementBackground = Color3.fromHex("#020617"),
-    ElementTitle = Color3.fromHex("#F9FAFB"),
-    ElementDesc = Color3.fromHex("#9CA3AF"),
-    ElementIcon = Color3.fromHex("#E5E7EB"),
-
-    PopupBackground = Color3.fromHex("#020617"),
-    PopupBackgroundTransparency = 0,
-    PopupTitle = Color3.fromHex("#F9FAFB"),
-    PopupContent = Color3.fromHex("#E5E7EB"),
-    PopupIcon = Color3.fromHex("#E5E7EB"),
-
-    Toggle = Color3.fromHex("#22D3EE"),
-    ToggleBar = Color3.fromHex("#FFFFFF"),
-
-    Checkbox = Color3.fromHex("#0F172A"),
-    CheckboxIcon = Color3.fromHex("#22D3EE"),
-
-    Slider = Color3.fromHex("#0F172A"),
-    SliderThumb = Color3.fromHex("#22D3EE"),
-})
-
--- Gradiente de fundo suave
-WindUI:Gradient({
-    ["0"]   = { Color = Color3.fromHex("#020617"), Transparency = 0 },
-    ["100"] = { Color = Color3.fromHex("#020617"), Transparency = 0 },
-}, {
-    Rotation = 90,
-})
-
--- Define tema inicial
-WindUI:SetTheme("KLS Midnight")
-
--- // Criar janela principal do hub [web:24]
+-- // Criar janela principal do hub (sem KeySystem, sem user badge)
 local Window = WindUI:CreateWindow({
     Title = "KLS HUB",
-    Icon = "lucide:radar",
+    Icon = "craft:macbook-stroke", -- ícone premium do pack de ícones do Footagesus[web:20]
     Author = "by Khalexis Team",
     Folder = "KLS_HUB",
-
-    Size = UDim2.fromOffset(600, 470),
+    Size = UDim2.fromOffset(580, 460),
     MinSize = Vector2.new(560, 350),
-    MaxSize = Vector2.new(860, 580),
-    Transparent = false,
-    Theme = "KLS Midnight",
+    MaxSize = Vector2.new(850, 560),
+    Transparent = true,
+    Theme = "KLS Dark",
     Resizable = true,
-    SideBarWidth = 210,
-    BackgroundImageTransparency = 0.45,
+    SideBarWidth = 200,
+    BackgroundImageTransparency = 0.42,
     HideSearchBar = false,
     ScrollBarEnabled = true,
-    HidePanelBackground = false,
 
-    -- Sem User / KeySystem por enquanto
+    -- Sem user card pra não aparecer letra no topo
     User = {
         Enabled = false,
         Anonymous = true,
     },
-})
 
--- Key para abrir/fechar (G)
-Window:SetToggleKey(Enum.KeyCode.G)
+    -- KeySystem completamente removido
+}) --[web:34]
 
--- Ícone da janela um pouco maior
-Window:SetIconSize(26)
+-- Tecla para abrir/fechar o hub
+Window:SetToggleKey(Enum.KeyCode.RightShift) --[web:34]
 
--- Botão flutuante para abrir
-Window:EditOpenButton({
-    Title = "Open KLS HUB",
-    Icon = "lucide:menu",
-    CornerRadius = UDim.new(0, 14),
-    StrokeThickness = 2,
-    Color = ColorSequence.new(
-        Color3.fromHex("6366F1"),
-        Color3.fromHex("22D3EE")
-    ),
-    OnlyMobile = false,
-    Enabled = true,
-    Draggable = true,
-})
-
--- Tag de versão
-Window:Tag({
-    Title = "v1.0.0",
-    Icon = "lucide:github",
-    Color = Color3.fromHex("#22C55E"),
-    Radius = 10,
-})
-
-----------------------------------------------------------------
---                      TABS PRINCIPAIS
-----------------------------------------------------------------
+---------------------------------------------------------------------
+--                              TABS
+---------------------------------------------------------------------
 
 local Tabs = {
-    Player   = Window:Tab({ Title = "Player",   Icon = "lucide:user" }),
+    Player   = Window:Tab({ Title = "Player",   Icon = "lucide:person-standing" }),
     Farm     = Window:Tab({ Title = "Farm",     Icon = "lucide:wheat" }),
-    Auto     = Window:Tab({ Title = "Auto",     Icon = "lucide:bot" }),
-    Teleport = Window:Tab({ Title = "Teleport", Icon = "lucide:map-pin" }),
-    Events   = Window:Tab({ Title = "Events",   Icon = "lucide:sparkles" }),
     Selling  = Window:Tab({ Title = "Selling",  Icon = "lucide:shopping-bag" }),
-    Configs  = Window:Tab({ Title = "Configs",  Icon = "lucide:settings-2" }),
-}
+    Settings = Window:Tab({ Title = "Settings", Icon = "lucide:settings" }),
+} --[web:11]
 
--- Seleciona a aba inicial
-Tabs.Player:Select()
-
-----------------------------------------------------------------
---                      PLAYER TAB (vazio por enquanto)
-----------------------------------------------------------------
-
+---------------------------------------------------------------------
+--                          PLAYER TAB
+---------------------------------------------------------------------
 do
-    local SectionInfo = Tabs.Player:Section({
-        Title = "Player Utilities",
-        Opened = true,
-    })
-
-    SectionInfo:Paragraph({
-        Title = "Coming soon",
-        Desc  = "All player features will be here: movement, stats, visuals and more.",
-        Color = "Blue",
-        Icon  = "lucide:info",
-    })
+    -- Placeholder, vazio por enquanto
+    -- local InfoSection = Tabs.Player:Section({ Title = "Player", Opened = true })
 end
 
-----------------------------------------------------------------
---                      FARM TAB (vazio por enquanto)
-----------------------------------------------------------------
-
+---------------------------------------------------------------------
+--                           FARM TAB
+---------------------------------------------------------------------
 do
-    local SectionInfo = Tabs.Farm:Section({
-        Title = "Farming System",
-        Opened = true,
-    })
-
-    SectionInfo:Paragraph({
-        Title = "Farming suite",
-        Desc  = "Auto farm paths, target selectors and smart loops will be configured here.",
-        Color = "Green",
-        Icon  = "lucide:leaf",
-    })
+    -- Placeholder, vazio por enquanto
+    -- local FarmSection = Tabs.Farm:Section({ Title = "Farm", Opened = true })
 end
 
-----------------------------------------------------------------
---                      AUTO TAB (vazio por enquanto)
-----------------------------------------------------------------
-
+---------------------------------------------------------------------
+--                          SELLING TAB
+---------------------------------------------------------------------
 do
-    local SectionInfo = Tabs.Auto:Section({
-        Title = "Automation Core",
-        Opened = true,
-    })
-
-    SectionInfo:Paragraph({
-        Title = "Automation center",
-        Desc  = "Global auto systems like auto-rejoin, auto-buy and auto-upgrade will stay here.",
-        Color = "Orange",
-        Icon  = "lucide:cpu",
-    })
+    -- Placeholder, vazio por enquanto
+    -- local SellingSection = Tabs.Selling:Section({ Title = "Selling", Opened = true })
 end
 
-----------------------------------------------------------------
---                      TELEPORT TAB (vazio por enquanto)
-----------------------------------------------------------------
-
+---------------------------------------------------------------------
+--                         SETTINGS TAB (THEMES)
+---------------------------------------------------------------------
 do
-    local SectionInfo = Tabs.Teleport:Section({
-        Title = "Teleport Hub",
+    local SettingsSection = Tabs.Settings:Section({
+        Title = "Appearance & Themes",
+        Icon = "lucide:palette",
         Opened = true,
-    })
+    }) --[web:11]
 
-    SectionInfo:Paragraph({
-        Title = "Teleport presets",
-        Desc  = "Map waypoints, safe spots and grind zones will be added in this section.",
-        Color = "Purple",
-        Icon  = "lucide:map",
-    })
-end
-
-----------------------------------------------------------------
---                      EVENTS TAB (vazio por enquanto)
-----------------------------------------------------------------
-
-do
-    local SectionInfo = Tabs.Events:Section({
-        Title = "Events & Waves",
-        Opened = true,
-    })
-
-    SectionInfo:Paragraph({
-        Title = "Dynamic events",
-        Desc  = "Boss timers, wave handlers and special events automations will live here.",
-        Color = "Red",
-        Icon  = "lucide:alarm-clock",
-    })
-end
-
-----------------------------------------------------------------
---                      SELLING TAB (vazio por enquanto)
-----------------------------------------------------------------
-
-do
-    local SectionInfo = Tabs.Selling:Section({
-        Title = "Selling & Economy",
-        Opened = true,
-    })
-
-    SectionInfo:Paragraph({
-        Title = "Smart selling",
-        Desc  = "Auto-sell filters, price rules and rarity protection will be configured here.",
-        Color = "Yellow",
-        Icon  = "lucide:coins",
-    })
-end
-
-----------------------------------------------------------------
---                      CONFIGS TAB (com conteúdo)
-----------------------------------------------------------------
-
-do
-    local GeneralSection = Tabs.Configs:Section({
-        Title = "General Settings",
-        Opened = true,
-    })
-
-    GeneralSection:Paragraph({
-        Title = "KLS HUB",
-        Desc  = "Universal script hub crafted by Khalexis Team.",
-        Color = "White",
-        Icon  = "lucide:radar",
-    })
-
-    -- Seletor de tema
-    local ThemesSection = Tabs.Configs:Section({
+    SettingsSection:Paragraph({
         Title = "Theme Manager",
-        Opened = true,
-    })
+        Desc  = "Selecione o tema visual do KLS HUB.",
+        Color = "Blue",
+    }) --[web:29]
 
-    ThemesSection:Dropdown({
+    -- Coletar todos os temas registrados na WindUI
+    local themeValues = {}
+    for name, _ in pairs(WindUI:GetThemes()) do
+        table.insert(themeValues, name)
+    end --[web:11]
+
+    -- Garantir que haja ao menos um tema (ex: KLS Dark)
+    if #themeValues == 0 then
+        table.insert(themeValues, "KLS Dark")
+    end
+
+    -- Dropdown para seleção de tema
+    local ThemeDropdown = SettingsSection:Dropdown({
         Title = "Select Theme",
-        Values = { "KLS Midnight", "KLS Frost", "Dark", "Light" },
+        Desc  = "Muda o tema global da interface.",
+        Value = WindUI:GetCurrentTheme(), -- tema atual como default[web:11]
+        Values = themeValues,
+        SearchBarEnabled = false,
+        Multi = false,
+        AllowNone = false,
         Callback = function(themeName)
-            WindUI:SetTheme(themeName)
-            WindUI:Notify({
-                Title = "Theme applied",
-                Content = "Current theme: " .. themeName,
-                Duration = 3,
-                Icon = "lucide:palette",
-            })
-        end
-    })
-
-    -- Transparência da janela [web:18]
-    ThemesSection:Slider({
-        Title = "Background Transparency",
-        Desc  = "Adjust the hub transparency in real-time.",
-        Step  = 0.1,
-        Value = { Min = 0, Max = 1, Default = 0.2 },
-        Callback = function(value)
-            local v = tonumber(string.format("%.1f", value))
-            Window:ToggleTransparency(v > 0)
-        end
-    })
-
-    -- Toggle de resizable
-    ThemesSection:Toggle({
-        Title = "Resizable Window",
-        Desc  = "Enable or disable window resizing.",
-        Icon  = "lucide:stretch-horizontal",
-        Value = true,
-        Callback = function(state)
-            Window:IsResizable(state)
-        end
-    })
-
-    -- Keybind custom para abrir o hub
-    local KeybindSection = Tabs.Configs:Section({
-        Title = "Hotkeys",
-        Opened = true,
-    })
-
-    KeybindSection:Keybind({
-        Title = "Toggle Hub Key",
-        Desc  = "Press a key to set a new toggle key for KLS HUB.",
-        Value = "G",
-        Callback = function(key)
-            if Enum.KeyCode[key] then
-                Window:SetToggleKey(Enum.KeyCode[key])
+            if themeName and WindUI:GetThemes()[themeName] then
+                WindUI:SetTheme(themeName)
                 WindUI:Notify({
-                    Title = "Keybind updated",
-                    Content = "New toggle key: " .. key,
-                    Duration = 3,
-                    Icon = "lucide:keyboard",
-                })
-            end
-        end
-    })
-
-    -- Info / créditos
-    local AboutSection = Tabs.Configs:Section({
-        Title = "About & Info",
-        Opened = true,
-    })
-
-    AboutSection:Paragraph({
-        Title = "KLS HUB Identity",
-        Desc  = "Built for flexibility: plug your game-specific logic inside Player, Farm, Auto, Teleport, Events and Selling tabs.",
-        Color = "Grey",
-        Icon  = "lucide:info",
-    })
-
-    AboutSection:Button({
-        Title = "Copy Loadstring",
-        Icon  = "lucide:copy",
-        Callback = function()
-            if setclipboard then
-                setclipboard('loadstring(game:HttpGet("YOUR_RAW_KLS_HUB_URL_HERE"))()')
-                WindUI:Notify({
-                    Title = "Copied!",
-                    Content = "Loadstring copied to clipboard.",
+                    Title = "Theme Applied",
+                    Content = "Tema atual: " .. tostring(themeName),
                     Duration = 3,
                     Icon = "lucide:check-circle-2",
                 })
             else
                 WindUI:Notify({
-                    Title = "Clipboard not available",
-                    Content = "Executor does not support setclipboard.",
-                    Duration = 4,
+                    Title = "Theme Error",
+                    Content = "Tema inválido ou não encontrado.",
+                    Duration = 3,
                     Icon = "lucide:alert-triangle",
                 })
             end
-        end
-    })
+        end,
+    }) --[web:11][web:29]
+
+    -- Selecionar explicitamente o tema atual no dropdown
+    ThemeDropdown:Select(WindUI:GetCurrentTheme()) --[web:11]
+
+    -- Slider de transparência da janela (usando ToggleTransparency bool)
+    local TransparencyToggle = SettingsSection:Toggle({
+        Title = "Window Transparency",
+        Desc  = "Ativa/desativa a transparência da janela do hub.",
+        Icon = "lucide:app-window",
+        Value = WindUI:GetTransparency(), -- já pega o estado atual[web:29]
+        Callback = function(state)
+            Window:ToggleTransparency(state)
+        end,
+    }) --[web:29]
+
+    -- (Se quiser depois a gente troca esse Toggle por Slider + lógica custom)
 end
 
-----------------------------------------------------------------
---                      EVENTOS DA JANELA
-----------------------------------------------------------------
+---------------------------------------------------------------------
+--                    ABRIR JANELA DIRETO (SEM KEY)
+---------------------------------------------------------------------
 
-Window:OnOpen(function()
-    print("[KLS HUB] Window opened.")
-end)
+Window:Open() -- abre o hub imediatamente, sem popup de key[web:34]
 
-Window:OnClose(function()
-    print("[KLS HUB] Window closed.")
-end)
-
-Window:OnDestroy(function()
-    print("[KLS HUB] Window destroyed.")
-end)
-
-----------------------------------------------------------------
---                      ABRIR HUB DIRETO
-----------------------------------------------------------------
-
-Window:Open()
+--[[
+    Status atual:
+    - Tabs criadas: Player, Farm, Selling, Settings.
+    - Player/Farm/Selling ainda vazias, prontas pra receber lógica.
+    - Settings com Theme Manager completo (dropdown com todos os temas + toggle de transparência).
+]]
