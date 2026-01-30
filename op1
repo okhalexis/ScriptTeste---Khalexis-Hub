@@ -1,124 +1,89 @@
 --[[
-    NEXUS PRIME - PROFESSIONAL EDITION (REBORN)
-    Re-arquitetado para Performance e Persistência
-    Target: Roblox Engine v.2024
+    NEXUS PRIME - PROFESSIONAL EDITION (V2)
+    Bypassing: Character Attribute System & Tsunami Engine
     UI Framework: WindUI
 ]]
 
--- // 1. SERVIÇOS DO SISTEMA
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local HttpService = game:GetService("HttpService")
+local TweenService = game:GetService("TweenService")
 
 local LocalPlayer = Players.LocalPlayer
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local Humanoid = Character:WaitForChild("Humanoid")
-local RootPart = Character:WaitForChild("HumanoidRootPart")
 
--- // 2. ESTADO GLOBAL (PERSISTENTE)
-_G.NexusConfig = _G.NexusConfig or {
-    Speed = 16,
-    CFrameSpeed = false,
+-- // 1. LÓGICA DE ESTADO (PERSISTENTE)
+_G.NexusState = _G.NexusState or {
+    Speed = 18,
     FlyEnabled = false,
-    FlySpeed = 50,
+    FlySpeed = 100,
     AutoFarm = false,
-    SafetyProtocol = true,
-    Theme = "Dark"
+    Theme = "Dark",
+    SafetyProtocol = true
 }
-local State = _G.NexusConfig
+local State = _G.NexusState
 
--- // 3. SISTEMA DE PERSISTÊNCIA (AUTO-RECOVERY)
-local function UpdateReferences(Char)
-    Character = Char
-    Humanoid = Char:WaitForChild("Humanoid")
-    RootPart = Char:WaitForChild("HumanoidRootPart")
+-- // 2. SISTEMA DE BYPASS DE MOVIMENTAÇÃO
+-- O script do jogo usa atributos. Vamos forçar nossos valores neles.
+local function ApplyBypass()
+    local Char = LocalPlayer.Character
+    if not Char then return end
     
-    -- Re-aplica configurações de física ao renascer
-    Humanoid.WalkSpeed = State.Speed
+    -- Enganando o script 'Character' do jogo
+    LocalPlayer:SetAttribute("CurrentSpeed", State.Speed)
+    LocalPlayer:SetAttribute("PreferredSpeed", State.Speed)
+    LocalPlayer:SetAttribute("CoilMultiplier", 1.5) -- Aumenta o multiplicador base
+    
+    -- Previne o "SlowMode"
+    LocalPlayer:SetAttribute("SlowMode", false)
+    LocalPlayer:SetAttribute("InObby", false)
 end
 
-LocalPlayer.CharacterAdded:Connect(UpdateReferences)
-
--- // 4. MOTORES DE MOVIMENTAÇÃO (ENGINE)
-
--- [ SPEED MELHORADO: CFRAME BYPASS ]
-RunService.PreRender:Connect(function(delta)
-    if Character and RootPart and Humanoid and State.CFrameSpeed then
-        if Humanoid.MoveDirection.Magnitude > 0 then
-            RootPart.CFrame = RootPart.CFrame + (Humanoid.MoveDirection * (State.Speed / 10))
-        end
-    end
-end)
-
--- [ FLY MELHORADO: BODY VELOCITY ]
+-- // 3. SISTEMA DE VOO ELITE (BODY VELOCITY)
 local FlyBV, FlyBG
-local function ToggleFly(active)
-    if active then
-        FlyBV = Instance.new("BodyVelocity")
-        FlyBG = Instance.new("BodyGyro")
+local function HandleFly()
+    if State.FlyEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local Root = LocalPlayer.Character.HumanoidRootPart
+        local Cam = Workspace.CurrentCamera
         
-        FlyBV.MaxForce = Vector3.new(1e8, 1e8, 1e8)
-        FlyBV.Velocity = Vector3.zero
-        FlyBV.Parent = RootPart
+        if not FlyBV then
+            FlyBV = Instance.new("BodyVelocity", Root)
+            FlyBV.MaxForce = Vector3.new(1e8, 1e8, 1e8)
+            FlyBG = Instance.new("BodyGyro", Root)
+            FlyBG.MaxTorque = Vector3.new(1e8, 1e8, 1e8)
+            FlyBG.P = 10000
+        end
         
-        FlyBG.MaxTorque = Vector3.new(1e8, 1e8, 1e8)
-        FlyBG.P = 10000
-        FlyBG.Parent = RootPart
-    else
-        if FlyBV then FlyBV:Destroy() end
-        if FlyBG then FlyBG:Destroy() end
-    end
-end
-
-RunService.Heartbeat:Connect(function()
-    if State.FlyEnabled and RootPart then
-        local cam = Workspace.CurrentCamera
         local moveDir = Vector3.zero
-        
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + Cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - Cam.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - Cam.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + Cam.CFrame.RightVector end
         if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
         if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
         
-        if FlyBV then
-            FlyBV.Velocity = moveDir * State.FlySpeed
-            FlyBG.CFrame = cam.CFrame
-        end
+        FlyBV.Velocity = moveDir * State.FlySpeed
+        FlyBG.CFrame = Cam.CFrame
+    else
+        if FlyBV then FlyBV:Destroy() FlyBV = nil end
+        if FlyBG then FlyBG:Destroy() FlyBG = nil end
     end
-end)
-
--- [ GAP SYSTEM MELHORADO ]
-local function TeleportToGap(gapName)
-    -- Procura o gap em diferentes containers possíveis (mais robusto)
-    local gap = Workspace:FindFirstChild(gapName, true) -- Busca recursiva
-    if gap and gap:IsA("BasePart") then
-        local targetPos = gap.Position + Vector3.new(0, 5, 0)
-        
-        -- Bypass simples de plataforma
-        RootPart.CFrame = CFrame.new(targetPos)
-        return true
-    end
-    return false
 end
 
--- [ AUTO FARM: BRAINROT MONEY ]
+-- // 4. AUTO FARM BRAINROT (DINHEIRO)
 task.spawn(function()
-    while task.wait(0.1) do
-        if State.AutoFarm then
-            -- Procura por itens dropados (ajuste o nome "Money" ou "Coin" conforme o jogo)
+    while task.wait(0.3) do
+        if State.AutoFarm and LocalPlayer.Character then
+            -- Procura por moedas/brainrot drops no mapa
             for _, item in pairs(Workspace:GetDescendants()) do
-                if (item.Name:find("Money") or item.Name:find("Drop") or item.Name:find("Brain") or item.Name:find("Cash")) 
-                and item:IsA("BasePart") and item.Transparency < 1 then
-                    -- Teleporta o item para você (ou você para o item)
-                    if (item.Position - RootPart.Position).Magnitude < 500 then
-                        item.CFrame = RootPart.CFrame
-                        -- Caso precise tocar:
-                        -- firetouchinterest(RootPart, item, 0)
+                if (item.Name:find("Money") or item.Name:find("Coin") or item.Name:find("Brain") or item.Name:find("Cash")) 
+                and item:IsA("BasePart") then
+                    -- Teleporta o item para você (ou encosta nele)
+                    item.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame
+                    -- firetouchinterest se o executor permitir
+                    if firetouchinterest then
+                        firetouchinterest(LocalPlayer.Character.HumanoidRootPart, item, 0)
+                        firetouchinterest(LocalPlayer.Character.HumanoidRootPart, item, 1)
                     end
                 end
             end
@@ -126,87 +91,95 @@ task.spawn(function()
     end
 end)
 
--- // 5. INTERFACE WindUI
+-- // 5. GAP NAVIGATION (CORRIGIDO)
+local function GlideToGap(gapName)
+    local Char = LocalPlayer.Character
+    if not Char then return end
+    
+    -- Procura o Gap no container específico do seu mapa
+    local gapsFolder = Workspace:FindFirstChild("DefaultMap") and Workspace.DefaultMap:FindFirstChild("Gaps")
+    local target = gapsFolder and gapsFolder:FindFirstChild(gapName) or Workspace:FindFirstChild(gapName, true)
+    
+    if target then
+        Char:PivotTo(target.CFrame * CFrame.new(0, 3, 0))
+        return true
+    end
+    return false
+end
+
+-- // 6. INTERFACE WINDUI
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
 local Window = WindUI:CreateWindow({
     Title = "Nexus Prime Reborn",
-    Icon = "shield",
+    Icon = "zap",
     Author = "Chief Dev",
     Folder = "NexusStudio",
     Transparent = true,
     Theme = State.Theme
 })
 
--- [ ABA: PLAYER ]
+-- [ PLAYER TAB ]
 local PlayerTab = Window:Tab({ Title = "Player", Icon = "user" })
 
-PlayerTab:Toggle({
-    Title = "CFrame Speed Bypass",
-    Desc = "Usa um método de velocidade que jogos raramente detectam",
-    Callback = function(v) State.CFrameSpeed = v end
-})
-
 PlayerTab:Slider({
-    Title = "Velocidade",
-    Value = {Min = 16, Max = 500, Default = State.Speed},
-    Callback = function(v) State.Speed = v end
-})
-
-PlayerTab:Toggle({
-    Title = "Fly (V)",
-    Value = State.FlyEnabled,
+    Title = "Velocidade Real",
+    Desc = "Bypassa o script de WalkSpeed do jogo via Attributes",
+    Value = {Min = 18, Max = 300, Default = State.Speed},
     Callback = function(v) 
-        State.FlyEnabled = v 
-        ToggleFly(v)
+        State.Speed = v 
+        ApplyBypass()
     end
 })
 
 PlayerTab:Slider({
     Title = "Fly Speed",
-    Value = {Min = 10, Max = 500, Default = State.FlySpeed},
+    Value = {Min = 50, Max = 500, Default = State.FlySpeed},
     Callback = function(v) State.FlySpeed = v end
 })
 
--- [ ABA: FARMING ]
+PlayerTab:Button({
+    Title = "Destroy VIP Walls",
+    Callback = function()
+        local vips = Workspace:FindFirstChild("VIPWalls")
+        if vips then vips:Destroy() end
+    end
+})
+
+-- [ SELLING (AUTO FARM) ]
 local SellingTab = Window:Tab({ Title = "Selling", Icon = "shopping-cart" })
 
 SellingTab:Toggle({
     Title = "Auto Farm Brainrot",
-    Desc = "Puxa dinheiro e drops próximos automaticamente",
+    Desc = "Puxa moedas e brains automaticamente",
+    Value = State.AutoFarm,
     Callback = function(v) State.AutoFarm = v end
 })
 
-SellingTab:Button({
-    Title = "Destroy Barriers",
-    Callback = function()
-        local walls = Workspace:FindFirstChild("VIPWalls")
-        if walls then walls:Destroy() end
-    end
-})
+-- [ EVENTS (GAPS) ]
+local EventsTab = Window:Tab({ Title = "Events", Icon = "map-pin" })
 
--- [ ABA: NAVIGATION ]
-local NavTab = Window:Tab({ Title = "Events", Icon = "zap" })
+local gapList = {}
+for i = 1, 10 do table.insert(gapList, "Gap" .. i) end
 
-local gaps = {"Gap1", "Gap2", "Gap3", "Gap4", "Gap5", "Gap6", "Gap7", "Gap8", "Gap9"}
-NavTab:Dropdown({
-    Title = "Select Gap Teleport",
-    Values = gaps,
-    Callback = function(v)
-        local success = TeleportToGap(v)
+EventsTab:Dropdown({
+    Title = "Teleport to Gap",
+    Values = gapList,
+    Callback = function(selected)
+        local ok = GlideToGap(selected)
         WindUI:Notify({
             Title = "Navigator",
-            Content = success and "Teleportado para "..v or "Gap não encontrado!",
-            Variant = success and "Success" or "Error"
+            Content = ok and "Teleportado para "..selected or "Gap não encontrado no mapa.",
+            Variant = ok and "Success" or "Error"
         })
     end
 })
 
--- [ ABA: SETTINGS ]
+-- [ SETTINGS ]
 local SettingsTab = Window:Tab({ Title = "Settings", Icon = "settings" })
 
 SettingsTab:Dropdown({
-    Title = "Change Theme",
+    Title = "Visual Theme",
     Values = {"Dark", "Light", "Aqua", "Rose", "Amethyst"},
     Callback = function(t)
         Window:SetTheme(t)
@@ -219,18 +192,30 @@ SettingsTab:Button({
     Callback = function() Window:Destroy() end
 })
 
--- // 6. HOTKEYS E INICIALIZAÇÃO
+-- // 7. LOOPS DE SINCRONIZAÇÃO
+RunService.RenderStepped:Connect(function()
+    ApplyBypass() -- Força os atributos a cada frame para ganhar do script original
+    HandleFly()
+end)
+
+-- Garantir que funcione ao morrer
+LocalPlayer.CharacterAdded:Connect(function()
+    repeat task.wait() until LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    ApplyBypass()
+    if State.FlyEnabled then HandleFly() end
+end)
+
+-- Keybind V para Fly
 UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
     if input.KeyCode == Enum.KeyCode.V then
         State.FlyEnabled = not State.FlyEnabled
-        ToggleFly(State.FlyEnabled)
-        WindUI:Notify({Title = "Nexus", Content = "Fly: " .. (State.FlyEnabled and "ON" or "OFF")})
+        WindUI:Notify({Title = "Nexus", Content = "Voo: " .. (State.FlyEnabled and "Ativado" or "Desativado")})
     end
 end)
 
 WindUI:Notify({
-    Title = "Nexus Reborn Loaded",
-    Content = "Sistemas persistentes ativos.",
+    Title = "Nexus Prime Ativado",
+    Content = "Sistemas de Bypass e AutoFarm carregados.",
     Icon = "check-circle"
 })
