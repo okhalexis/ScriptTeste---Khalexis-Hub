@@ -1,27 +1,23 @@
 --[[
-    KLS HUB - Foundation Script
+    KLS HUB - Official Build
     Developed by: Khalexis Team
     UI Library: WindUI
-    Version: 2.0 (Clean Build)
+    Version: 2.1 (Fixed Themes)
 ]]
 
---------------------------------------------------------------------------------
--- 1. LIBRARY INITIALIZATION
---------------------------------------------------------------------------------
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
--- Basic Configs
+-- 1. Configurações Básicas
 WindUI:SetNotificationLower(true)
 
---------------------------------------------------------------------------------
--- 2. THEME REGISTRATION (Cores Personalizadas)
---------------------------------------------------------------------------------
+-- 2. CRIANDO OS TEMAS (Cores do Hub)
+-- Esses nomes devem ser EXATAMENTE iguais aos colocados no Dropdown lá embaixo
 
--- Theme 1: Khalexis Void (Tema Principal - Roxo/Escuro)
+-- Tema Roxo (Principal)
 WindUI:AddTheme({
     Name = "Khalexis Void",
-    Accent = Color3.fromHex("#8b5cf6"),     -- Roxo
-    Background = Color3.fromHex("#09090b"), -- Preto Profundo
+    Accent = Color3.fromHex("#8b5cf6"),
+    Background = Color3.fromHex("#09090b"),
     Outline = Color3.fromHex("#27272a"),
     Text = Color3.fromHex("#fafafa"),
     Placeholder = Color3.fromHex("#71717a"),
@@ -29,11 +25,11 @@ WindUI:AddTheme({
     Icon = Color3.fromHex("#a1a1aa"),
 })
 
--- Theme 2: Crimson Slayer (Vermelho Sangue)
+-- Tema Vermelho
 WindUI:AddTheme({
     Name = "Crimson Slayer",
-    Accent = Color3.fromHex("#dc2626"),     -- Vermelho
-    Background = Color3.fromHex("#0f0505"), 
+    Accent = Color3.fromHex("#dc2626"),
+    Background = Color3.fromHex("#0f0505"),
     Outline = Color3.fromHex("#450a0a"),
     Text = Color3.fromHex("#ffffff"),
     Placeholder = Color3.fromHex("#7f1d1d"),
@@ -41,10 +37,10 @@ WindUI:AddTheme({
     Icon = Color3.fromHex("#fca5a5"),
 })
 
--- Theme 3: Azure Abyss (Azul Oceano)
+-- Tema Azul
 WindUI:AddTheme({
     Name = "Azure Abyss",
-    Accent = Color3.fromHex("#3b82f6"),     -- Azul
+    Accent = Color3.fromHex("#3b82f6"),
     Background = Color3.fromHex("#020617"),
     Outline = Color3.fromHex("#172554"),
     Text = Color3.fromHex("#ffffff"),
@@ -53,10 +49,10 @@ WindUI:AddTheme({
     Icon = Color3.fromHex("#93c5fd"),
 })
 
--- Theme 4: Toxic Waste (Verde Neon)
+-- Tema Verde
 WindUI:AddTheme({
     Name = "Toxic Waste",
-    Accent = Color3.fromHex("#22c55e"),     -- Verde
+    Accent = Color3.fromHex("#22c55e"),
     Background = Color3.fromHex("#052e16"),
     Outline = Color3.fromHex("#14532d"),
     Text = Color3.fromHex("#ffffff"),
@@ -65,18 +61,16 @@ WindUI:AddTheme({
     Icon = Color3.fromHex("#86efac"),
 })
 
--- Set Default Theme
+-- Aplicando o tema padrão
 WindUI:SetTheme("Khalexis Void")
 
---------------------------------------------------------------------------------
--- 3. WINDOW CREATION
---------------------------------------------------------------------------------
+-- 3. CRIANDO A JANELA
 local Window = WindUI:CreateWindow({
     Title = "KLS HUB",
-    Icon = "crown", -- Ícone da equipe
+    Icon = "crown",
     Author = "by Khalexis Team",
     Folder = "KLSHub",
-    Size = UDim2.fromOffset(600, 420),
+    Size = UDim2.fromOffset(580, 400),
     Transparent = true,
     Theme = "Khalexis Void",
     Resizable = true,
@@ -84,83 +78,72 @@ local Window = WindUI:CreateWindow({
     HideSearchBar = false,
 })
 
---------------------------------------------------------------------------------
--- 4. TABS & CATEGORIES (Empty Structure)
---------------------------------------------------------------------------------
+-- ====================================================================
+-- CATEGORIAS VAZIAS (ESQUELETO)
+-- ====================================================================
 
--- > Tab: Player
+-- 1. Player
 local PlayerTab = Window:Tab({ Title = "Player", Icon = "user" })
 local PlayerSec = PlayerTab:Section({ Title = "Attributes", Opened = true })
--- [Add Player Functions Here]
 
-
--- > Tab: Farm
+-- 2. Farm
 local FarmTab = Window:Tab({ Title = "Farm", Icon = "swords" })
 local FarmSec = FarmTab:Section({ Title = "Automation", Opened = true })
--- [Add Farm Functions Here]
 
-
--- > Tab: Auto
+-- 3. Auto
 local AutoTab = Window:Tab({ Title = "Auto", Icon = "bot" })
 local AutoSec = AutoTab:Section({ Title = "Utilities", Opened = true })
--- [Add Auto Functions Here]
 
-
--- > Tab: Teleport
+-- 4. Teleport
 local TeleportTab = Window:Tab({ Title = "Teleport", Icon = "map-pin" })
 local TeleportSec = TeleportTab:Section({ Title = "Waypoints", Opened = true })
--- [Add Teleport Functions Here]
 
-
--- > Tab: Events
+-- 5. Events
 local EventsTab = Window:Tab({ Title = "Events", Icon = "calendar" })
 local EventsSec = EventsTab:Section({ Title = "Active Events", Opened = true })
--- [Add Events Functions Here]
 
-
--- > Tab: Selling
+-- 6. Selling
 local SellingTab = Window:Tab({ Title = "Selling", Icon = "coins" })
 local SellingSec = SellingTab:Section({ Title = "Merchant", Opened = true })
--- [Add Selling Functions Here]
 
+-- ====================================================================
+-- CATEGORIA CONFIGS (FUNCIONAL)
+-- ====================================================================
 
---------------------------------------------------------------------------------
--- 5. SETTINGS TAB (Functional)
---------------------------------------------------------------------------------
-local SettingsTab = Window:Tab({ Title = "Settings", Icon = "settings-2" })
+local SettingsTab = Window:Tab({ Title = "Configs", Icon = "settings-2" })
 local ThemeSec = SettingsTab:Section({ Title = "Interface Theme", Opened = true })
 
--- Automatic Theme Selector
+-- Correção do Dropdown: Listamos os nomes manualmente
 ThemeSec:Dropdown({
     Title = "Select Visual Style",
-    Desc = "Choose a color palette for the hub.",
-    Values = WindUI:GetThemes(), -- Gets all created themes automatically
+    Desc = "Choose a color palette.",
+    
+    -- AQUI ESTÁ A CORREÇÃO: Lista manual dos nomes
+    Values = {
+        "Khalexis Void",   -- Roxo
+        "Crimson Slayer",  -- Vermelho
+        "Azure Abyss",     -- Azul
+        "Toxic Waste",     -- Verde
+        "Dark",            -- Padrão da Lib
+        "Light"            -- Padrão da Lib
+    },
+    
     Multi = false,
-    Default = "Khalexis Void",
+    Default = "Khalexis Void", -- Seleciona o primeiro
     Callback = function(selectedTheme)
         WindUI:SetTheme(selectedTheme)
     end
 })
 
-local KeySec = SettingsTab:Section({ Title = "Keybinds", Opened = true })
+local KeySec = SettingsTab:Section({ Title = "System", Opened = true })
 
 KeySec:Keybind({
     Title = "Menu Toggle",
-    Desc = "Key to open and close the UI.",
+    Desc = "Key to open/close UI.",
     Value = "RightControl",
     Callback = function(key)
         Window:SetToggleKey(Enum.KeyCode[key])
     end
 })
 
---------------------------------------------------------------------------------
--- 6. INITIALIZATION
---------------------------------------------------------------------------------
 Window:Open()
-
-WindUI:Notify({
-    Title = "KLS HUB",
-    Content = "Successfully loaded.",
-    Duration = 3,
-    Icon = "check"
-})
