@@ -2,14 +2,16 @@
 -- ║                 BASE HUB - WINDUI STRUCTURE                  ║
 -- ╚══════════════════════════════════════════════════════════════╝
 
--- Services básicos
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Carregar WindUI (última versão)
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+-- WindUI latest
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))() -- [web:8]
 
--- ▓▓ Temas customizados
+WindUI:SetNotificationLower(true)
+
+-- ▓▓ Temas básicos + anime
+
 WindUI:AddTheme({
     Name = "EliteDark",
     Accent = Color3.fromHex("#6366f1"),
@@ -20,48 +22,39 @@ WindUI:AddTheme({
     Placeholder = Color3.fromHex("#6b7280"),
     Button = Color3.fromHex("#1e1e2e"),
     Icon = Color3.fromHex("#818cf8"),
-
     Hover = Color3.fromHex("#ffffff"),
-
     WindowBackground = Color3.fromHex("#0a0a0f"),
     WindowShadow = Color3.fromHex("#000000"),
-
     DialogBackground = Color3.fromHex("#0a0a0f"),
     DialogBackgroundTransparency = 0.05,
     DialogTitle = Color3.fromHex("#e5e7eb"),
     DialogContent = Color3.fromHex("#d1d5db"),
     DialogIcon = Color3.fromHex("#818cf8"),
-
     WindowTopbarButtonIcon = Color3.fromHex("#818cf8"),
     WindowTopbarTitle = Color3.fromHex("#ffffff"),
     WindowTopbarAuthor = Color3.fromHex("#9ca3af"),
     WindowTopbarIcon = Color3.fromHex("#6366f1"),
-
     TabBackground = Color3.fromHex("#1e1e2e"),
     TabTitle = Color3.fromHex("#e5e7eb"),
     TabIcon = Color3.fromHex("#818cf8"),
-
     ElementBackground = Color3.fromHex("#1e1e2e"),
     ElementTitle = Color3.fromHex("#e5e7eb"),
     ElementDesc = Color3.fromHex("#9ca3af"),
     ElementIcon = Color3.fromHex("#818cf8"),
-
     PopupBackground = Color3.fromHex("#0a0a0f"),
     PopupBackgroundTransparency = 0.05,
     PopupTitle = Color3.fromHex("#e5e7eb"),
     PopupContent = Color3.fromHex("#d1d5db"),
     PopupIcon = Color3.fromHex("#818cf8"),
-
     Toggle = Color3.fromHex("#1e1e2e"),
     ToggleBar = Color3.fromHex("#6366f1"),
-
     Checkbox = Color3.fromHex("#1e1e2e"),
     CheckboxIcon = Color3.fromHex("#6366f1"),
-
     Slider = Color3.fromHex("#1e1e2e"),
     SliderThumb = Color3.fromHex("#6366f1"),
 })
 
+-- Tema CrimsonNight (dark red)
 WindUI:AddTheme({
     Name = "CrimsonNight",
     Accent = Color3.fromHex("#f97373"),
@@ -72,52 +65,86 @@ WindUI:AddTheme({
     Placeholder = Color3.fromHex("#6b7280"),
     Button = Color3.fromHex("#111827"),
     Icon = Color3.fromHex("#fecaca"),
-
     Hover = Color3.fromHex("#ffffff"),
-
     WindowBackground = Color3.fromHex("#09030a"),
     WindowShadow = Color3.fromHex("#000000"),
-
     DialogBackground = Color3.fromHex("#09030a"),
     DialogBackgroundTransparency = 0.05,
     DialogTitle = Color3.fromHex("#f9fafb"),
     DialogContent = Color3.fromHex("#e5e7eb"),
     DialogIcon = Color3.fromHex("#fecaca"),
-
     WindowTopbarButtonIcon = Color3.fromHex("#fecaca"),
     WindowTopbarTitle = Color3.fromHex("#f9fafb"),
     WindowTopbarAuthor = Color3.fromHex("#e5e7eb"),
     WindowTopbarIcon = Color3.fromHex("#f97373"),
-
     TabBackground = Color3.fromHex("#111827"),
     TabTitle = Color3.fromHex("#f9fafb"),
     TabIcon = Color3.fromHex("#fecaca"),
-
     ElementBackground = Color3.fromHex("#111827"),
     ElementTitle = Color3.fromHex("#f9fafb"),
     ElementDesc = Color3.fromHex("#e5e7eb"),
     ElementIcon = Color3.fromHex("#fecaca"),
-
     PopupBackground = Color3.fromHex("#09030a"),
     PopupBackgroundTransparency = 0.05,
     PopupTitle = Color3.fromHex("#f9fafb"),
     PopupContent = Color3.fromHex("#e5e7eb"),
     PopupIcon = Color3.fromHex("#fecaca"),
-
     Toggle = Color3.fromHex("#111827"),
     ToggleBar = Color3.fromHex("#f97373"),
-
     Checkbox = Color3.fromHex("#111827"),
     CheckboxIcon = Color3.fromHex("#f97373"),
-
     Slider = Color3.fromHex("#111827"),
     SliderThumb = Color3.fromHex("#f97373"),
 })
 
-WindUI:SetNotificationLower(true)
+-- Temas com background de anime (usando rbxassetid://) [web:4][web:6]
+
+local AnimeBackgrounds = {
+    ["AnimeGirlBlue"] = "rbxassetid://665326906309",      -- Anime Aesthetic [web:6]
+    ["AnimePastel"]   = "rbxassetid://1096405055049",    -- ~Aesthetic Anime~ [web:6]
+    ["AnimeBoyDark"]  = "rbxassetid://256579271238",     -- Anime boy [web:6]
+}
+
+WindUI:AddTheme({
+    Name = "AnimeBlue",
+    Accent = Color3.fromHex("#60a5fa"),
+    Background = Color3.fromHex("#020617"),
+    BackgroundTransparency = 0,
+    Outline = Color3.fromHex("#38bdf8"),
+    Text = Color3.fromHex("#e5e7eb"),
+    Placeholder = Color3.fromHex("#64748b"),
+    Button = Color3.fromHex("#020617"),
+    Icon = Color3.fromHex("#93c5fd"),
+})
+
+WindUI:AddTheme({
+    Name = "AnimePastel",
+    Accent = Color3.fromHex("#f9a8d4"),
+    Background = Color3.fromHex("#0f172a"),
+    BackgroundTransparency = 0,
+    Outline = Color3.fromHex("#fb7185"),
+    Text = Color3.fromHex("#fde68a"),
+    Placeholder = Color3.fromHex("#f9a8d4"),
+    Button = Color3.fromHex("#1e293b"),
+    Icon = Color3.fromHex("#fda4af"),
+})
+
+WindUI:AddTheme({
+    Name = "AnimeDarkBoy",
+    Accent = Color3.fromHex("#a855f7"),
+    Background = Color3.fromHex("#020617"),
+    BackgroundTransparency = 0,
+    Outline = Color3.fromHex("#7e22ce"),
+    Text = Color3.fromHex("#e5e7eb"),
+    Placeholder = Color3.fromHex("#6b7280"),
+    Button = Color3.fromHex("#020617"),
+    Icon = Color3.fromHex("#a855f7"),
+})
+
 WindUI:SetTheme("EliteDark")
 
--- ▓▓ Janela principal
+-- ▓▓ Janela principal (background padrão, será alterado pelas settings)
+
 local Window = WindUI:CreateWindow({
     Title = "My Super Hub",
     Icon = "lucide:crown",
@@ -133,7 +160,7 @@ local Window = WindUI:CreateWindow({
 
 Window:SetToggleKey(Enum.KeyCode.RightShift)
 
--- ▓▓ Tabs vazias (somente estrutura)
+-- ▓▓ Tabs
 
 local PlayerTab = Window:Tab({
     Title = "Player",
@@ -156,7 +183,24 @@ local SettingsTab = Window:Tab({
 })
 
 -- ══════════════════════════════════════════════════════
--- SETTINGS: apenas tema (Theme Picker)
+-- PLAYER: categoria Farm (estrutura, ainda vazia)
+-- ══════════════════════════════════════════════════════
+
+local FarmSection = PlayerTab:Section({
+    Title = "Farm",
+    Box = true,
+    Opened = true,
+    FontWeight = "SemiBold",
+})
+
+-- aqui depois vamos colocar Auto Farm, TP, etc.
+FarmSection:Paragraph({
+    Title = "Farm System",
+    Desc = "Base pronta para futuros sistemas de auto farm.",
+})
+
+-- ══════════════════════════════════════════════════════
+-- SETTINGS: Themes + Background anime
 -- ══════════════════════════════════════════════════════
 
 local ThemeSection = SettingsTab:Section({
@@ -165,12 +209,17 @@ local ThemeSection = SettingsTab:Section({
     Opened = true,
 })
 
+local CurrentBackgroundKey = nil
+
 local ThemeDropdown = ThemeSection:Dropdown({
     Title = "Select Theme",
     Desc = "Choose your favorite UI style",
     Values = {
         "EliteDark",
         "CrimsonNight",
+        "AnimeBlue",
+        "AnimePastel",
+        "AnimeDarkBoy",
         "Dark",
         "Light",
     },
@@ -180,18 +229,55 @@ local ThemeDropdown = ThemeSection:Dropdown({
     end,
 })
 
-ThemeSection:Button({
-    Title = "Preview Theme",
-    Icon = "lucide:eye",
-    Callback = function()
-        local current = WindUI:GetCurrentTheme()
-        WindUI:Notify({
-            Title = "Theme Preview",
-            Content = "Current theme: " .. tostring(current),
-            Duration = 3,
-            Icon = "lucide:info",
-        })
+local AnimeBgDropdown = ThemeSection:Dropdown({
+    Title = "Anime Background",
+    Desc = "Select an anime background image",
+    Values = {
+        "None",
+        "AnimeGirlBlue",
+        "AnimePastel",
+        "AnimeBoyDark",
+    },
+    SearchBarEnabled = false,
+    Callback = function(choice)
+        if choice == "None" then
+            CurrentBackgroundKey = nil
+            Window:SetBackgroundImage("")  -- limpa
+            return
+        end
+
+        CurrentBackgroundKey = choice
+        local asset = AnimeBackgrounds[choice]
+        if asset then
+            Window:SetBackgroundImage(asset) -- rbxassetid://id [web:4][web:6]
+        end
     end,
 })
 
--- Você ainda pode adicionar mais coisas depois dentro de PlayerTab, SellingTab e EventsTab.
+ThemeSection:Slider({
+    Title = "Background Transparency",
+    Desc = "Adjust background opacity",
+    Value = {
+        Min = 0,
+        Max = 1,
+        Default = 0,
+    },
+    Step = 0.05,
+    Callback = function(v)
+        Window:SetBackgroundImageTransparency(v)
+    end,
+})
+
+ThemeSection:Button({
+    Title = "Show Current Theme",
+    Icon = "lucide:info",
+    Callback = function()
+        local t = WindUI:GetCurrentTheme() -- [web:2]
+        WindUI:Notify({
+            Title = "Theme",
+            Content = "Current theme: " .. tostring(t),
+            Duration = 3,
+            Icon = "lucide:palette",
+        })
+    end,
+})
