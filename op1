@@ -1,288 +1,308 @@
 --[[
     KLS HUB - Developed by: Khalexis Team
     UI Library: WindUI
-    Version: 3.0 (Brainrot Auto Farm Update)
+    Version: 4.0 (Smart Pathfinding AI)
 ]]
 
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 
--- Configurações Globais
 WindUI:SetNotificationLower(true)
 
 -- ====================================================================
--- SISTEMA DE DETECÇÃO AUTOMÁTICA (AUTO-UPDATE LISTS)
+-- TEMAS (Recolocados conforme solicitado)
 -- ====================================================================
-local BrainrotList = {}
-local GapsList = {}
+local ThemesDB = {
+    ["Khalexis Void"] = {
+        Accent = Color3.fromHex("#8b5cf6"), Background = Color3.fromHex("#09090b"),
+        Outline = Color3.fromHex("#27272a"), Text = Color3.fromHex("#fafafa"),
+        Placeholder = Color3.fromHex("#71717a"), Button = Color3.fromHex("#18181b"), Icon = Color3.fromHex("#a1a1aa")
+    },
+    ["Crimson Slayer"] = {
+        Accent = Color3.fromHex("#dc2626"), Background = Color3.fromHex("#0f0505"), 
+        Outline = Color3.fromHex("#450a0a"), Text = Color3.fromHex("#ffffff"),
+        Placeholder = Color3.fromHex("#7f1d1d"), Button = Color3.fromHex("#1a0505"), Icon = Color3.fromHex("#fca5a5")
+    },
+    ["Azure Abyss"] = {
+        Accent = Color3.fromHex("#3b82f6"), Background = Color3.fromHex("#020617"),
+        Outline = Color3.fromHex("#172554"), Text = Color3.fromHex("#ffffff"),
+        Placeholder = Color3.fromHex("#1e3a8a"), Button = Color3.fromHex("#0b1120"), Icon = Color3.fromHex("#93c5fd")
+    },
+    ["Toxic Waste"] = {
+        Accent = Color3.fromHex("#22c55e"), Background = Color3.fromHex("#052e16"),
+        Outline = Color3.fromHex("#14532d"), Text = Color3.fromHex("#ffffff"),
+        Placeholder = Color3.fromHex("#166534"), Button = Color3.fromHex("#051505"), Icon = Color3.fromHex("#86efac")
+    }
+}
 
--- 1. Pega os nomes dos Brainrots direto do Menu do jogo (conforme seu dump)
-local function UpdateBrainrotList()
-    BrainrotList = {} -- Limpa lista
-    local menuFrame = LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("Menus"):WaitForChild("Index"):WaitForChild("ScrollingFrame")
-    
-    for _, item in pairs(menuFrame:GetChildren()) do
-        if item:IsA("Frame") or item:IsA("ImageButton") then
-            -- Tenta pegar o nome do item. As vezes o nome da Frame é o nome do bicho
-            table.insert(BrainrotList, item.Name)
-        end
-    end
-    table.sort(BrainrotList) -- Organiza alfabeticamente
+for name, theme in pairs(ThemesDB) do
+    theme.Name = name
+    WindUI:AddTheme(theme)
 end
-
--- 2. Pega os Gaps seguros do Workspace
-local function UpdateGapsList()
-    GapsList = {}
-    if workspace:FindFirstChild("Misc") and workspace.Misc:FindFirstChild("Gaps") then
-        for _, gap in pairs(workspace.Misc.Gaps:GetChildren()) do
-            table.insert(GapsList, gap.Name)
-        end
-        table.sort(GapsList)
-    else
-        table.insert(GapsList, "Gap1") -- Fallback se não achar
-    end
-end
-
--- Executa a atualização inicial
-pcall(UpdateBrainrotList)
-pcall(UpdateGapsList)
-
--- ====================================================================
--- CONFIGURAÇÃO DO TEMA
--- ====================================================================
-WindUI:AddTheme({
-    Name = "Khalexis Void",
-    Accent = Color3.fromHex("#8b5cf6"),
-    Background = Color3.fromHex("#09090b"),
-    Outline = Color3.fromHex("#27272a"),
-    Text = Color3.fromHex("#fafafa"),
-    Placeholder = Color3.fromHex("#71717a"),
-    Button = Color3.fromHex("#18181b"),
-    Icon = Color3.fromHex("#a1a1aa"),
-})
 WindUI:SetTheme("Khalexis Void")
 
+-- 3. JANELA
 local Window = WindUI:CreateWindow({
     Title = "KLS HUB",
     Icon = "crown",
     Author = "by Khalexis Team",
     Folder = "KLSHub",
-    Size = UDim2.fromOffset(620, 450),
+    Size = UDim2.fromOffset(680, 480),
     Transparent = true,
     Theme = "Khalexis Void",
     Resizable = true,
-    SideBarWidth = 170,
+    SideBarWidth = 180,
     HideSearchBar = false,
 })
 
 -- ====================================================================
--- VARIÁVEIS DE CONTROLE
+-- VARIÁVEIS GLOBAIS
 -- ====================================================================
-local FarmConfig = {
-    Active = false,
-    TargetMob = nil,
-    SelectedGap = "Gap1", -- Padrão
-    LevitateHeight = 6 -- Altura para não tocar no chão (Mud)
+local _G_Config = {
+    FarmActive = false,
+    LevitateHeight = 8, -- Altura segura acima da lama
+    MoveSpeed = 35,     -- Velocidade do Tween entre Gaps
+    SpeedHack = 16,
+    SpeedEnabled = false
 }
 
-local FlightState = { Enabled = false, Speed = 50, BodyGyro = nil, BodyVelocity = nil }
+-- Listas
+local BrainrotList = {}
+local GapsTable = {} -- Armazena os objetos Gap
 
 -- ====================================================================
--- ABA 1: PLAYER (Mantida conforme pedido anterior)
+-- FUNÇÕES DO SISTEMA "SMART PATHFINDING"
 -- ====================================================================
-local PlayerTab = Window:Tab({ Title = "Player", Icon = "user" })
-local MoveSec = PlayerTab:Section({ Title = "Movement", Opened = true })
 
-MoveSec:Input({
-    Title = "WalkSpeed Input",
-    Desc = "Set exact speed amount",
-    Placeholder = "Default: 16",
-    Icon = "footprints",
-    Callback = function(text)
-        local num = tonumber(text)
-        if num and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.WalkSpeed = num
+-- 1. Carregar Dados do Jogo
+local function LoadGameData()
+    BrainrotList = {}
+    GapsTable = {}
+    
+    -- Ler Brainrots
+    local success, menu = pcall(function() return LocalPlayer.PlayerGui.Menus.Index.ScrollingFrame:GetChildren() end)
+    if success and menu then
+        for _, v in pairs(menu) do
+            if v:IsA("Frame") or v:IsA("ImageButton") then table.insert(BrainrotList, v.Name) end
         end
+        table.sort(BrainrotList)
     end
-})
 
-MoveSec:Slider({
-    Title = "Jump Power",
-    Step = 1,
-    Value = { Min = 50, Max = 300, Default = 50 },
-    Callback = function(v)
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.UseJumpPower = true
-            LocalPlayer.Character.Humanoid.JumpPower = v
-        end
+    -- Ler Gaps e Ordenar Numericamente (Gap1, Gap2, Gap10...)
+    if workspace:FindFirstChild("Misc") and workspace.Misc:FindFirstChild("Gaps") then
+        local unsorted = workspace.Misc.Gaps:GetChildren()
+        table.sort(unsorted, function(a, b)
+            -- Extrai o número do nome "Gap12" -> 12
+            local numA = tonumber(string.match(a.Name, "%d+")) or 0
+            local numB = tonumber(string.match(b.Name, "%d+")) or 0
+            return numA < numB
+        end)
+        GapsTable = unsorted
     end
-})
+end
+LoadGameData()
 
-MoveSec:Button({
-    Title = "Double Speed (2x)",
-    Icon = "fast-forward",
-    Callback = function()
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.WalkSpeed = LocalPlayer.Character.Humanoid.WalkSpeed * 2
-            WindUI:Notify({Title="Speed", Content="Speed doubled!", Icon="zap"})
-        end
+-- 2. Verificar se o caminho está seguro (Raycast)
+local function IsPathSafe(startPos, endPos)
+    local direction = endPos - startPos
+    local distance = direction.Magnitude
+    
+    local rayParams = RaycastParams.new()
+    rayParams.FilterDescendantsInstances = {LocalPlayer.Character, workspace.Misc.Gaps, workspace.Misc.Ground, workspace.Misc.Roof} -- Ignora mapa fixo e player
+    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+    
+    -- Lança um raio para ver se bate em algo (A ONDA)
+    local result = workspace:Raycast(startPos, direction.Unit * distance, rayParams)
+    
+    if result and result.Instance then
+        -- Se bater em algo que não seja o mapa, assume que é a onda mortal
+        return false -- CAMINHO PERIGOSO
     end
-})
+    return true -- CAMINHO SEGURO
+end
 
-local FlySec = PlayerTab:Section({ Title = "Flight V3", Opened = true })
+-- 3. Mover Jogador (Tween + Levitação)
+local function MoveToGap(gapPart)
+    local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
 
-FlySec:Toggle({
-    Title = "Enable Flight",
-    Icon = "plane",
-    Value = false,
-    Callback = function(state)
-        FlightState.Enabled = state
-        local char = LocalPlayer.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
-        
-        if state then
-            local bg = Instance.new("BodyGyro", hrp)
-            bg.P = 9e4; bg.maxTorque = Vector3.new(9e9,9e9,9e9); bg.cframe = hrp.CFrame
-            local bv = Instance.new("BodyVelocity", hrp)
-            bv.velocity = Vector3.zero; bv.maxForce = Vector3.new(9e9,9e9,9e9)
-            FlightState.BodyGyro = bg; FlightState.BodyVelocity = bv
+    local targetCFrame = gapPart.CFrame * CFrame.new(0, _G_Config.LevitateHeight, 0)
+    local distance = (hrp.Position - targetCFrame.Position).Magnitude
+    local timeToTravel = distance / _G_Config.MoveSpeed
+    
+    local tweenInfo = TweenInfo.new(timeToTravel, Enum.EasingStyle.Linear)
+    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
+    
+    -- Trava física para não cair
+    local bv = Instance.new("BodyVelocity", hrp)
+    bv.Velocity = Vector3.new(0,0,0)
+    bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    
+    tween:Play()
+    tween.Completed:Wait()
+    
+    if bv then bv:Destroy() end
+    -- Mantém a posição no Gap
+    hrp.CFrame = targetCFrame
+end
+
+-- 4. Loop Principal do Farm Inteligente
+local function StartSmartFarm()
+    task.spawn(function()
+        while _G_Config.FarmActive do
+            if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                task.wait(1)
+                continue
+            end
             
-            task.spawn(function()
-                while FlightState.Enabled and char:FindFirstChild("Humanoid") do
-                    char.Humanoid.PlatformStand = true
-                    bg.cframe = workspace.CurrentCamera.CFrame
-                    local dir = Vector3.zero
-                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir += workspace.CurrentCamera.CFrame.LookVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir -= workspace.CurrentCamera.CFrame.LookVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir -= workspace.CurrentCamera.CFrame.RightVector end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir += workspace.CurrentCamera.CFrame.RightVector end
-                    bv.velocity = dir * FlightState.Speed
-                    task.wait()
-                end
-                char.Humanoid.PlatformStand = false
-            end)
-        else
-            if FlightState.BodyGyro then FlightState.BodyGyro:Destroy() end
-            if FlightState.BodyVelocity then FlightState.BodyVelocity:Destroy() end
-        end
-    end
-})
-
--- ====================================================================
--- ABA 2: FARM (Lógica dos Gaps e Brainrot)
--- ====================================================================
-local FarmTab = Window:Tab({ Title = "Farm", Icon = "swords" })
-local BrainrotSec = FarmTab:Section({ Title = "Target Selection", Opened = true })
-
-BrainrotSec:Dropdown({
-    Title = "Select Brainrot",
-    Desc = "Choose which mob you want to farm.",
-    Values = BrainrotList, -- Lista automática
-    Multi = false,
-    Callback = function(val)
-        FarmConfig.TargetMob = val
-    end
-})
-
-BrainrotSec:Dropdown({
-    Title = "Select Safe Gap",
-    Desc = "Where to hide from waves/walls.",
-    Values = GapsList, -- Lista automática (Gap1, Gap2...)
-    Default = "Gap1",
-    Multi = false,
-    Callback = function(val)
-        FarmConfig.SelectedGap = val
-    end
-})
-
-local AutoSec = FarmTab:Section({ Title = "Automation", Opened = true })
-
-AutoSec:Toggle({
-    Title = "Auto Farm (Levitate in Gap)",
-    Desc = "Teleports to Gap and hovers to survive waves.",
-    Icon = "crosshair",
-    Value = false,
-    Callback = function(state)
-        FarmConfig.Active = state
-        
-        task.spawn(function()
-            while FarmConfig.Active do
-                local char = LocalPlayer.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                local humanoid = char and char:FindFirstChild("Humanoid")
+            local hrp = LocalPlayer.Character.HumanoidRootPart
+            hrp.AssemblyLinearVelocity = Vector3.zero -- Zera gravidade
+            
+            -- Percorrer cada Gap na ordem correta
+            for i, gapModel in ipairs(GapsTable) do
+                if not _G_Config.FarmActive then break end
                 
-                if hrp and humanoid and FarmConfig.SelectedGap then
-                    -- 1. Encontrar o Gap Físico no Workspace
-                    local gapFolder = workspace.Misc.Gaps:FindFirstChild(FarmConfig.SelectedGap)
+                -- Pega a parte física de referência do Gap (Mud ou Base)
+                local refPart = gapModel:FindFirstChild("Mud") or gapModel:FindFirstChildWhichIsA("BasePart")
+                
+                if refPart then
+                    local origin = hrp.Position
+                    local dest = refPart.Position + Vector3.new(0, _G_Config.LevitateHeight, 0)
                     
-                    if gapFolder then
-                        -- Tenta achar uma parte de referência no Gap (pode ser 'Mud' ou uma parte filha)
-                        local referencePart = gapFolder:FindFirstChild("Mud") or gapFolder:GetChildren()[1]
+                    -- ETAPA: AVALIAÇÃO DE RISCO
+                    local safe = false
+                    WindUI:Notify({Title="AI", Content="Analyzing route to " .. gapModel.Name .. "...", Duration=1})
+                    
+                    -- Loop de espera até a onda passar
+                    repeat
+                        if not _G_Config.FarmActive then break end
+                        safe = IsPathSafe(origin, dest)
                         
-                        if referencePart and referencePart:IsA("BasePart") then
-                            -- 2. Calcular Posição Segura (CFrame do Gap + Altura)
-                            local safeCFrame = referencePart.CFrame * CFrame.new(0, FarmConfig.LevitateHeight, 0)
-                            
-                            -- 3. Teleporte / Levitação
-                            hrp.CFrame = safeCFrame
-                            
-                            -- Congela a velocidade de queda para não cair no "Mud" (chão perigoso)
-                            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0) 
-                            hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                        if not safe then
+                            -- Trava o player onde está (esperando)
+                            hrp.CFrame = CFrame.new(origin)
+                            WindUI:Notify({Title="WARNING", Content="Wave detected! Waiting...", Duration=0.5, Icon="alert-triangle"})
+                            task.wait(0.5) -- Espera um pouco e checa de novo
                         end
+                    until safe or not _G_Config.FarmActive
+                    
+                    -- Se estiver seguro, AVANÇA
+                    if safe and _G_Config.FarmActive then
+                        WindUI:Notify({Title="SAFE", Content="Moving to " .. gapModel.Name, Icon="check"})
+                        MoveToGap(refPart)
                     end
                 end
-                task.wait() -- Executa muito rápido para "travar" o player lá
+                task.wait(0.2) -- Pequena pausa no Gap antes de calcular o próximo
             end
-        end)
+            
+            -- Se chegou ao fim, espera um pouco e reinicia ou para (dependendo do objetivo)
+            WindUI:Notify({Title="FARM", Content="Reached end of path. Rescanning...", Duration=2})
+            task.wait(2)
+        end
+    end)
+end
+
+-- Speed Loop Fix
+RunService.RenderStepped:Connect(function()
+    if _G_Config.SpeedEnabled and LocalPlayer.Character then
+        local hum = LocalPlayer.Character:FindFirstChild("Humanoid")
+        if hum then hum.WalkSpeed = _G_Config.SpeedValue end
     end
+end)
+
+-- ====================================================================
+-- INTERFACE (TABS)
+-- ====================================================================
+
+-- > PLAYER TAB
+local PlayerTab = Window:Tab({ Title = "Player", Icon = "user" })
+local PSection = PlayerTab:Section({ Title = "Attributes", Opened = true })
+
+PSection:Toggle({
+    Title = "Enable Speed",
+    Desc = "Force walkspeed value.",
+    Icon = "zap",
+    Callback = function(v) _G_Config.SpeedEnabled = v end
 })
 
-AutoSec:Slider({
-    Title = "Levitation Height",
-    Desc = "How high above the gap floor to float.",
-    Step = 1,
-    Value = { Min = 3, Max = 20, Default = 6 },
+PSection:Input({
+    Title = "WalkSpeed",
+    Desc = "Enter value (e.g. 50)",
+    Placeholder = "16",
+    Icon = "footprints",
+    Callback = function(t) _G_Config.SpeedValue = tonumber(t) or 16 end
+})
+
+PSection:Slider({
+    Title = "Jump Power",
+    Value = {Min=50, Max=300, Default=50},
     Callback = function(v)
-        FarmConfig.LevitateHeight = v
+        if LocalPlayer.Character then LocalPlayer.Character.Humanoid.JumpPower = v end
     end
 })
 
--- ====================================================================
--- ABA 3: CONFIGS (Toggle Key)
--- ====================================================================
-local SettingsTab = Window:Tab({ Title = "Configs", Icon = "settings-2" })
-local ConfigSec = SettingsTab:Section({ Title = "Menu Settings", Opened = true })
+-- > FARM TAB
+local FarmTab = Window:Tab({ Title = "Farm", Icon = "swords" })
+local AISection = FarmTab:Section({ Title = "Smart Brainrot Farm", Opened = true })
 
-ConfigSec:Keybind({
-    Title = "Menu Toggle Key",
-    Desc = "Click to set a new keybind.",
-    Value = "RightControl",
-    Callback = function(key)
-        Window:SetToggleKey(Enum.KeyCode[key])
-        WindUI:Notify({ Title="Config", Content="Keybind set to "..tostring(key), Icon="keyboard" })
+AISection:Dropdown({
+    Title = "Select Target",
+    Values = BrainrotList,
+    Multi = false,
+    Callback = function(v) print("Target set: "..v) end
+})
+
+AISection:Toggle({
+    Title = "Enable Smart Farm",
+    Desc = "Auto-calculates waves and moves safely between Gaps.",
+    Icon = "brain-circuit",
+    Value = false,
+    Callback = function(state)
+        _G_Config.FarmActive = state
+        if state then
+            StartSmartFarm()
+        end
     end
 })
 
-local ThemeSec = SettingsTab:Section({ Title = "Visuals", Opened = true })
+AISection:Slider({
+    Title = "Levitation Height",
+    Desc = "Altitude above Mud/Ground.",
+    Step = 1,
+    Value = { Min = 5, Max = 15, Default = 8 },
+    Callback = function(v) _G_Config.LevitateHeight = v end
+})
+
+AISection:Slider({
+    Title = "Travel Speed",
+    Desc = "How fast the character moves between gaps.",
+    Step = 5,
+    Value = { Min = 20, Max = 100, Default = 35 },
+    Callback = function(v) _G_Config.MoveSpeed = v end
+})
+
+-- > SETTINGS TAB
+local ConfigTab = Window:Tab({ Title = "Configs", Icon = "settings-2" })
+local ThemeSec = ConfigTab:Section({ Title = "Themes", Opened = true })
+
 ThemeSec:Dropdown({
-    Title = "Theme Selector",
-    Values = {"Khalexis Void", "Dark", "Light"},
+    Title = "Select Theme",
+    Values = {"Khalexis Void", "Crimson Slayer", "Azure Abyss", "Toxic Waste", "Dark"},
     Default = "Khalexis Void",
-    Callback = function(theme)
-        WindUI:SetTheme(theme)
+    Callback = function(t) WindUI:SetTheme(t) end
+})
+
+local KeySec = ConfigTab:Section({ Title = "Bind", Opened = true })
+KeySec:Keybind({
+    Title = "Menu Toggle",
+    Value = "RightControl",
+    Callback = function(k)
+        local key = Enum.KeyCode[k]
+        if key then Window:SetToggleKey(key) end
     end
 })
 
--- Inicializa
 Window:Open()
-WindUI:Notify({
-    Title = "KLS HUB Loaded",
-    Content = "Brainrot Lists & Gaps updated automatically.",
-    Duration = 5,
-    Icon = "check"
-})
