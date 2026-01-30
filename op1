@@ -1,228 +1,500 @@
 --[[
-    KLS HUB v5.0 - PERFECT AUTO FARM (Baseado no Dump Real do Jogo)
-    Desenvolvido por Khalexis Team - 100% Sobrevivência Garantida
+    KLS HUB - Roblox Script Hub
+    Desenvolvido por Khalexis Team
+    UI baseada em WindUI (Footagesus)
 ]]
 
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local LocalPlayer = Players.LocalPlayer
+-- // Carregar WindUI (última versão)
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))() --[web:4]
 
-WindUI:SetNotificationLower(true)
+-- // Ajustes básicos da library
+WindUI:SetNotificationLower(true) --[web:8]
 
--- ====================================================================
--- CONFIGURAÇÕES GLOBAIS
--- ====================================================================
-local Config = {
-    FarmActive = false,
-    CurrentGapIndex = 1,
-    LevitateHeight = 8,
-    MoveSpeed = 45,
-    SafetyMargin = 1.2, -- Margem de segurança (travelTime * 1.2 < waveTime)
-    SpeedEnabled = false,
-    SpeedValue = 50
-}
+-- Fonte custom (troque o id se quiser)
+WindUI:SetFont("rbxassetid://12187371879") --[web:8]
 
--- ====================================================================
--- SISTEMA DE MAPA (Baseado no Dump Real)
--- ====================================================================
-local GapsTable = {}
-local function UpdateGaps()
-    GapsTable = {}
-    if workspace.DefaultMap and workspace.DefaultMap.Gaps then
-        for _, gap in pairs(workspace.DefaultMap.Gaps:GetChildren()) do
-            if gap.Name:match("Gap%d+") and gap:FindFirstChild("Mud") then
-                table.insert(GapsTable, gap)
-            end
-        end
-        table.sort(GapsTable, function(a, b)
-            return tonumber(a.Name:match("%d+")) < tonumber(b.Name:match("%d+"))
-        end)
-    end
-    print("Gaps carregados:", #GapsTable) -- Debug
-end
+-- // Tema personalizado KLS HUB
+WindUI:AddTheme({
+    Name = "KLS Dark",
+    Accent = Color3.fromHex("#f97316"),
+    Background = Color3.fromHex("#050816"),
+    BackgroundTransparency = 0,
+    Outline = Color3.fromHex("#f97316"),
+    Text = Color3.fromHex("#ffffff"),
+    Placeholder = Color3.fromHex("#64748b"),
+    Button = Color3.fromHex("#0f172a"),
+    Icon = Color3.fromHex("#f97316"),
 
--- ====================================================================
--- DETECÇÃO DE ONDAS (Wave1Visual, Wave2Visual, Wave3Visual, etc.)
--- ====================================================================
-local function FindNearestWave()
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return nil end
-    
-    local nearest = nil
-    local minDist = math.huge
-    
-    -- Detecta todas as ondas visuais no workspace
-    for _, obj in pairs(workspace:GetChildren()) do
-        if obj.Name:match("Wave%d+Visual") or obj.Name:match("WackyWaveVisual") then
-            local hitbox = obj:FindFirstChild("Hitbox") or obj:FindFirstChild("TsunamiWave")
-            if hitbox and hitbox:IsA("BasePart") then
-                local dist = (hitbox.Position - hrp.Position).Magnitude
-                if dist < minDist then
-                    minDist = dist
-                    nearest = hitbox
-                end
-            end
-        end
-    end
-    
-    return nearest
-end
+    Hover = Color3.fromHex("#f97316"),
+    WindowBackground = Color3.fromHex("#020617"),
+    WindowShadow = Color3.fromHex("#000000"),
 
--- Velocidade real da onda (observada no dump ~80 studs/s)
-local function GetWaveSpeed(wavePart)
-    local vel = wavePart.AssemblyLinearVelocity.Magnitude
-    return vel > 0 and vel or 80 -- Velocidade padrão das ondas
-end
+    DialogBackground = Color3.fromHex("#020617"),
+    DialogBackgroundTransparency = 0,
+    DialogTitle = Color3.fromHex("#ffffff"),
+    DialogContent = Color3.fromHex("#e2e8f0"),
+    DialogIcon = Color3.fromHex("#f97316"),
 
--- ====================================================================
--- CÁLCULOS PREDITIVOS PERFEITOS
--- ====================================================================
-local function AnalyzeSafety(currentPos, nextPos)
-    local wave = FindNearestWave()
-    if not wave then return true, 0, math.huge end
-    
-    local waveSpeed = GetWaveSpeed(wave)
-    local waveDist = (wave.Position - currentPos).Magnitude
-    local waveTime = waveDist / waveSpeed
-    
-    local travelDist = (nextPos - currentPos).Magnitude
-    local travelTime = (travelDist / Config.MoveSpeed) * Config.SafetyMargin
-    
-    return travelTime < waveTime, travelTime, waveTime
-end
+    WindowTopbarButtonIcon = Color3.fromHex("#f97316"),
+    WindowTopbarTitle = Color3.fromHex("#ffffff"),
+    WindowTopbarAuthor = Color3.fromHex("#e2e8f0"),
+    WindowTopbarIcon = Color3.fromHex("#f97316"),
 
--- ====================================================================
--- MOVIMENTO ULTRA SEGURO
--- ====================================================================
-local function MoveToSafePosition(gapMud)
-    local hrp = LocalPlayer.Character.HumanoidRootPart
-    local targetPos = gapMud.Position + Vector3.new(0, Config.LevitateHeight, 0)
-    
-    local dist = (hrp.Position - targetPos).Magnitude
-    local tweenTime = dist / Config.MoveSpeed
-    
-    local tween = TweenService:Create(hrp, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos)})
-    
-    -- Anti-falls
-    local bv = Instance.new("BodyVelocity")
-    bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-    bv.Velocity = Vector3.new(0, 0, 0)
-    bv.Parent = hrp
-    
-    tween:Play()
-    tween.Completed:Wait()
-    bv:Destroy()
-    
-    hrp.CFrame = CFrame.new(targetPos)
-end
+    TabBackground = Color3.fromHex("#020617"),
+    TabTitle = Color3.fromHex("#e5e7eb"),
+    TabIcon = Color3.fromHex("#f97316"),
 
--- ====================================================================
--- AUTO FARM PRINCIPAL (100% Sobrevivência)
--- ====================================================================
-local function StartPerfectFarm()
-    spawn(function()
-        while Config.FarmActive do
-            local char = LocalPlayer.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            if not hrp then wait(1); continue end
-            
-            -- Verifica se chegou no final
-            if Config.CurrentGapIndex > #GapsTable then
-                WindUI:Notify({Title="🎉 FINALIZADO", Content="Chegou na área Brainrot!", Icon="award", Duration=3})
-                Config.FarmActive = false
-                break
-            end
-            
-            local currentGap = GapsTable[Config.CurrentGapIndex]
-            local nextGap = GapsTable[Config.CurrentGapIndex + 1]
-            
-            if not currentGap or not currentGap.Mud then
-                wait(0.5); continue 
-            end
-            
-            local currentSafePos = currentGap.Mud.Position + Vector3.new(0, Config.LevitateHeight, 0)
-            
-            -- Mantém seguro no gap atual
-            hrp.CFrame = CFrame.new(currentSafePos)
-            
-            if nextGap then
-                local nextSafePos = nextGap.Mud.Position + Vector3.new(0, Config.LevitateHeight, 0)
-                local isSafe, travelT, waveT = AnalyzeSafety(hrp.Position, nextSafePos)
-                
-                WindUI:Notify({
-                    Title="AI SCAN", 
-                    Content=string.format("Gap%d → Gap%d | Travel:%.1f | Wave:%.1f", 
-                        Config.CurrentGapIndex, Config.CurrentGapIndex+1, travelT, waveT),
-                    Duration=1
-                })
-                
-                if isSafe then
-                    WindUI:Notify({Title="✅ SEGURO", Content="Avançando para " .. nextGap.Name, Icon="arrow-right"})
-                    MoveToSafePosition(nextGap.Mud)
-                    Config.CurrentGapIndex = Config.CurrentGapIndex + 1
-                else
-                    WindUI:Notify({Title="⏸️ ESPERANDO", Content="Onda muito próxima!", Icon="shield-check"})
-                end
-            end
-            
-            wait(0.3) -- Reavaliação contínua
-        end
-    end)
-end
+    ElementBackground = Color3.fromHex("#020617"),
+    ElementTitle = Color3.fromHex("#e5e7eb"),
+    ElementDesc = Color3.fromHex("#9ca3af"),
+    ElementIcon = Color3.fromHex("#f97316"),
 
--- ====================================================================
--- INTERFACE WINDUI PERFEITA
--- ====================================================================
+    PopupBackground = Color3.fromHex("#020617"),
+    PopupBackgroundTransparency = 0,
+    PopupTitle = Color3.fromHex("#ffffff"),
+    PopupContent = Color3.fromHex("#e5e7eb"),
+    PopupIcon = Color3.fromHex("#f97316"),
+
+    Toggle = Color3.fromHex("#0f172a"),
+    ToggleBar = Color3.fromHex("#f97316"),
+
+    Checkbox = Color3.fromHex("#0f172a"),
+    CheckboxIcon = Color3.fromHex("#f97316"),
+
+    Slider = Color3.fromHex("#0f172a"),
+    SliderThumb = Color3.fromHex("#f97316"),
+}) --[web:8]
+
+-- Gradiente de fundo leve
+WindUI:Gradient({
+    ["0"] = { Color = Color3.fromHex("#020617"), Transparency = 0 },
+    ["100"] = { Color = Color3.fromHex("#111827"), Transparency = 0 },
+}, {
+    Rotation = 0,
+}) --[web:8]
+
+WindUI:SetTheme("KLS Dark") --[web:8]
+
+-- // (Opcional) Localização básica (en / pt-br)
+WindUI:Localization({
+    Enabled = true,
+    Prefix = "loc:",
+    DefaultLanguage = "en",
+    Translations = {
+        ["en"] = {
+            ["KLS_TITLE"] = "KLS HUB",
+            ["KLS_WELCOME"] = "Welcome to KLS HUB",
+            ["KLS_SETTINGS"] = "Settings",
+            ["KLS_FEATURES"] = "Features",
+            ["KLS_LOGO"] = "rbxassetid://129260712070622",
+        },
+        ["pt-br"] = {
+            ["KLS_TITLE"] = "KLS HUB",
+            ["KLS_WELCOME"] = "Bem-vindo ao KLS HUB",
+            ["KLS_SETTINGS"] = "Configurações",
+            ["KLS_FEATURES"] = "Funções",
+            ["KLS_LOGO"] = "rbxassetid://129260712070622",
+        },
+    }
+}) --[web:8]
+
+-- Force language se quiser:
+-- WindUI:SetLanguage("pt-br") --[web:8]
+
+-- // Popup inicial
+WindUI:Popup({
+    Title = "KLS HUB",
+    Icon = "lucide:flame",
+    Content = "KLS HUB - Desenvolvido por Khalexis Team",
+    Buttons = {
+        {
+            Title = "Continuar",
+            Variant = "Primary",
+            Callback = function() end,
+        },
+    }
+}) --[web:4]
+
+-- // Janela principal
 local Window = WindUI:CreateWindow({
-    Title="KLS HUB v5.0", Icon="brain-circuit", Size=UDim2.fromOffset(650, 500),
-    Theme="Khalexis Void", Resizable=true
-})
+    Title = "loc:KLS_TITLE",
+    Icon = "lucide:flame",
+    Author = "by Khalexis Team",
+    Folder = "KLS_HUB",
+    Size = UDim2.fromOffset(580, 460),
+    MinSize = Vector2.new(560, 350),
+    MaxSize = Vector2.new(850, 560),
+    Transparent = true,
+    Theme = "KLS Dark",
+    Resizable = true,
+    SideBarWidth = 200,
+    Background = "rbxassetid://13511292247",
+    BackgroundImageTransparency = 0.35,
+    HideSearchBar = false,
+    ScrollBarEnabled = true,
 
--- PLAYER TAB
-local PlayerTab = Window:Tab({Title="Player", Icon="user"})
-PlayerTab:Toggle({Title="Speed Hack", Callback=function(v) Config.SpeedEnabled=v end})
-PlayerTab:Slider({Title="Speed", Min=16, Max=100, Default=50, Callback=function(v) Config.SpeedValue=v end})
+    User = {
+        Enabled = true,
+        Anonymous = true,
+        Callback = function()
+            WindUI:Notify({
+                Title = "KLS HUB",
+                Content = "Obrigado por usar o KLS HUB!",
+                Duration = 4,
+                Icon = "lucide:smile",
+            })
+        end,
+    },
 
--- FARM TAB (Principal)
-local FarmTab = Window:Tab({Title="Auto Farm", Icon="swords"})
-local FarmSec = FarmTab:Section({Title="Predictive Wave AI", Opened=true})
+    KeySystem = {
+        Key = { "KLS-TEST", "KLS-FREE" },
+        Note = "Key System de exemplo (edite no script).",
+        URL = "https://discord.gg/SEU_DISCORD_AQUI",
+        SaveKey = false,
+    },
+}) --[web:8]
 
-FarmSec:Slider({Title="Levitação", Min=5, Max=15, Default=8, Callback=function(v) Config.LevitateHeight=v end})
-FarmSec:Slider({Title="Velocidade", Min=30, Max=80, Default=45, Callback=function(v) Config.MoveSpeed=v end})
-FarmSec:Slider({Title="Margem Segurança", Min=1.0, Max=2.0, Default=1.2, Step=0.1, Callback=function(v) Config.SafetyMargin=v end})
+-- Atalhos da Window
+Window:SetToggleKey(Enum.KeyCode.RightShift) --[web:8]
+Window:EditOpenButton({
+    Title = "Abrir KLS HUB",
+    Icon = "lucide:layout-dashboard",
+    CornerRadius = UDim.new(0, 16),
+    StrokeThickness = 2,
+    Color = ColorSequence.new(
+        Color3.fromHex("f97316"),
+        Color3.fromHex("22c55e")
+    ),
+    OnlyMobile = false,
+    Enabled = true,
+    Draggable = true,
+}) --[web:8]
 
-FarmSec:Button({Title="🔄 Refresh Gaps", Callback=UpdateGaps})
-FarmSec:Button({Title="📍 Reset Posição", Callback=function() Config.CurrentGapIndex=1 end})
+Window:DisableTopbarButtons({ "Fullscreen" }) --[web:8]
+Window.Icon:SetAnonymous(true) --[web:8]
 
-FarmSec:Toggle({
-    Title="🚀 PERFECT AUTO FARM", 
-    Desc="Gap1 → Gap9 + Brainrot (100% Sobrevivência)",
-    Callback=function(state)
-        Config.FarmActive = state
-        UpdateGaps()
-        if state and #GapsTable > 0 then
-            Config.CurrentGapIndex = 1
-            StartPerfectFarm()
-            WindUI:Notify({Title="AI ATIVA", Content="Farm preditivo iniciado!", Icon="robot", Duration=3})
-        end
+Window:OnOpen(function()
+    print("[KLS HUB] Window Opened")
+end) --[web:8]
+
+Window:OnClose(function()
+    print("[KLS HUB] Window Closed")
+end) --[web:8]
+
+Window:OnDestroy(function()
+    print("[KLS HUB] Window Destroyed")
+end) --[web:8]
+
+-- // Tabs principais
+local Tabs = {
+    Home = Window:Tab({ Title = "Home", Icon = "lucide:home" }),
+    Main = Window:Tab({ Title = "Main", Icon = "lucide:sparkles" }),
+    Visual = Window:Tab({ Title = "Visual", Icon = "lucide:monitor" }),
+    Misc = Window:Tab({ Title = "Misc", Icon = "lucide:settings-2" }),
+    Config = Window:Tab({ Title = "Configs", Icon = "lucide:folder" }),
+} --[web:4]
+
+Window:Divider() --[web:8]
+
+--------------------------------------------------------------------
+-- HOME TAB
+--------------------------------------------------------------------
+local HomeSection = Tabs.Home:Section({
+    Title = "KLS HUB • Khalexis Team",
+    Box = true,
+    FontWeight = "SemiBold",
+    Opened = true,
+}) --[web:8]
+
+HomeSection:Paragraph({
+    Title = "Sobre",
+    Desc = "KLS HUB é um hub universal desenvolvido pela Khalexis Team usando WindUI.",
+    Color = "Orange",
+    Image = "rbxassetid://129260712070622",
+    ImageSize = 32,
+}) --[web:8]
+
+HomeSection:Button({
+    Title = "Discord / Suporte",
+    Desc = "Clique para copiar o link de suporte do KLS HUB.",
+    Icon = "lucide:link-2",
+    Callback = function()
+        setclipboard("https://discord.gg/SEU_DISCORD_AQUI")
+        WindUI:Notify({
+            Title = "KLS HUB",
+            Content = "Link do Discord copiado!",
+            Duration = 3,
+            Icon = "lucide:check",
+        })
     end
-})
+}) --[web:8]
 
--- Configs
-local ConfigTab = Window:Tab({Title="Configs", Icon="settings"})
-ConfigTab:Keybind({Title="Toggle Menu", Value="RightControl"})
+Tabs.Home:Space() --[web:8]
 
--- Speed Loop
-RunService.Heartbeat:Connect(function()
-    if Config.SpeedEnabled and LocalPlayer.Character then
-        local hum = LocalPlayer.Character:FindFirstChild("Humanoid")
-        if hum then hum.WalkSpeed = Config.SpeedValue end
+local InfoCode = Tabs.Home:Code({
+    Title = "Info de Uso",
+    Code = [[-- Example:
+loadstring(game:HttpGet("SUA_RAW_URL_AQUI"))()]],
+}) --[web:8]
+
+InfoCode:OnCopy(function()
+    print("[KLS HUB] Código copiado")
+end) --[web:8]
+
+--------------------------------------------------------------------
+-- MAIN TAB (onde você pluga scripts por jogo)
+--------------------------------------------------------------------
+local MainSection = Tabs.Main:Section({
+    Title = "Scripts Principais",
+    Box = true,
+    Opened = true,
+}) --[web:8]
+
+local DropdownGame = MainSection:Dropdown({
+    Title = "Selecionar Jogo",
+    Desc = "Escolha o jogo para executar o script correspondente.",
+    Values = { "Universal", "Blox Fruits", "MM2", "Doors" },
+    Value = "Universal",
+    Callback = function(v)
+        print("[KLS HUB] Jogo selecionado:", v)
     end
-end)
+}) --[web:8]
 
--- Init
-UpdateGaps()
-Window:Open()
-WindUI:Notify({Title="KLS HUB v5.0", Content="Carregado com dump real do jogo!", Icon="check", Duration=4})
+MainSection:Button({
+    Title = "Executar Script",
+    Desc = "Carrega o script do jogo selecionado.",
+    Icon = "lucide:play",
+    Callback = function()
+        local gameSelected = DropdownGame.Value or "Universal"
+        WindUI:Notify({
+            Title = "Executar Script",
+            Content = "Executando script para: " .. tostring(gameSelected),
+            Duration = 3,
+            Icon = "lucide:loader-2",
+        })
+        -- Aqui você pluga os loadstrings específicos de cada jogo
+        -- if gameSelected == "Blox Fruits" then
+        --     loadstring(game:HttpGet("URL_DO_SCRIPT"))()
+        -- end
+    end
+}) --[web:4]
+
+local MainToggle = MainSection:Toggle({
+    Title = "Auto Farm (Exemplo)",
+    Desc = "Toggle de demonstração para auto farm.",
+    Icon = "lucide:swords",
+    Type = "Checkbox",
+    Value = false,
+    Callback = function(state)
+        print("[KLS HUB] Auto Farm:", state)
+    end
+}) --[web:8]
+
+local SpeedSlider = MainSection:Slider({
+    Title = "Speed (Exemplo)",
+    Desc = "Controla um valor de speed fictício.",
+    Step = 1,
+    Value = { Min = 16, Max = 200, Default = 50 },
+    Callback = function(value)
+        print("[KLS HUB] Speed slider:", value)
+    end
+}) --[web:8]
+
+--------------------------------------------------------------------
+-- VISUAL TAB
+--------------------------------------------------------------------
+local VisualSection = Tabs.Visual:Section({
+    Title = "Visual & UI",
+    Box = true,
+    Opened = true,
+}) --[web:8]
+
+local ColorpickerAccent = VisualSection:Colorpicker({
+    Title = "Cor de Accent",
+    Desc = "Muda a cor principal do tema (efeito visual).",
+    Default = Color3.fromRGB(249, 115, 22),
+    Transparency = 0,
+    Callback = function(color)
+        print("[KLS HUB] Accent color:", tostring(color))
+        -- aqui você pode re-aplicar tema dinamicamente se tiver um sistema próprio
+    end
+}) --[web:8]
+
+local TransparencySlider = VisualSection:Slider({
+    Title = "Transparência da Janela",
+    Desc = "Controle de transparência da janela do KLS HUB.",
+    Step = 0.1,
+    Value = { Min = 0, Max = 1, Default = 0.2 },
+    Callback = function(value)
+        local v = tonumber(string.format("%.1f", value))
+        Window:ToggleTransparency(v > 0)
+        print("[KLS HUB] Transparency:", v)
+    end
+}) --[web:3]
+
+local KeybindUI = VisualSection:Keybind({
+    Title = "Keybind para abrir KLS",
+    Desc = "Altere a tecla que abre/fecha o hub.",
+    Value = "RightShift",
+    Callback = function(v)
+        Window:SetToggleKey(Enum.KeyCode[v])
+    end
+}) --[web:8]
+
+--------------------------------------------------------------------
+-- MISC TAB
+--------------------------------------------------------------------
+local MiscSection = Tabs.Misc:Section({
+    Title = "Ferramentas Extras",
+    Box = true,
+    Opened = true,
+}) --[web:8]
+
+MiscSection:Input({
+    Title = "Executar Código",
+    Desc = "Cole um loadstring ou código Lua para executar.",
+    Value = "",
+    Type = "Textarea",
+    Placeholder = "loadstring(game:HttpGet(\"\"))()",
+    Callback = function(txt)
+        print("[KLS HUB] Código custom recebido")
+        -- pcall(function() loadstring(txt)() end)
+    end
+}) --[web:8]
+
+MiscSection:Button({
+    Title = "Notificação de Teste",
+    Desc = "Mostra uma notificação padrão do KLS HUB.",
+    Icon = "lucide:bell",
+    Callback = function()
+        WindUI:Notify({
+            Title = "KLS HUB",
+            Content = "Isso é uma notificação de teste.",
+            Duration = 3,
+            Icon = "lucide:bell-ring",
+        })
+    end
+}) --[web:8]
+
+MiscSection:Button({
+    Title = "Mostrar Dialog Exemplo",
+    Desc = "Abre um dialog de confirmação.",
+    Icon = "lucide:help-circle",
+    Callback = function()
+        Window:Dialog({
+            Title = "Confirmação",
+            Content = "Você deseja realmente executar esta ação?",
+            Icon = "lucide:alert-triangle",
+            Buttons = {
+                {
+                    Title = "Confirmar",
+                    Variant = "Primary",
+                    Callback = function()
+                        print("[KLS HUB] Ação confirmada")
+                    end
+                },
+                {
+                    Title = "Cancelar",
+                    Variant = "Tertiary",
+                    Callback = function()
+                        print("[KLS HUB] Ação cancelada")
+                    end
+                },
+            }
+        })
+    end
+}) --[web:8]
+
+--------------------------------------------------------------------
+-- CONFIGS TAB (usando ConfigManager do WindUI)
+--------------------------------------------------------------------
+local ConfigSection = Tabs.Config:Section({
+    Title = "Gerenciar Configs",
+    Box = true,
+    Opened = true,
+}) --[web:8]
+
+local ConfigManager = Window.ConfigManager --[web:8]
+local currentConfig = ConfigManager:CreateConfig("kls_default") --[web:8]
+
+-- Exemplos de elementos com Flag para configs
+local ConfigToggle = Tabs.Config:Toggle({
+    Title = "Exemplo Toggle Config",
+    Desc = "Toggle de teste salvo em config.",
+    Flag = "ToggleConfigExample",
+    Callback = function(v)
+        print("[KLS HUB][Config] Toggle:", v)
+    end
+}) --[web:1]
+
+local ConfigSlider = Tabs.Config:Slider({
+    Title = "Exemplo Slider Config",
+    Desc = "Slider de teste salvo em config.",
+    Flag = "SliderConfigExample",
+    Step = 1,
+    Value = { Min = 0, Max = 100, Default = 50 },
+    Callback = function(v)
+        print("[KLS HUB][Config] Slider:", v)
+    end
+}) --[web:1]
+
+local ConfigKeybind = Tabs.Config:Keybind({
+    Title = "Exemplo Keybind Config",
+    Desc = "Keybind de teste salvo em config.",
+    Flag = "KeybindConfigExample",
+    Value = "F",
+    Callback = function(v)
+        print("[KLS HUB][Config] Keybind:", v)
+    end
+}) --[web:1]
+
+local ConfigDropdown = Tabs.Config:Dropdown({
+    Title = "Exemplo Dropdown Config",
+    Desc = "Dropdown de teste salvo em config.",
+    Flag = "DropdownConfigExample",
+    Values = { "Test 1", "Test 2" },
+    Value = "Test 1",
+    Callback = function(v)
+        print("[KLS HUB][Config] Dropdown:", v)
+    end
+}) --[web:1]
+
+-- Botões Save / Load básicos
+ConfigSection:Button({
+    Title = "Salvar Config (kls_default)",
+    Icon = "lucide:save",
+    Callback = function()
+        currentConfig:Save()
+        WindUI:Notify({
+            Title = "Configs",
+            Content = "Config kls_default salva.",
+            Duration = 3,
+            Icon = "lucide:check",
+        })
+    end
+}) --[web:8]
+
+ConfigSection:Button({
+    Title = "Carregar Config (kls_default)",
+    Icon = "lucide:folder-open",
+    Callback = function()
+        currentConfig:Load()
+        WindUI:Notify({
+            Title = "Configs",
+            Content = "Config kls_default carregada.",
+            Duration = 3,
+            Icon = "lucide:check-circle-2",
+        })
+    end
+}) --[web:8]
+
+--------------------------------------------------------------------
+-- ABRIR JANELA NO FINAL
+--------------------------------------------------------------------
+Window:Open() --[web:8]
+
+--[[
+    Observação:
+    - Onde marquei comentários de exemplo, você pluga seus scripts reais.
+    - Troque URLs, keys, Discord etc. para os dados do seu projeto.
+]]
