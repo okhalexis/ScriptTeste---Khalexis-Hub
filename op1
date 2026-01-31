@@ -1,6 +1,8 @@
-Aqui está o script completo. A única alteração foi na definição do tema (agora chamado "Crimson" com cores preto e vermelho escuro) e na linha que seleciona esse tema por padrão ao abrir a janela.
+Com certeza. Peguei o script base que você forneceu e apliquei as duas alterações solicitadas:
+1.  **Tema Crimson:** Adicionei a definição do tema "Crimson" (preto e vermelho escuro) e o defini como padrão ao abrir a janela.
+2.  **Mini Descrição:** Inseri o parágrafo "Click on Stop Movement to unbug" na seção Brainrot Areas.
 
-O resto da estrutura e lógica continua exatamente igual.
+Aqui está o script pronto para copiar e colar:
 
 ```lua
 --[[========================================================
@@ -84,7 +86,7 @@ WindUI:Localization({
     }
 })
 
--- TEMA CRIMSON (PRETO E VERMELHO) DEFINIDO AQUI
+-- TEMA CRIMSON (Adicionado conforme pedido)
 WindUI:AddTheme({
     Name = "Crimson",
     Accent = Color3.fromHex("#DC143C"),
@@ -160,7 +162,7 @@ local Window = WindUI:CreateWindow({
     MinSize    = Vector2.new(560, 350),
     MaxSize    = Vector2.new(850, 560),
     Transparent= false,
-    Theme      = "Crimson", -- ALTERADO PARA CRIMSON
+    Theme      = "Crimson", -- Alterado para Crimson
     Resizable  = true,
     SideBarWidth = 200,
     BackgroundImageTransparency = 0.35,
@@ -642,6 +644,12 @@ local AutoFarmSection = Tabs.Farm:Section({
     Opened = true,
 })
 
+-- ADICIONADO AQUI: MINI DESCRIÇÃO PARA UNBUG
+AutoFarmSection:Paragraph({
+    Title = "Important Tip",
+    Content = "Click on Stop Movement to unbug."
+})
+
 -- Ícones alterados para "hand" (dedinho clicando)
 local GapPositions = {
     { Index = 1,  Name = "Common",    Icon = "hand",       X = 199.9,  Y = -2.7, Z = -14.0 },
@@ -1005,7 +1013,7 @@ SettingsWindowSection:Button({Title = "Center Window", Icon = "align-center", Ca
 local themeNames = {}
 for name in pairs(WindUI:GetThemes()) do table.insert(themeNames, name) end
 Tabs.Settings:Section({Title = "Themes", Icon = "palette", Box = true, Opened = true}):Dropdown({
-    Title = "Theme Selector", Icon = "brush", Values = themeNames, Value = "Crimson", -- AGORA O PADRÃO É CRIMSON
+    Title = "Theme Selector", Icon = "brush", Values = themeNames, Value = "Crimson", -- Alterado padrão para Crimson
     Callback = function(t) WindUI:SetTheme(t) end
 })
 
@@ -1028,7 +1036,7 @@ end)
 
 WindUI:Notify({
     Title = "Hub Injetado",
-    Content = "Tema Crimson carregado com sucesso!",
+    Content = "Abas reorganizadas e Sistemas Potencializados!",
     Duration = 5,
     Icon = "check"
 })
