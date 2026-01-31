@@ -1,16 +1,3 @@
-Você quer manter **toda** a estrutura (incluindo WaveDetector, AutoFly, AutoFarm, Dropdown, Toggle etc.), só que trocar o comportamento de seleção + loop sequencial para TP direto por botão. Então vou reescrever o script inteiro, sem pular nada, apenas adaptando a parte do Auto Farm Brainrot para:
-
-- Renomear a seção para: `Auto TP Área`.
-- Remover o Dropdown/Toggle de “Gap 1 -> Target”.
-- Criar botões individuais (Common, Uncommon, Rare, etc.) que:
-  - Definem `AutoGapState.TargetGapIndex` para o índice da área.
-  - Chamam um fluxo que **teleporta direto** até o Gap alvo, ignorando o esquema 1→2→3… (ou seja, ao clicar no botão, ele já seta `CurrentGapIndex = TargetGapIndex` e vai somente para aquele gap).
-
-Mantive todas as funções auxiliares (WaveDetector, AutoFly, autoFarmLoop) para não quebrar nada, mas adaptei o loop para funcionar como “ir direto para o Gap alvo atual”, e cada botão só seta o alvo e dispara o processo uma vez.
-
-Segue o script completo, reescrito na mesma estrutura:
-
-```lua
 --[[========================================================
     KILL SCRIPTS QUE ATRAPALHAM WALK/SPEED/UPGRADES
 ==========================================================]]
@@ -632,7 +619,8 @@ FarmSection:Toggle({
 })
 
 ----------------------------------------------------
--- AUTO FARM BRAINROT -> AUTO TP ÁREA
+-- AUTO FARM BRAINROT - LEVITANDO + NO CLIP AUTO
+-- (AGORA: AUTO TP ÁREA COM BOTÕES)
 ----------------------------------------------------
 local AutoFarmSection = Tabs.Farm:Section({
     Title  = "Auto TP Área",
@@ -671,10 +659,9 @@ local ARRIVAL_DISTANCE = 2
 ----------------------------------------------------
 local WaveDetector = {}
 
--- workspace.ActiveTsunamis.ActiveTsunamis
 local ACTIVE_TSUNAMIS_PATH = {"ActiveTsunamis", "ActiveTsunamis"}
-local CHECK_INTERVAL   = 0.03  -- ~30 checks/s
-local SAFE_DELTA_X     = 200   -- waveX - playerX >= 200 => seguro avançar
+local CHECK_INTERVAL   = 0.03
+local SAFE_DELTA_X     = 200
 
 local function getActiveTsunamisFolder()
     local obj = workspace
@@ -685,7 +672,6 @@ local function getActiveTsunamisFolder()
     return obj
 end
 
--- procura uma parte representando a ramificação da onda
 local function getWaveBranchPart(root)
     if root:IsA("BasePart") then
         return root
@@ -710,7 +696,6 @@ local function getWaveBranchPart(root)
     return bestPart
 end
 
--- menor (waveX - playerX) dentre TODAS waves/ramificações
 local function getNearestWaveDeltaX(playerPosX)
     local folder = getActiveTsunamisFolder()
     if not folder then return nil end
@@ -734,7 +719,6 @@ local function getNearestWaveDeltaX(playerPosX)
     return nearestDeltaX
 end
 
--- true = seguro avançar
 function WaveDetector.IsSafeToAdvance()
     local hrp = getHumanoidRootPart()
     if not hrp then
@@ -873,7 +857,7 @@ local function finishAtPosition(targetPos)
 end
 
 ----------------------------------------------------
--- MAIN LOOP (ADAPTADO PARA TP DIRETO)
+-- MAIN LOOP GAP -> TARGET (AGORA: DIRETO)
 ----------------------------------------------------
 local autoFarmCoroutine = nil
 
@@ -886,7 +870,7 @@ local function getGapByIndex(idx)
 end
 
 local function autoFarmLoop()
-    print("[Auto TP] Levitation started")
+    print("[Auto TP] Gap levitation started")
 
     PlayerFlags.NoClipEnabled = true
     if not AutoFly.Start() then
@@ -896,7 +880,7 @@ local function autoFarmLoop()
         return
     end
 
-    -- Agora: CurrentGapIndex começa já no TargetGapIndex (TP direto)
+    -- Agora começamos direto no alvo
     AutoGapState.CurrentGapIndex = AutoGapState.TargetGapIndex or 1
 
     while AutoGapState.Enabled do
@@ -943,7 +927,7 @@ local function autoFarmLoop()
                     Icon    = "map-pin",
                 })
 
-                -- como é TP direto, paramos após chegar
+                -- TP direto: encerra após chegar
                 AutoGapState.Enabled = false
                 break
             else
@@ -960,9 +944,9 @@ local function autoFarmLoop()
 end
 
 ----------------------------------------------------
--- UI CONTROLS AUTO TP (BOTÕES POR ÁREA)
+-- UI CONTROLS AUTO TP (BOTÕES)
 ----------------------------------------------------
-local function setTargetAndStart(index, name)
+local function startTPTo(index, name)
     AutoGapState.TargetGapIndex = index
     AutoGapState.Enabled = true
 
@@ -985,7 +969,7 @@ for _, gap in ipairs(GapPositions) do
         Desc  = string.format("Teleportar direto para %s (Gap %d)", gap.Name, gap.Index),
         Icon  = "map-pin",
         Callback = function()
-            setTargetAndStart(gap.Index, gap.Name)
+            startTPTo(gap.Index, gap.Name)
         end
     })
 end
@@ -1005,8 +989,8 @@ Tabs.Selling:Section({
 ----------------------------------------------------
 local SettingsWindowSection = Tabs.Settings:Section({
     Title = "Window Settings",
-    Icon = "sliders",
-    Box = true,
+    Icon  = "sliders",
+    Box   = true,
     Opened = true,
 })
 
@@ -1077,4 +1061,3 @@ ThemesSection:Dropdown({
         })
     end
 })
-```
