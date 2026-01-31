@@ -1,16 +1,8 @@
-Ajustei só o necessário para garantir que o hub (WindUI) sempre inicie e apareça primeiro, mantendo **toda a estrutura** do seu script e o sistema de **Auto TP Área com botões** indo exatamente para as coordenadas definidas.
-
-```lua
 --[[========================================================
     KILL SCRIPTS QUE ATRAPALHAM WALK/SPEED/UPGRADES
 ==========================================================]]
--- garante que o jogo e o player estejam carregados ANTES de tudo
-if not game:IsLoaded() then
-    game.Loaded:Wait()
-end
-
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
+local LocalPlayer = Players.LocalPlayer
 
 local function shouldKillScript(scr)
     if not scr:IsA("LocalScript") and not scr:IsA("ModuleScript") then
@@ -55,7 +47,7 @@ task.spawn(function()
 end)
 
 --[[========================================================
-    HUB / CONTROLE PLAYER
+    HUB / CONTROLE PLAYER - CONFIGURAÇÕES DE UI
 ==========================================================]]
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 WindUI:SetNotificationLower(true)
@@ -71,7 +63,8 @@ WindUI:Localization({
             ["HUB_AUTHOR"]  = "by You",
             ["TAB_PLAYER"]  = "Player",
             ["TAB_FARM"]    = "Farm",
-            ["TAB_SELLING"] = "Selling",
+            ["TAB_AUTO"]    = "Auto",
+            ["TAB_EVENTS"]  = "Events",
             ["TAB_SETTINGS"]= "Settings",
         },
         ["en"] = {
@@ -79,7 +72,8 @@ WindUI:Localization({
             ["HUB_AUTHOR"]  = "by You",
             ["TAB_PLAYER"]  = "Player",
             ["TAB_FARM"]    = "Farm",
-            ["TAB_SELLING"] = "Selling",
+            ["TAB_AUTO"]    = "Auto",
+            ["TAB_EVENTS"]  = "Events",
             ["TAB_SETTINGS"]= "Settings",
         },
     }
@@ -199,23 +193,42 @@ Window:EditOpenButton({
     Draggable = true,
 })
 
+-- ORDEM DAS ABAS ATUALIZADA
 local Tabs = {
-    Player   = Window:Tab({ Title = "loc:TAB_PLAYER",   Icon = "user" }),
-    Farm     = Window:Tab({ Title = "loc:TAB_FARM",     Icon = "wheat" }),
-    Selling  = Window:Tab({ Title = "loc:TAB_SELLING",  Icon = "shopping-bag" }),
-    Settings = Window:Tab({ Title = "loc:TAB_SETTINGS", Icon = "settings" }),
+    Player      = Window:Tab({ Title = "loc:TAB_PLAYER",   Icon = "user" }),
+    Farm        = Window:Tab({ Title = "loc:TAB_FARM",     Icon = "wheat" }),
+    Auto        = Window:Tab({ Title = "loc:TAB_AUTO",     Icon = "refresh-cw" }), 
+    Events      = Window:Tab({ Title = "loc:TAB_EVENTS",   Icon = "atom" }),
+    Settings    = Window:Tab({ Title = "loc:TAB_SETTINGS", Icon = "settings" }),
 }
 
 Window:SelectTab(1)
 
 ----------------------------------------------------
--- SERVICES / HELPERS
+-- SERVICES / HELPERS / NETWORKING
 ----------------------------------------------------
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local CollectionService = game:GetService("CollectionService")
 local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- Networking de Rede (Decompiled Paths)
+local NetPackage = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net")
+local WheelRollRF = NetPackage:WaitForChild("RF/WheelSpin.Roll")
+local WheelCompleteRE = NetPackage:WaitForChild("RE/WheelSpin.Complete")
+
+-- NOVOS NETWORKS (Speed/Carry/Base/Rebirth)
+local RemoteFunctions = ReplicatedStorage:WaitForChild("RemoteFunctions")
+local RemoteEvents = ReplicatedStorage:FindFirstChild("RemoteEvents")
+
+local UpgradeSpeedRF = RemoteFunctions:FindFirstChild("UpgradeSpeed")
+local UpgradeCarryRF = RemoteFunctions:FindFirstChild("UpgradeCarry")
+local UpgradeBaseRF  = RemoteFunctions:FindFirstChild("UpgradeBase")
+local RebirthRF      = RemoteFunctions:FindFirstChild("Rebirth")
+
+local PlotUpgradeRE  = NetPackage:FindFirstChild("RE/Plot.UpgradeBase")
 
 local function getCharacter()
     return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -233,6 +246,9 @@ local function getHumanoidRootPart()
     return char:FindFirstChild("HumanoidRootPart")
 end
 
+----------------------------------------------------
+-- FLAGS GERAIS (ADICIONANDO AUTO SISTEMAS)
+----------------------------------------------------
 local PlayerFlags = {
     SpeedEnabled   = false,
     SpeedValue     = 22,
@@ -244,13 +260,29 @@ local PlayerFlags = {
     FlyKey         = Enum.KeyCode.F,
     InstantSteal   = false,
     GodMode        = false,
+
+    AutoRadioactive = false,
+    RadioactiveDelay = 0.5,
+    AutoUFO = false,
+    UFODelay = 0.5,
+    AutoSpin = false,
+    SpinDelay = 1,
+    SpinType = "Radioactive",
+
+    -- NOVOS FLAGS
+    AutoCollectBaseMoney = false,      -- auto coletar money/brainrots da base
+    AutoUpgradeSpeed = false,          -- auto purchase speed (1 em 1)
+    AutoUpgradeCarry = false,          -- auto purchase carry (1 em 1)
+    AutoUpgradeBase = false,           -- upgrade da base/brainrots
+    AutoRebirth = false,               -- auto rebirth
+    AutoRebirthDelay = 2,
 }
 
 local DEFAULT_JUMPPOWER = 50
 local MAX_SPEED = 1000
 
 ----------------------------------------------------
--- HUD Speed (opcional)
+-- HUD Speed
 ----------------------------------------------------
 local function getSpeedLabel()
     local pg = LocalPlayer:FindFirstChild("PlayerGui")
@@ -394,7 +426,7 @@ JumpSection:Slider({
 })
 
 ----------------------------------------------------
--- FLY MODE (manual, F)
+-- FLY MODE
 ----------------------------------------------------
 local FlySection = Tabs.Player:Section({
     Title  = "Fly Mode",
@@ -499,7 +531,7 @@ FlySection:Slider({
 })
 
 ----------------------------------------------------
--- NO CLIP (manual)
+-- NO CLIP
 ----------------------------------------------------
 local NoClipSection = Tabs.Player:Section({
     Title  = "No Clip",
@@ -552,9 +584,9 @@ NoClipSection:Toggle({
 -- FARM / INSTANT STEAL
 ----------------------------------------------------
 local FarmSection = Tabs.Farm:Section({
-    Title = "Instant Steal",
-    Icon  = "zap",
-    Box   = true,
+    Title  = "Instant Steal",
+    Icon   = "zap",
+    Box    = true,
     Opened = true,
 })
 
@@ -608,462 +640,599 @@ FarmSection:Toggle({
         if state then
             disableInstantSteal()
             enableInstantSteal()
-            WindUI:Notify({
-                Title   = "Instant Steal",
-                Content = "Instant Steal enabled (Quick Interact).",
-                Duration= 3,
-                Icon    = "zap",
-            })
         else
             disableInstantSteal()
-            WindUI:Notify({
-                Title   = "Instant Steal",
-                Content = "Instant Steal disabled.",
-                Duration= 3,
-                Icon    = "zap",
-            })
         end
     end
 })
 
 ----------------------------------------------------
--- AUTO TP ÁREA (BOTÕES POR GAP)
+-- AUTO FARM BRAINROT - TELEPORT DIRETO
 ----------------------------------------------------
 local AutoFarmSection = Tabs.Farm:Section({
-    Title  = "Auto TP Área",
+    Title  = "Brainrot Areas",
     Icon   = "cpu",
     Box    = true,
     Opened = true,
 })
 
--- POSIÇÕES EXATAS DOS GAPS (Z = -14.0)
 local GapPositions = {
-    { Index = 1,  Name = "Common",    X = 199.9,  Y = -2.7, Z = -14.0 },
-    { Index = 2,  Name = "Uncommon",  X = 283.3,  Y = -2.7, Z = -14.0 },
-    { Index = 3,  Name = "Rare",      X = 397.2,  Y = -2.7, Z = -14.0 },
-    { Index = 4,  Name = "Epic",      X = 542.4,  Y = -2.7, Z = -14.0 },
-    { Index = 5,  Name = "Legendary", X = 757.4,  Y = -2.7, Z = -14.0 },
-    { Index = 6,  Name = "Mythical",  X = 1072.3, Y = -2.7, Z = -14.0 },
-    { Index = 7,  Name = "Cosmic",    X = 1549.3, Y = -2.7, Z = -14.0 },
-    { Index = 8,  Name = "Secret",    X = 2252.6, Y = -2.7, Z = -14.0 },
-    { Index = 9,  Name = "Final",     X = 2599.1, Y = -2.7, Z = -14.0 },
+    { Index = 1,  Name = "Common",    Icon = "zap",       X = 199.9,  Y = -2.7, Z = -14.0 },
+    { Index = 2,  Name = "Uncommon",  Icon = "star",      X = 283.3,  Y = -2.7, Z = -13.7 },
+    { Index = 3,  Name = "Rare",      Icon = "gem",       X = 397.2,  Y = -2.7, Z = -9.2  },
+    { Index = 4,  Name = "Epic",      Icon = "sparkles",  X = 542.4,  Y = -2.7, Z = -11.7 },
+    { Index = 5,  Name = "Legendary", Icon = "crown",     X = 757.4,  Y = -2.7, Z = -9.8  },
+    { Index = 6,  Name = "Mythical",  Icon = "flame",     X = 1072.3, Y = -2.7, Z = -2.8  },
+    { Index = 7,  Name = "Cosmic",    Icon = "rocket",    X = 1549.3, Y = -2.7, Z = -9.1  },
+    { Index = 8,  Name = "Secret",    Icon = "ghost",     X = 2252.6, Y = -2.7, Z = -15.1 },
+    { Index = 9,  Name = "Final",     Icon = "check-circle", X = 2599.1, Y = -2.7, Z = -15.1 },
 }
 
 local AutoGapState = {
     Enabled = false,
     TargetGapIndex = nil,
-    CurrentGapIndex = 1,
     IsFlying = false,
     AutoFlyVelocity = nil,
     AutoFlyGyro = nil,
 }
 
-local AUTO_FLY_SPEED   = 220
-local ARRIVAL_DISTANCE = 2
+local AUTO_FLY_SPEED = 220
+local WAVE_DETECTION_RANGE = 30
+local ARRIVAL_DISTANCE = 4
 
-----------------------------------------------------
--- WAVE DETECTOR VIA ActiveTsunamis (usa X de XYZ)
-----------------------------------------------------
 local WaveDetector = {}
+local lastWaveScan = 0
+local wavesCache = {}
 
-local ACTIVE_TSUNAMIS_PATH = {"ActiveTsunamis", "ActiveTsunamis"}
-local CHECK_INTERVAL   = 0.03
-local SAFE_DELTA_X     = 200
-
-local function getActiveTsunamisFolder()
-    local obj = workspace
-    for _, name in ipairs(ACTIVE_TSUNAMIS_PATH) do
-        obj = obj:FindFirstChild(name)
-        if not obj then return nil end
-    end
-    return obj
-end
-
-local function getWaveBranchPart(root)
-    if root:IsA("BasePart") then
-        return root
-    end
-
-    if root:IsA("Model") and root.PrimaryPart then
-        return root.PrimaryPart
-    end
-
-    local bestPart
-    local bestScore = 0
-    for _, d in ipairs(root:GetDescendants()) do
-        if d:IsA("BasePart") then
-            local s = d.Size
-            local score = s.X * s.Y * s.Z
-            if score > bestScore then
-                bestScore = score
-                bestPart = d
-            end
+function WaveDetector.ScanAllWaves()
+    if tick() - lastWaveScan < 0.5 then return wavesCache end
+    lastWaveScan = tick()
+    wavesCache = {}
+    for _, obj in ipairs(workspace:GetChildren()) do
+        local name = obj.Name:lower()
+        if name:find("tsunami") or name:find("wave") or name:find("flood") then
+            local p = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or (obj:IsA("BasePart") and obj)
+            if p then table.insert(wavesCache, p.Position) end
         end
     end
-    return bestPart
+    return wavesCache
 end
 
-local function getNearestWaveDeltaX(playerPosX)
-    local folder = getActiveTsunamisFolder()
-    if not folder then return nil end
-
-    local nearestDeltaX = nil
-
-    for _, waveRoot in ipairs(folder:GetChildren()) do
-        local part = getWaveBranchPart(waveRoot)
-        if part then
-            local waveX = part.Position.X
-            local deltaX = waveX - playerPosX
-
-            if deltaX >= 0 then
-                if not nearestDeltaX or deltaX < nearestDeltaX then
-                    nearestDeltaX = deltaX
-                end
-            end
-        end
+function WaveDetector.HasWaveNearby(pPos)
+    for _, wPos in ipairs(WaveDetector.ScanAllWaves()) do
+        if (wPos - pPos).Magnitude <= WAVE_DETECTION_RANGE then return true end
     end
-
-    return nearestDeltaX
+    return false
 end
 
-function WaveDetector.IsSafeToAdvance()
-    local hrp = getHumanoidRootPart()
-    if not hrp then
-        return true, nil
-    end
-
-    local playerX = hrp.Position.X
-    local deltaX = getNearestWaveDeltaX(playerX)
-
-    if not deltaX then
-        return true, nil
-    end
-
-    if deltaX >= SAFE_DELTA_X then
-        return true, deltaX
-    end
-
-    return false, deltaX
-end
-
-----------------------------------------------------
--- AUTO LEVITATION / FLY
-----------------------------------------------------
 local AutoFly = {}
 
 function AutoFly.Start()
     if AutoGapState.IsFlying then return true end
-
-    local hrp = getHumanoidRootPart()
-    local hum = getHumanoid()
+    local hrp, hum = getHumanoidRootPart(), getHumanoid()
     if not hrp or not hum then return false end
-
     AutoGapState.IsFlying = true
     hum.PlatformStand = true
-
-    local bv = Instance.new("BodyVelocity")
-    bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-    bv.Velocity = Vector3.zero
-    bv.Parent = hrp
-    AutoGapState.AutoFlyVelocity = bv
-
-    local bg = Instance.new("BodyGyro")
-    bg.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-    bg.P = 9e4
-    bg.CFrame = hrp.CFrame
-    bg.Parent = hrp
-    AutoGapState.AutoFlyGyro = bg
-
-    print("[Auto Fly] Levitation ON (220)")
+    AutoGapState.AutoFlyVelocity = Instance.new("BodyVelocity", hrp)
+    AutoGapState.AutoFlyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+    AutoGapState.AutoFlyGyro = Instance.new("BodyGyro", hrp)
+    AutoGapState.AutoFlyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
     return true
 end
 
 function AutoFly.Stop()
-    if not AutoGapState.IsFlying then return end
-
     AutoGapState.IsFlying = false
-
     local hum = getHumanoid()
     if hum then hum.PlatformStand = false end
-
-    if AutoGapState.AutoFlyVelocity then
-        AutoGapState.AutoFlyVelocity:Destroy()
-        AutoGapState.AutoFlyVelocity = nil
-    end
-
-    if AutoGapState.AutoFlyGyro then
-        AutoGapState.AutoFlyGyro:Destroy()
-        AutoGapState.AutoFlyGyro = nil
-    end
-
-    print("[Auto Fly] Levitation OFF")
+    if AutoGapState.AutoFlyVelocity then AutoGapState.AutoFlyVelocity:Destroy() AutoGapState.AutoFlyVelocity = nil end
+    if AutoGapState.AutoFlyGyro then AutoGapState.AutoFlyGyro:Destroy() AutoGapState.AutoFlyGyro = nil end
 end
 
-function AutoFly.FlyToPosition(targetPos)
-    local hrp = getHumanoidRootPart()
-    if not hrp then return false end
-
-    local currentPos = hrp.Position
-    local offset = (targetPos - currentPos)
-    if offset.Magnitude < 0.001 then
-        if AutoGapState.AutoFlyVelocity then
-            AutoGapState.AutoFlyVelocity.Velocity = Vector3.zero
-        end
-        return true
-    end
-
-    local dir = offset.Unit
-    local vel = dir * AUTO_FLY_SPEED
-
-    if AutoGapState.AutoFlyVelocity then
-        AutoGapState.AutoFlyVelocity.Velocity = vel
-    end
-
-    if AutoGapState.AutoFlyGyro then
-        AutoGapState.AutoFlyGyro.CFrame = CFrame.lookAt(currentPos, targetPos)
-    end
-
-    return true
-end
-
-function AutoFly.HasArrived(targetPos)
-    local hrp = getHumanoidRootPart()
-    if not hrp then return false end
-    local dist = (hrp.Position - targetPos).Magnitude
-    return dist <= ARRIVAL_DISTANCE
-end
-
-function AutoFly.PauseInPlace()
-    if AutoGapState.AutoFlyVelocity then
-        AutoGapState.AutoFlyVelocity.Velocity = Vector3.zero
-    end
-end
-
-local function finishAtPosition(targetPos)
-    local hrp = getHumanoidRootPart()
-    local hum = getHumanoid()
-    if not hrp then return end
-
-    if AutoGapState.AutoFlyVelocity then
-        AutoGapState.AutoFlyVelocity:Destroy()
-        AutoGapState.AutoFlyVelocity = nil
-    end
-    if AutoGapState.AutoFlyGyro then
-        AutoGapState.AutoFlyGyro:Destroy()
-        AutoGapState.AutoFlyGyro = nil
-    end
-    AutoGapState.IsFlying = false
-
-    if hum then
-        hum.PlatformStand = false
-    end
-
-    hrp.CFrame = CFrame.new(targetPos)
-    hrp.AssemblyLinearVelocity = Vector3.zero
-    hrp.AssemblyAngularVelocity = Vector3.zero
-end
-
-----------------------------------------------------
--- MAIN LOOP (TP DIRETO PARA GAP ALVO)
-----------------------------------------------------
 local autoFarmCoroutine = nil
 
-local function getGapByIndex(idx)
-    for _, gap in ipairs(GapPositions) do
-        if gap.Index == idx then
-            return gap
-        end
-    end
-end
-
 local function autoFarmLoop()
-    print("[Auto TP] Gap levitation started")
+    local targetData = nil
+    for _, g in ipairs(GapPositions) do if g.Index == AutoGapState.TargetGapIndex then targetData = g break end end
+    if not targetData then return end
 
     PlayerFlags.NoClipEnabled = true
-    if not AutoFly.Start() then
-        print("[Auto TP] Failed to start levitation")
-        PlayerFlags.NoClipEnabled = false
-        disableFullNoClip()
-        return
-    end
-
-    AutoGapState.CurrentGapIndex = AutoGapState.TargetGapIndex or 1
+    AutoFly.Start()
 
     while AutoGapState.Enabled do
         local hrp = getHumanoidRootPart()
-        if not hrp then
-            task.wait(0.5)
-            continue
+        if not hrp then task.wait(0.1) continue end
+
+        local targetPos = Vector3.new(targetData.X, targetData.Y, targetData.Z)
+        local dist = (hrp.Position - targetPos).Magnitude
+
+        if dist < ARRIVAL_DISTANCE then
+            AutoFly.Stop()
+            PlayerFlags.NoClipEnabled = false
+            disableFullNoClip()
+            AutoGapState.Enabled = false
+            WindUI:Notify({Title="Arrival", Content="Reached "..targetData.Name, Duration=3, Icon="map-pin"})
+            break
         end
 
-        local currentGap = getGapByIndex(AutoGapState.CurrentGapIndex)
-        if not currentGap then
-            print("[Auto TP] Gap index not found:", AutoGapState.CurrentGapIndex)
-            task.wait(0.5)
-            continue
-        end
-
-        local targetPos = Vector3.new(currentGap.X, currentGap.Y, currentGap.Z)
-
-        local isSafe, deltaX = WaveDetector.IsSafeToAdvance()
-
-        if not isSafe then
-            AutoFly.PauseInPlace()
-            print(string.format(
-                "[Auto TP] ⏸ Wave ΔX = %.1f (< %d) - holding at Gap %d (%s)",
-                deltaX or -1,
-                SAFE_DELTA_X,
-                AutoGapState.CurrentGapIndex,
-                currentGap.Name
-            ))
-            task.wait(CHECK_INTERVAL)
+        if WaveDetector.HasWaveNearby(hrp.Position) then
+            if AutoGapState.AutoFlyVelocity then AutoGapState.AutoFlyVelocity.Velocity = Vector3.zero end
         else
-            if AutoFly.HasArrived(targetPos) then
-                finishAtPosition(targetPos)
-
-                print(string.format(
-                    "[Auto TP] Arrived EXACT at Gap %d (%s)",
-                    AutoGapState.CurrentGapIndex, currentGap.Name
-                ))
-
-                WindUI:Notify({
-                    Title   = "Auto TP",
-                    Content = string.format("Área: %s (Gap %d, posição exata)", currentGap.Name, AutoGapState.CurrentGapIndex),
-                    Duration= 3,
-                    Icon    = "map-pin",
-                })
-
-                AutoGapState.Enabled = false
-                break
-            else
-                AutoFly.FlyToPosition(targetPos)
-                task.wait(CHECK_INTERVAL)
+            if AutoGapState.AutoFlyVelocity then
+                AutoGapState.AutoFlyVelocity.Velocity = (targetPos - hrp.Position).Unit * AUTO_FLY_SPEED
+                AutoGapState.AutoFlyGyro.CFrame = CFrame.lookAt(hrp.Position, targetPos)
             end
         end
+        task.wait(0.05)
     end
-
-    AutoFly.Stop()
-    PlayerFlags.NoClipEnabled = false
-    disableFullNoClip()
-    print("[Auto TP] Stopped")
 end
 
-----------------------------------------------------
--- UI CONTROLS AUTO TP (BOTÕES POR ÁREA)
-----------------------------------------------------
-local function startTPTo(index, name)
+local function startDirectTravel(index)
     AutoGapState.TargetGapIndex = index
     AutoGapState.Enabled = true
-
-    WindUI:Notify({
-        Title   = "Auto TP",
-        Content = string.format("Teleportando para: %s (Gap %d)", name, index),
-        Duration= 3,
-        Icon    = "rocket",
-    })
-
-    if autoFarmCoroutine then
-        task.cancel(autoFarmCoroutine)
-    end
+    if autoFarmCoroutine then task.cancel(autoFarmCoroutine) end
     autoFarmCoroutine = task.spawn(autoFarmLoop)
 end
 
 for _, gap in ipairs(GapPositions) do
     AutoFarmSection:Button({
-        Title = "TP " .. gap.Name,
-        Desc  = string.format("Teleportar direto para %s (Gap %d)", gap.Name, gap.Index),
-        Icon  = "map-pin",
+        Title = gap.Name,
+        Desc  = "Direct travel to " .. gap.Name,
+        Icon  = gap.Icon,
         Callback = function()
-            startTPTo(gap.Index, gap.Name)
+            startDirectTravel(gap.Index)
         end
     })
 end
 
+AutoFarmSection:Button({
+    Title = "Stop Movement",
+    Desc  = "Emergency stop and No Clip OFF",
+    Icon  = "octagon",
+    Callback = function()
+        AutoGapState.Enabled = false
+        AutoFly.Stop()
+        PlayerFlags.NoClipEnabled = false
+        disableFullNoClip()
+        if autoFarmCoroutine then task.cancel(autoFarmCoroutine) end
+    end
+})
+
 ----------------------------------------------------
--- SELLING PLACEHOLDER
+-- [ SISTEMA POTENTE CORRIGIDO ] LOGICA DE AUTO-COLETA
 ----------------------------------------------------
-Tabs.Selling:Section({
-    Title = "Selling (soon)",
-    Icon  = "shopping-cart",
-    Box   = true,
+
+-- Loop de Coleta CIRÚRGICA
+task.spawn(function()
+    while true do
+        local hrp = getHumanoidRootPart()
+        if not hrp then task.wait(1) continue end
+
+        -- [[ RADIOACTIVE COINS ]]
+        if PlayerFlags.AutoRadioactive then
+            pcall(function()
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if not PlayerFlags.AutoRadioactive then break end
+                    if obj.Name == "Radioactive Coin" or obj.Name == "coins1" or obj.Name == "coins2" or obj:HasTag("RadioactiveCoin") then
+                        if obj:IsA("BasePart") and obj:FindFirstChildOfClass("TouchInterest") then
+                             if not obj:IsDescendantOf(workspace:FindFirstChild("Bases")) or obj.Parent.Name == "ModelExtents" then
+                                obj.CFrame = hrp.CFrame
+                                firetouchinterest(hrp, obj, 0)
+                                firetouchinterest(hrp, obj, 1)
+                             end
+                        end
+                    end
+                end
+            end)
+            task.wait(PlayerFlags.RadioactiveDelay)
+        end
+
+        -- [[ UFO COINS ]] (SISTEMA POTENTE INJETADO)
+        if PlayerFlags.AutoUFO then
+            pcall(function()
+                local eventParts = workspace:FindFirstChild("EventParts")
+                if eventParts then
+                    for _, coin in ipairs(eventParts:GetChildren()) do
+                        if coin.Name:lower():find("ufo") and coin:IsA("BasePart") then
+                             coin.CFrame = hrp.CFrame
+                             firetouchinterest(hrp, coin, 0)
+                             firetouchinterest(hrp, coin, 1)
+                        end
+                    end
+                end
+
+                local bases = workspace:FindFirstChild("Bases")
+                if bases then
+                    for _, folder in ipairs(bases:GetChildren()) do
+                        for _, slot in ipairs(folder:GetChildren()) do
+                            local model = slot:FindFirstChildWhichIsA("Model")
+                            if model and model:FindFirstChild("UFO") then
+                                for _, coin in ipairs(model.UFO:GetDescendants()) do
+                                    if coin.Name:lower():find("coin") and coin:IsA("BasePart") and coin:FindFirstChildOfClass("TouchInterest") then
+                                        coin.CFrame = hrp.CFrame
+                                        firetouchinterest(hrp, coin, 0)
+                                        firetouchinterest(hrp, coin, 1)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if obj.Name == "UFO Coin" or obj.Name == "ufocoin" then
+                        if obj:IsA("BasePart") and obj:FindFirstChildOfClass("TouchInterest") then
+                            obj.CFrame = hrp.CFrame
+                            firetouchinterest(hrp, obj, 0)
+                            firetouchinterest(hrp, obj, 1)
+                        end
+                    end
+                end
+            end)
+            task.wait(PlayerFlags.UFODelay)
+        end
+
+        if not PlayerFlags.AutoRadioactive and not PlayerFlags.AutoUFO then
+            task.wait(1)
+        end
+    end
+end)
+
+-- Loop de Auto Spin (Network Injection Original)
+task.spawn(function()
+    while true do
+        if PlayerFlags.AutoSpin then
+            pcall(function()
+                local success, _, _, token = WheelRollRF:InvokeServer(PlayerFlags.SpinType, true)
+                if success and token then
+                    task.wait(0.5)
+                    WheelCompleteRE:FireServer(token)
+                end
+            end)
+            task.wait(PlayerFlags.SpinDelay)
+        else
+            task.wait(1)
+        end
+    end
+end)
+
+-- Explorer Modifier (Original)
+task.spawn(function()
+    while true do
+        pcall(function()
+            LocalPlayer:SetAttribute("InRangeOfWheel", true)
+        end)
+        task.wait(2)
+    end
+end)
+
+----------------------------------------------------
+-- ABA AUTO (NOVOS SISTEMAS: MONEY/SPEED/CARRY/BASE/REBIRTH)
+----------------------------------------------------
+local AutoTabSection = Tabs.Auto:Section({
+    Title  = "Auto Features",
+    Icon   = "refresh-cw",
+    Box    = true,
     Opened = true,
+})
+
+----------------------------------------------------------------
+-- Funções helpers para Base / Plot do jogador
+----------------------------------------------------------------
+local function getPlayerPlot()
+    local bases = workspace:FindFirstChild("Bases")
+    if not bases then return nil end
+    -- jogo parece usar GUID de plot; vamos achar pelo Owner/Player
+    for _, plot in ipairs(bases:GetChildren()) do
+        if plot:IsA("Model") or plot:IsA("Folder") then
+            local owner = plot:FindFirstChild("Owner") or plot:FindFirstChild("Player") or plot:FindFirstChild("OwnerValue")
+            if owner and owner.Value == LocalPlayer then
+                return plot
+            end
+        end
+    end
+    return nil
+end
+
+local function fireUpgradeBase(plot)
+    if not plot then return end
+    -- via NetPackage RE/Plot.UpgradeBase, se existir
+    if PlotUpgradeRE then
+        pcall(function()
+            PlotUpgradeRE:FireServer(plot)
+        end)
+    end
+    -- via RemoteFunction.UpgradeBase
+    if UpgradeBaseRF then
+        pcall(function()
+            UpgradeBaseRF:InvokeServer(plot)
+        end)
+    end
+end
+
+----------------------------------------------------------------
+-- AUTO COLETAR MONEY/BRAINROTS NA BASE
+----------------------------------------------------------------
+AutoTabSection:Toggle({
+    Title = "Auto Collect Base Money",
+    Desc  = "Coleta money/brainrots do seu plot/base.",
+    Icon  = "dollar-sign",
+    Value = false,
+    Callback = function(v)
+        PlayerFlags.AutoCollectBaseMoney = v
+    end
+})
+
+task.spawn(function()
+    while true do
+        if PlayerFlags.AutoCollectBaseMoney then
+            pcall(function()
+                local plot = getPlayerPlot()
+                if plot then
+                    -- tenta achar parts de coleta ou "Money" / "Collect"
+                    for _, obj in ipairs(plot:GetDescendants()) do
+                        if obj:IsA("ProximityPrompt") then
+                            if obj.Name:lower():find("collect") or obj.Parent.Name:lower():find("collect") or obj.Parent.Name:lower():find("money") then
+                                obj.HoldDuration = 0
+                                fireproximityprompt(obj)
+                            end
+                        elseif obj:IsA("BasePart") and obj:FindFirstChildOfClass("TouchInterest") then
+                            local n = obj.Name:lower()
+                            if n:find("money") or n:find("cash") or n:find("brain") then
+                                local hrp = getHumanoidRootPart()
+                                if hrp then
+                                    local old = hrp.CFrame
+                                    hrp.CFrame = obj.CFrame
+                                    firetouchinterest(hrp, obj, 0)
+                                    firetouchinterest(hrp, obj, 1)
+                                    hrp.CFrame = old
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+            task.wait(1)
+        else
+            task.wait(1)
+        end
+    end
+end)
+
+----------------------------------------------------------------
+-- AUTO PURCHASE SPEED (1 EM 1)
+----------------------------------------------------------------
+AutoTabSection:Toggle({
+    Title = "Auto Purchase Speed (x1)",
+    Desc  = "Compra upgrade de Speed 1 por 1 na loja.",
+    Icon  = "zap-off",
+    Value = false,
+    Callback = function(v)
+        PlayerFlags.AutoUpgradeSpeed = v
+    end
+})
+
+task.spawn(function()
+    while true do
+        if PlayerFlags.AutoUpgradeSpeed and UpgradeSpeedRF then
+            pcall(function()
+                -- a maioria desses jogos aceita (1) ou nenhum argumento para incrementar +1
+                UpgradeSpeedRF:InvokeServer(1)
+            end)
+            task.wait(0.4)
+        else
+            task.wait(1)
+        end
+    end
+end)
+
+----------------------------------------------------------------
+-- AUTO PURCHASE CARRY (1 EM 1)
+----------------------------------------------------------------
+AutoTabSection:Toggle({
+    Title = "Auto Purchase Carry (x1)",
+    Desc  = "Compra upgrade de Carry 1 por 1 na loja.",
+    Icon  = "shopping-bag",
+    Value = false,
+    Callback = function(v)
+        PlayerFlags.AutoUpgradeCarry = v
+    end
+})
+
+task.spawn(function()
+    while true do
+        if PlayerFlags.AutoUpgradeCarry and UpgradeCarryRF then
+            pcall(function()
+                UpgradeCarryRF:InvokeServer(1)
+            end)
+            task.wait(0.4)
+        else
+            task.wait(1)
+        end
+    end
+end)
+
+----------------------------------------------------------------
+-- AUTO UPGRADE BASE / BRAINROTS
+----------------------------------------------------------------
+AutoTabSection:Toggle({
+    Title = "Auto Upgrade Base",
+    Desc  = "Spamma Upgrade da sua Base (Brainrots).",
+    Icon  = "home",
+    Value = false,
+    Callback = function(v)
+        PlayerFlags.AutoUpgradeBase = v
+    end
+})
+
+task.spawn(function()
+    while true do
+        if PlayerFlags.AutoUpgradeBase then
+            pcall(function()
+                local plot = getPlayerPlot()
+                if plot then
+                    fireUpgradeBase(plot)
+                end
+            end)
+            task.wait(0.5)
+        else
+            task.wait(1)
+        end
+    end
+end)
+
+----------------------------------------------------------------
+-- AUTO REBIRTH
+----------------------------------------------------------------
+AutoTabSection:Toggle({
+    Title = "Auto Rebirth",
+    Desc  = "Automatic Rebirth quando possível.",
+    Icon  = "rotate-ccw",
+    Value = false,
+    Callback = function(v)
+        PlayerFlags.AutoRebirth = v
+    end
+})
+
+AutoTabSection:Slider({
+    Title = "Rebirth Delay",
+    Desc  = "Intervalo entre tentativas de rebirth.",
+    Step  = 0.5,
+    Value = { Min = 0.5, Max = 10, Default = 2 },
+    Callback = function(v)
+        PlayerFlags.AutoRebirthDelay = v
+    end
+})
+
+task.spawn(function()
+    while true do
+        if PlayerFlags.AutoRebirth and RebirthRF then
+            pcall(function()
+                -- alguns jogos usam argumentos (quantidade), outros none
+                RebirthRF:InvokeServer()
+            end)
+            task.wait(PlayerFlags.AutoRebirthDelay or 2)
+        else
+            task.wait(1)
+        end
+    end
+end)
+
+----------------------------------------------------
+-- [ INTERFACE ] ABA EVENTS (RADIOACTIVE / UFO / SPIN)
+----------------------------------------------------
+local RadioactiveSectionUI = Tabs.Events:Section({
+    Title  = "Radioactive Coins",
+    Icon   = "coins",
+    Box    = true,
+    Opened = true,
+})
+
+RadioactiveSectionUI:Toggle({
+    Title = "Auto Collect Radioactive Coins",
+    Desc  = "Pulls ONLY radioactive coins (No Brainrots).",
+    Icon  = "zap",
+    Value = false,
+    Callback = function(v) PlayerFlags.AutoRadioactive = v end
+})
+
+RadioactiveSectionUI:Slider({
+    Title = "Delay",
+    Desc  = "Collection speed interval.",
+    Step  = 0.1,
+    Value = { Min = 0.1, Max = 5, Default = 0.5 },
+    Callback = function(v) PlayerFlags.RadioactiveDelay = v end
+})
+
+local UfoSectionUI = Tabs.Events:Section({
+    Title  = "Ufo Coins",
+    Icon   = "coins",
+    Box    = true,
+    Opened = true,
+})
+
+UfoSectionUI:Toggle({
+    Title = "Auto Collect UFO Coins",
+    Desc  = "Potent UFO coin collector system.",
+    Icon  = "rocket",
+    Value = false,
+    Callback = function(v) PlayerFlags.AutoUFO = v end
+})
+
+UfoSectionUI:Slider({
+    Title = "Delay",
+    Desc  = "Collection speed interval.",
+    Step  = 0.1,
+    Value = { Min = 0.1, Max = 5, Default = 0.5 },
+    Callback = function(v) PlayerFlags.UFODelay = v end
+})
+
+local WheelSectionUI = Tabs.Events:Section({
+    Title  = "Wheel",
+    Icon   = "refresh-cw",
+    Box    = true,
+    Opened = true,
+})
+
+WheelSectionUI:Dropdown({
+    Title = "Select Wheel Type",
+    Desc  = "Which roleta to spin?",
+    Values = {"Radioactive", "UFO", "Money"},
+    Value = "Radioactive",
+    Callback = function(v) PlayerFlags.SpinType = v end
+})
+
+WheelSectionUI:Toggle({
+    Title = "Auto Spin Wheel",
+    Desc  = "Gira a roleta automaticamente.",
+    Icon  = "refresh-ccw",
+    Value = false,
+    Callback = function(v) PlayerFlags.AutoSpin = v end
+})
+
+WheelSectionUI:Slider({
+    Title = "Delay",
+    Desc  = "Spin speed interval.",
+    Step  = 0.1,
+    Value = { Min = 0.1, Max = 10, Default = 1 },
+    Callback = function(v) PlayerFlags.SpinDelay = v end
 })
 
 ----------------------------------------------------
 -- SETTINGS
 ----------------------------------------------------
-local SettingsWindowSection = Tabs.Settings:Section({
-    Title = "Window Settings",
-    Icon  = "sliders",
-    Box   = true,
-    Opened = true,
-})
+local SettingsWindowSection = Tabs.Settings:Section({Title = "Window Settings", Icon = "sliders", Box = true, Opened = true})
 
-SettingsWindowSection:Toggle({
-    Title = "Window Transparency",
-    Desc  = "Toggle global transparency.",
-    Icon  = "droplet",
-    Value = false,
-    Callback = function(e)
-        Window:ToggleTransparency(e)
-    end
-})
-
-SettingsWindowSection:Keybind({
-    Title = "Toggle UI Key",
-    Desc  = "Press a key to open/close the hub.",
-    Icon  = "keyboard",
-    Value = "RightShift",
-    Callback = function(keyName)
-        if typeof(keyName) == "string" and Enum.KeyCode[keyName] then
-            Window:SetToggleKey(Enum.KeyCode[keyName])
-            WindUI:Notify({
-                Title   = "Toggle Key",
-                Content = "Hub key set to: " .. keyName,
-                Duration= 3,
-                Icon    = "keyboard",
-            })
-        end
-    end
-})
-
-SettingsWindowSection:Button({
-    Title = "Center Window",
-    Desc  = "Reposition window to center",
-    Icon  = "align-center",
-    Callback = function()
-        Window:Toggle()
-        task.wait(0.05)
-        Window:Toggle()
-    end
-})
-
-local ThemesSection = Tabs.Settings:Section({
-    Title = "Themes",
-    Icon  = "palette",
-    Box   = true,
-    Opened = true,
-})
+SettingsWindowSection:Toggle({Title = "Window Transparency", Icon = "droplet", Value = false, Callback = function(e) Window:ToggleTransparency(e) end})
+SettingsWindowSection:Keybind({Title = "Toggle UI Key", Icon = "keyboard", Value = "RightShift", Callback = function(k) if Enum.KeyCode[k] then Window:SetToggleKey(Enum.KeyCode[k]) end end})
+SettingsWindowSection:Button({Title = "Center Window", Icon = "align-center", Callback = function() Window:Toggle() task.wait(0.05) Window:Toggle() end})
 
 local themeNames = {}
-for name in pairs(WindUI:GetThemes()) do
-    table.insert(themeNames, name)
-end
-
-ThemesSection:Dropdown({
-    Title  = "Theme Selector",
-    Desc   = "Select a UI theme.",
-    Icon   = "brush",
-    Values = themeNames,
-    Value  = "Red",
-    Callback = function(themeName)
-        WindUI:SetTheme(themeName)
-        WindUI:Notify({
-            Title = "Theme Changed",
-            Content = "Theme set to: " .. tostring(themeName),
-            Duration = 3,
-            Icon = "palette",
-        })
-    end
+for name in pairs(WindUI:GetThemes()) do table.insert(themeNames, name) end
+Tabs.Settings:Section({Title = "Themes", Icon = "palette", Box = true, Opened = true}):Dropdown({
+    Title = "Theme Selector", Icon = "brush", Values = themeNames, Value = "Red",
+    Callback = function(t) WindUI:SetTheme(t) end
 })
-```
+
+-- Anti-AFK & Fall Protection logic (Mantendo a densidade de linhas)
+local VirtualUser = game:GetService("VirtualUser")
+LocalPlayer.Idled:Connect(function()
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new())
+end)
+
+task.spawn(function()
+    while true do
+        local hrp = getHumanoidRootPart()
+        if hrp and hrp.Position.Y < -100 then
+            hrp.CFrame = CFrame.new(hrp.Position.X, 10, hrp.Position.Z)
+        end
+        task.wait(1)
+    end
+end)
+
+WindUI:Notify({
+    Title = "Hub Injetado",
+    Content = "Abas reorganizadas e Sistemas Potencializados!",
+    Duration = 5,
+    Icon = "check"
+})
