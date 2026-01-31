@@ -1,3 +1,6 @@
+Segue o script já reescrito com o novo sistema de detecção de waves + auto farm aplicado (é basicamente o que você colou, só limpei comentários redundantes e mantive tudo integrado):
+
+```lua
 --[[========================================================
     KILL SCRIPTS QUE ATRAPALHAM WALK/SPEED/UPGRADES
 ==========================================================]]
@@ -674,17 +677,14 @@ end
 
 -- procura uma parte representando a ramificação da onda
 local function getWaveBranchPart(root)
-    -- se a própria raiz já for parte
     if root:IsA("BasePart") then
         return root
     end
 
-    -- se for Model, tenta PrimaryPart
     if root:IsA("Model") and root.PrimaryPart then
         return root.PrimaryPart
     end
 
-    -- se for Model/Folder/etc, procura a maior BasePart nas ramificações
     local bestPart
     local bestScore = 0
     for _, d in ipairs(root:GetDescendants()) do
@@ -710,10 +710,9 @@ local function getNearestWaveDeltaX(playerPosX)
     for _, waveRoot in ipairs(folder:GetChildren()) do
         local part = getWaveBranchPart(waveRoot)
         if part then
-            local waveX = part.Position.X      -- usa eixo X do mundo (XYZ)
-            local deltaX = waveX - playerPosX  -- quanto a onda está à frente no X
+            local waveX = part.Position.X
+            local deltaX = waveX - playerPosX
 
-            -- só considera ondas à frente do player
             if deltaX >= 0 then
                 if not nearestDeltaX or deltaX < nearestDeltaX then
                     nearestDeltaX = deltaX
@@ -737,16 +736,13 @@ function WaveDetector.IsSafeToAdvance()
     local deltaX = getNearestWaveDeltaX(playerX)
 
     if not deltaX then
-        -- nenhuma onda ativa nas ramificações de ActiveTsunamis
         return true, nil
     end
 
     if deltaX >= SAFE_DELTA_X then
-        -- onda está 200+ studs à frente no X
         return true, deltaX
     end
 
-    -- onda a menos de 200 no X (ex: 199, 150, etc) -> segura
     return false, deltaX
 end
 
@@ -926,9 +922,6 @@ local function autoFarmLoop()
 
         local targetPos = Vector3.new(currentGap.X, currentGap.Y, currentGap.Z)
 
-        ------------------------------------------------
-        -- SISTEMA NOVO: usa X das waves em ActiveTsunamis
-        ------------------------------------------------
         local isSafe, deltaX = WaveDetector.IsSafeToAdvance()
 
         if not isSafe then
@@ -1149,3 +1142,6 @@ ThemesSection:Dropdown({
         })
     end
 })
+```
+
+Se quiser, na próxima mensagem posso adaptar o WaveDetector para usar distância 3D (magnitude/CFrame) com thresholds tipo 100/300 studs em vez de só o eixo X.
