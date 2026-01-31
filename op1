@@ -1,14 +1,3 @@
-Para garantir que ele colete EXATAMENTE na peça verde onde ficam os números (o `CollectMoneyGui`), vou ajustar o script para buscar especificamente essa peça pela presença do GUI, e não apenas pelo nome. Também vou melhorar o "toque" virtual para garantir que o jogo registre que você pisou nela.
-
-Aqui está a versão corrigida e mais robusta do sistema de Auto Collect, inserida no seu script completo.
-
-**O que mudou nessa versão:**
-1.  **Busca Inteligente:** Ele procura dentro de cada Slot por qualquer peça que contenha o `CollectMoneyGui` (os números), garantindo que é a peça certa (verde).
-2.  **Toque Físico:** O teleporte agora espera um pouquinho mais em cima da peça para o servidor confirmar o toque.
-
-Substitua TODO o seu script por este:
-
-```lua
 --[[========================================================
     KILL SCRIPTS QUE ATRAPALHAM WALK/SPEED/UPGRADES
 ==========================================================]]
@@ -208,7 +197,7 @@ Window:EditOpenButton({
 local Tabs = {
     Player      = Window:Tab({ Title = "loc:TAB_PLAYER",   Icon = "user" }),
     Farm        = Window:Tab({ Title = "loc:TAB_FARM",     Icon = "wheat" }),
-    Auto        = Window:Tab({ Title = "loc:TAB_AUTO",     Icon = "refresh-cw" }),
+    Auto        = Window:Tab({ Title = "loc:TAB_AUTO",     Icon = "refresh-cw" }), 
     Events      = Window:Tab({ Title = "loc:TAB_EVENTS",   Icon = "atom" }),
     Settings    = Window:Tab({ Title = "loc:TAB_SETTINGS", Icon = "settings" }),
 }
@@ -281,7 +270,7 @@ local PlayerFlags = {
     SpinType = "Radioactive",
 
     -- NOVOS FLAGS
-    AutoCollectBaseMoney = false,      -- auto coletar cash brainrots (Slots)
+    AutoCollectBaseMoney = false,      -- auto coletar money/brainrots da base
     AutoUpgradeSpeed = false,          -- auto purchase speed (1 em 1)
     AutoUpgradeCarry = false,          -- auto purchase carry (1 em 1)
     AutoUpgradeBase = false,           -- upgrade da base/brainrots
@@ -837,7 +826,7 @@ task.spawn(function()
             task.wait(PlayerFlags.RadioactiveDelay)
         end
 
-        -- [[ UFO COINS ]]
+        -- [[ UFO COINS ]] (SISTEMA POTENTE INJETADO)
         if PlayerFlags.AutoUFO then
             pcall(function()
                 local eventParts = workspace:FindFirstChild("EventParts")
@@ -888,7 +877,7 @@ task.spawn(function()
     end
 end)
 
--- Loop de Auto Spin
+-- Loop de Auto Spin (Network Injection Original)
 task.spawn(function()
     while true do
         if PlayerFlags.AutoSpin then
@@ -906,7 +895,7 @@ task.spawn(function()
     end
 end)
 
--- Explorer Modifier
+-- Explorer Modifier (Original)
 task.spawn(function()
     while true do
         pcall(function()
@@ -929,41 +918,30 @@ local AutoTabSection = Tabs.Auto:Section({
 ----------------------------------------------------------------
 -- Funções helpers para Base / Plot do jogador
 ----------------------------------------------------------------
-local function getPlayerBaseByDistance()
+local function getPlayerPlot()
     local bases = workspace:FindFirstChild("Bases")
     if not bases then return nil end
-
-    local hrp = getHumanoidRootPart()
-    if not hrp then return nil end
-
-    local closest, closestDist = nil, math.huge
-    for _, baseModel in ipairs(bases:GetChildren()) do
-        if baseModel:IsA("Model") or baseModel:IsA("Folder") then
-            local refPart = baseModel:FindFirstChild("Primary")
-                or baseModel:FindFirstChild("PrimaryPart")
-                or baseModel:FindFirstChild("UpgradeBase")
-                or baseModel:FindFirstChildWhichIsA("BasePart")
-
-            if refPart and refPart:IsA("BasePart") then
-                local d = (refPart.Position - hrp.Position).Magnitude
-                if d < closestDist then
-                    closestDist = d
-                    closest = baseModel
-                end
+    -- jogo parece usar GUID de plot; vamos achar pelo Owner/Player
+    for _, plot in ipairs(bases:GetChildren()) do
+        if plot:IsA("Model") or plot:IsA("Folder") then
+            local owner = plot:FindFirstChild("Owner") or plot:FindFirstChild("Player") or plot:FindFirstChild("OwnerValue")
+            if owner and owner.Value == LocalPlayer then
+                return plot
             end
         end
     end
-
-    return closest
+    return nil
 end
 
 local function fireUpgradeBase(plot)
     if not plot then return end
+    -- via NetPackage RE/Plot.UpgradeBase, se existir
     if PlotUpgradeRE then
         pcall(function()
             PlotUpgradeRE:FireServer(plot)
         end)
     end
+    -- via RemoteFunction.UpgradeBase
     if UpgradeBaseRF then
         pcall(function()
             UpgradeBaseRF:InvokeServer(plot)
@@ -972,61 +950,11 @@ local function fireUpgradeBase(plot)
 end
 
 ----------------------------------------------------------------
--- AUTO COLETAR CASH DOS BRAINROTS (Slots -> Collect -> CollectMoneyGui)
+-- AUTO COLETAR MONEY/BRAINROTS NA BASE
 ----------------------------------------------------------------
-local function getPlayerSlotsFolder()
-    local baseModel = getPlayerBaseByDistance()
-    if not baseModel then return nil end
-
-    local slots = baseModel:FindFirstChild("Slots")
-    return slots
-end
-
-local function getCollectPartFromSlot(slot)
-    if not slot then return nil end
-
-    -- Estratégia: achar a peça verde (Collect) que tem o GUI "CollectMoneyGui"
-    local collect = slot:FindFirstChild("Collect")
-    if collect and collect:IsA("BasePart") and collect:FindFirstChildOfClass("TouchInterest") then
-        return collect
-    end
-
-    -- Busca por qualquer parte que tenha o GUI de dinheiro (Confirmando ser a parte verde)
-    for _, obj in ipairs(slot:GetDescendants()) do
-        if obj:IsA("BasePart") and obj:FindFirstChildOfClass("TouchInterest") then
-            if obj:FindFirstChild("CollectMoneyGui") or obj:FindFirstChild("MoneyGui") or obj:FindFirstChild("Collect") then
-                return obj
-            end
-        end
-    end
-
-    return nil
-end
-
-local function remoteStepOnCollectPart(collectPart)
-    local hrp = getHumanoidRootPart()
-    if not hrp or not collectPart then return end
-
-    local oldCF = hrp.CFrame
-    local cf = collectPart.CFrame
-    -- Fica um pouco acima para garantir que não colida e seja ejetado
-    local targetCF = CFrame.new(cf.Position + Vector3.new(0, 3, 0))
-
-    pcall(function()
-        hrp.CFrame = targetCF
-        task.wait(0.15) -- Espera um pouco mais pra garantir o registro do toque
-        firetouchinterest(hrp, collectPart, 0)
-        firetouchinterest(hrp, collectPart, 1)
-        task.wait(0.1)
-        hrp.CFrame = oldCF
-    end)
-end
-
-PlayerFlags.AutoCollectBaseMoney = PlayerFlags.AutoCollectBaseMoney or false
-
 AutoTabSection:Toggle({
-    Title = "Auto Collect Cash Brainrots",
-    Desc  = "Percorre Slots.Slot1, Slot2, ... e pisa no Collect 1 por 1.",
+    Title = "Auto Collect Base Money",
+    Desc  = "Coleta money/brainrots do seu plot/base.",
     Icon  = "dollar-sign",
     Value = false,
     Callback = function(v)
@@ -1038,25 +966,31 @@ task.spawn(function()
     while true do
         if PlayerFlags.AutoCollectBaseMoney then
             pcall(function()
-                local slotsFolder = getPlayerSlotsFolder()
-                if not slotsFolder then
-                    task.wait(1)
-                    return
-                end
-
-                for _, slot in ipairs(slotsFolder:GetChildren()) do
-                    if not PlayerFlags.AutoCollectBaseMoney then break end
-
-                    if slot.Name:lower():find("slot") then
-                        local collectPart = getCollectPartFromSlot(slot)
-                        if collectPart then
-                            remoteStepOnCollectPart(collectPart)
-                            task.wait(0.2) -- Delay entre cada brainrot para não bugar
+                local plot = getPlayerPlot()
+                if plot then
+                    -- tenta achar parts de coleta ou "Money" / "Collect"
+                    for _, obj in ipairs(plot:GetDescendants()) do
+                        if obj:IsA("ProximityPrompt") then
+                            if obj.Name:lower():find("collect") or obj.Parent.Name:lower():find("collect") or obj.Parent.Name:lower():find("money") then
+                                obj.HoldDuration = 0
+                                fireproximityprompt(obj)
+                            end
+                        elseif obj:IsA("BasePart") and obj:FindFirstChildOfClass("TouchInterest") then
+                            local n = obj.Name:lower()
+                            if n:find("money") or n:find("cash") or n:find("brain") then
+                                local hrp = getHumanoidRootPart()
+                                if hrp then
+                                    local old = hrp.CFrame
+                                    hrp.CFrame = obj.CFrame
+                                    firetouchinterest(hrp, obj, 0)
+                                    firetouchinterest(hrp, obj, 1)
+                                    hrp.CFrame = old
+                                end
+                            end
                         end
                     end
                 end
             end)
-
             task.wait(1)
         else
             task.wait(1)
@@ -1081,6 +1015,7 @@ task.spawn(function()
     while true do
         if PlayerFlags.AutoUpgradeSpeed and UpgradeSpeedRF then
             pcall(function()
+                -- a maioria desses jogos aceita (1) ou nenhum argumento para incrementar +1
                 UpgradeSpeedRF:InvokeServer(1)
             end)
             task.wait(0.4)
@@ -1133,7 +1068,7 @@ task.spawn(function()
     while true do
         if PlayerFlags.AutoUpgradeBase then
             pcall(function()
-                local plot = getPlayerBaseByDistance()
+                local plot = getPlayerPlot()
                 if plot then
                     fireUpgradeBase(plot)
                 end
@@ -1172,6 +1107,7 @@ task.spawn(function()
     while true do
         if PlayerFlags.AutoRebirth and RebirthRF then
             pcall(function()
+                -- alguns jogos usam argumentos (quantidade), outros none
                 RebirthRF:InvokeServer()
             end)
             task.wait(PlayerFlags.AutoRebirthDelay or 2)
@@ -1264,64 +1200,20 @@ WheelSectionUI:Slider({
 ----------------------------------------------------
 -- SETTINGS
 ----------------------------------------------------
-local SettingsWindowSection = Tabs.Settings:Section({
-    Title = "Window Settings",
-    Icon = "sliders",
-    Box = true,
-    Opened = true
-})
+local SettingsWindowSection = Tabs.Settings:Section({Title = "Window Settings", Icon = "sliders", Box = true, Opened = true})
 
-SettingsWindowSection:Toggle({
-    Title = "Window Transparency",
-    Icon = "droplet",
-    Value = false,
-    Callback = function(e)
-        Window:ToggleTransparency(e)
-    end
-})
-
-SettingsWindowSection:Keybind({
-    Title = "Toggle UI Key",
-    Icon = "keyboard",
-    Value = "RightShift",
-    Callback = function(k)
-        if Enum.KeyCode[k] then
-            Window:SetToggleKey(Enum.KeyCode[k])
-        end
-    end
-})
-
-SettingsWindowSection:Button({
-    Title = "Center Window",
-    Icon = "align-center",
-    Callback = function()
-        Window:Toggle()
-        task.wait(0.05)
-        Window:Toggle()
-    end
-})
+SettingsWindowSection:Toggle({Title = "Window Transparency", Icon = "droplet", Value = false, Callback = function(e) Window:ToggleTransparency(e) end})
+SettingsWindowSection:Keybind({Title = "Toggle UI Key", Icon = "keyboard", Value = "RightShift", Callback = function(k) if Enum.KeyCode[k] then Window:SetToggleKey(Enum.KeyCode[k]) end end})
+SettingsWindowSection:Button({Title = "Center Window", Icon = "align-center", Callback = function() Window:Toggle() task.wait(0.05) Window:Toggle() end})
 
 local themeNames = {}
-for name in pairs(WindUI:GetThemes()) do
-    table.insert(themeNames, name)
-end
-
-Tabs.Settings:Section({
-    Title = "Themes",
-    Icon = "palette",
-    Box = true,
-    Opened = true
-}):Dropdown({
-    Title = "Theme Selector",
-    Icon = "brush",
-    Values = themeNames,
-    Value = "Red",
-    Callback = function(t)
-        WindUI:SetTheme(t)
-    end
+for name in pairs(WindUI:GetThemes()) do table.insert(themeNames, name) end
+Tabs.Settings:Section({Title = "Themes", Icon = "palette", Box = true, Opened = true}):Dropdown({
+    Title = "Theme Selector", Icon = "brush", Values = themeNames, Value = "Red",
+    Callback = function(t) WindUI:SetTheme(t) end
 })
 
--- Anti-AFK & Fall Protection logic
+-- Anti-AFK & Fall Protection logic (Mantendo a densidade de linhas)
 local VirtualUser = game:GetService("VirtualUser")
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
@@ -1344,4 +1236,3 @@ WindUI:Notify({
     Duration = 5,
     Icon = "check"
 })
-```
