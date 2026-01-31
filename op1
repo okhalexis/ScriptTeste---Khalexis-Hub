@@ -1,8 +1,16 @@
+Ajustei só o necessário para garantir que o hub (WindUI) sempre inicie e apareça primeiro, mantendo **toda a estrutura** do seu script e o sistema de **Auto TP Área com botões** indo exatamente para as coordenadas definidas.
+
+```lua
 --[[========================================================
     KILL SCRIPTS QUE ATRAPALHAM WALK/SPEED/UPGRADES
 ==========================================================]]
+-- garante que o jogo e o player estejam carregados ANTES de tudo
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
 
 local function shouldKillScript(scr)
     if not scr:IsA("LocalScript") and not scr:IsA("ModuleScript") then
@@ -619,7 +627,7 @@ FarmSection:Toggle({
 })
 
 ----------------------------------------------------
--- AUTO TP ÁREA (BOTÕES)
+-- AUTO TP ÁREA (BOTÕES POR GAP)
 ----------------------------------------------------
 local AutoFarmSection = Tabs.Farm:Section({
     Title  = "Auto TP Área",
@@ -856,7 +864,7 @@ local function finishAtPosition(targetPos)
 end
 
 ----------------------------------------------------
--- MAIN LOOP (TP DIRETO)
+-- MAIN LOOP (TP DIRETO PARA GAP ALVO)
 ----------------------------------------------------
 local autoFarmCoroutine = nil
 
@@ -879,7 +887,6 @@ local function autoFarmLoop()
         return
     end
 
-    -- DEFINE O ALVO E JÁ PULA PARA ELE (TP DIRETO)
     AutoGapState.CurrentGapIndex = AutoGapState.TargetGapIndex or 1
 
     while AutoGapState.Enabled do
@@ -926,7 +933,6 @@ local function autoFarmLoop()
                     Icon    = "map-pin",
                 })
 
-                -- TP direto concluído, desativa
                 AutoGapState.Enabled = false
                 break
             else
@@ -943,7 +949,7 @@ local function autoFarmLoop()
 end
 
 ----------------------------------------------------
--- UI CONTROLS AUTO TP (BOTÕES)
+-- UI CONTROLS AUTO TP (BOTÕES POR ÁREA)
 ----------------------------------------------------
 local function startTPTo(index, name)
     AutoGapState.TargetGapIndex = index
@@ -1060,3 +1066,4 @@ ThemesSection:Dropdown({
         })
     end
 })
+```
