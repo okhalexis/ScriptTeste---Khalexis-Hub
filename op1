@@ -638,16 +638,17 @@ local AutoFarmSection = Tabs.Farm:Section({
     Opened = true,
 })
 
+-- Ícones alterados para "hand" (dedinho clicando)
 local GapPositions = {
-    { Index = 1,  Name = "Common",    Icon = "zap",       X = 199.9,  Y = -2.7, Z = -14.0 },
-    { Index = 2,  Name = "Uncommon",  Icon = "star",      X = 283.3,  Y = -2.7, Z = -13.7 },
-    { Index = 3,  Name = "Rare",      Icon = "gem",       X = 397.2,  Y = -2.7, Z = -9.2  },
-    { Index = 4,  Name = "Epic",      Icon = "sparkles",  X = 542.4,  Y = -2.7, Z = -11.7 },
-    { Index = 5,  Name = "Legendary", Icon = "crown",     X = 757.4,  Y = -2.7, Z = -9.8  },
-    { Index = 6,  Name = "Mythical",  Icon = "flame",     X = 1072.3, Y = -2.7, Z = -2.8  },
-    { Index = 7,  Name = "Cosmic",    Icon = "rocket",    X = 1549.3, Y = -2.7, Z = -9.1  },
-    { Index = 8,  Name = "Secret",    Icon = "ghost",     X = 2252.6, Y = -2.7, Z = -15.1 },
-    { Index = 9,  Name = "Final",     Icon = "check-circle", X = 2599.1, Y = -2.7, Z = -15.1 },
+    { Index = 1,  Name = "Common",    Icon = "hand",       X = 199.9,  Y = -2.7, Z = -14.0 },
+    { Index = 2,  Name = "Uncommon",  Icon = "hand",      X = 283.3,  Y = -2.7, Z = -13.7 },
+    { Index = 3,  Name = "Rare",      Icon = "hand",       X = 397.2,  Y = -2.7, Z = -9.2  },
+    { Index = 4,  Name = "Epic",      Icon = "hand",  X = 542.4,  Y = -2.7, Z = -11.7 },
+    { Index = 5,  Name = "Legendary", Icon = "hand",     X = 757.4,  Y = -2.7, Z = -9.8  },
+    { Index = 6,  Name = "Mythical",  Icon = "hand",     X = 1072.3, Y = -2.7, Z = -2.8  },
+    { Index = 7,  Name = "Cosmic",    Icon = "hand",    X = 1549.3, Y = -2.7, Z = -9.1  },
+    { Index = 8,  Name = "Secret",    Icon = "hand",     X = 2252.6, Y = -2.7, Z = -15.1 },
+    { Index = 9,  Name = "Final",     Icon = "hand", X = 2599.1, Y = -2.7, Z = -15.1 },
 }
 
 local AutoGapState = {
@@ -755,12 +756,16 @@ local function startDirectTravel(index)
     autoFarmCoroutine = task.spawn(autoFarmLoop)
 end
 
+-- Botões com trava de 1ms e ícones de mão
+local lastClick = 0
 for _, gap in ipairs(GapPositions) do
     AutoFarmSection:Button({
         Title = gap.Name,
         Desc  = "Direct travel to " .. gap.Name,
         Icon  = gap.Icon,
         Callback = function()
+            if tick() - lastClick < 0.001 then return end
+            lastClick = tick()
             startDirectTravel(gap.Index)
         end
     })
@@ -1023,5 +1028,3 @@ WindUI:Notify({
     Duration = 5,
     Icon = "check"
 })
-
--- (O resto do seu código original segue aqui até o fim)
