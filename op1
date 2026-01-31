@@ -1,4 +1,4 @@
-Segue o script já reescrito com o novo sistema de detecção de waves + auto farm aplicado (é basicamente o que você colou, só limpei comentários redundantes e mantive tudo integrado):
+Vou manter toda a estrutura do teu script (mesmos tabs, seções, flags, AutoFly, AutoFarm etc.) e só trocar a parte de detecção de wave para o detector novo em cache, mas já **incluída** no script completo abaixo. [ppl-ai-file-upload.s3.amazonaws](https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/161181950/04e2d0fe-efa8-4362-87a9-a0b9529dc725/paste.txt)
 
 ```lua
 --[[========================================================
@@ -657,30 +657,27 @@ local AUTO_FLY_SPEED   = 220
 local ARRIVAL_DISTANCE = 2
 
 ----------------------------------------------------
--- WAVE DETECTOR VIA ActiveTsunamis (usa X de XYZ)
+-- WAVE DETECTOR NOVO (CACHE TODAS WAVES)
 ----------------------------------------------------
 local WaveDetector = {}
 
--- workspace.ActiveTsunamis.ActiveTsunamis
-local ACTIVE_TSUNAMIS_PATH = {"ActiveTsunamis", "ActiveTsunamis"}
-local CHECK_INTERVAL   = 0.03  -- ~30 checks/s
-local SAFE_DELTA_X     = 200   -- waveX - playerX >= 200 => seguro avançar
+local SAFE_NEAR_DIST = 100   -- <= 100 studs = perigo
+local SAFE_FAR_DIST  = 300   -- >= 300 studs = seguro
+local MAX_WAVE_DIST  = 4000  -- ignora mais longe
 
-local function getActiveTsunamisFolder()
-    local obj = workspace
-    for _, name in ipairs(ACTIVE_TSUNAMIS_PATH) do
-        obj = obj:FindFirstChild(name)
-        if not obj then return nil end
-    end
-    return obj
+local ACTIVE_TSUNAMIS_NAME = "ActiveTsunamis"
+
+local ActiveWaves = {}
+
+local function isWaveInstance(inst)
+    local n = inst.Name:lower()
+    return n:find("wave") ~= nil
 end
 
--- procura uma parte representando a ramificação da onda
 local function getWaveBranchPart(root)
     if root:IsA("BasePart") then
         return root
     end
-
     if root:IsA("Model") and root.PrimaryPart then
         return root.PrimaryPart
     end
@@ -700,50 +697,91 @@ local function getWaveBranchPart(root)
     return bestPart
 end
 
--- menor (waveX - playerX) dentre TODAS waves/ramificações
-local function getNearestWaveDeltaX(playerPosX)
-    local folder = getActiveTsunamisFolder()
-    if not folder then return nil end
+local function addWaveFromInstance(inst)
+    if not isWaveInstance(inst) then
+        return
+    end
+    local part = getWaveBranchPart(inst)
+    if not part then
+        return
+    end
+    ActiveWaves[inst] = part
+end
 
-    local nearestDeltaX = nil
+local function removeWaveFromInstance(inst)
+    ActiveWaves[inst] = nil
+end
 
-    for _, waveRoot in ipairs(folder:GetChildren()) do
-        local part = getWaveBranchPart(waveRoot)
-        if part then
-            local waveX = part.Position.X
-            local deltaX = waveX - playerPosX
+local function setupWaveTracking(folder)
+    for _, child in ipairs(folder:GetDescendants()) do
+        if isWaveInstance(child) then
+            addWaveFromInstance(child)
+        end
+    end
 
-            if deltaX >= 0 then
-                if not nearestDeltaX or deltaX < nearestDeltaX then
-                    nearestDeltaX = deltaX
+    folder.DescendantAdded:Connect(function(inst)
+        if isWaveInstance(inst) then
+            addWaveFromInstance(inst)
+        end
+    end)
+
+    folder.DescendantRemoving:Connect(function(inst)
+        if ActiveWaves[inst] then
+            removeWaveFromInstance(inst)
+        end
+    end)
+end
+
+task.spawn(function()
+    local folder = workspace:FindFirstChild(ACTIVE_TSUNAMIS_NAME)
+    if not folder then
+        folder = workspace:WaitForChild(ACTIVE_TSUNAMIS_NAME, 15)
+    end
+    if folder and folder:IsA("Folder") then
+        setupWaveTracking(folder)
+        print("[WaveDetector] Tracking waves em workspace." .. ACTIVE_TSUNAMIS_NAME)
+    else
+        warn("[WaveDetector] Nao encontrei pasta '" .. ACTIVE_TSUNAMIS_NAME .. "'.")
+    end
+end)
+
+local function getNearestWaveDist(playerPos)
+    local nearest
+    for inst, part in pairs(ActiveWaves) do
+        if part and part:IsDescendantOf(workspace) then
+            local dist = (part.Position - playerPos).Magnitude
+            if dist <= MAX_WAVE_DIST then
+                if not nearest or dist < nearest then
+                    nearest = dist
                 end
             end
         end
     end
-
-    return nearestDeltaX
+    return nearest
 end
 
--- true = seguro avançar para próximo gap
--- false = segura parado no gap atual
 function WaveDetector.IsSafeToAdvance()
     local hrp = getHumanoidRootPart()
     if not hrp then
         return true, nil
     end
 
-    local playerX = hrp.Position.X
-    local deltaX = getNearestWaveDeltaX(playerX)
+    local playerPos = hrp.Position
+    local nearestDist = getNearestWaveDist(playerPos)
 
-    if not deltaX then
+    if not nearestDist then
         return true, nil
     end
 
-    if deltaX >= SAFE_DELTA_X then
-        return true, deltaX
+    if nearestDist <= SAFE_NEAR_DIST then
+        return false, nearestDist
     end
 
-    return false, deltaX
+    if nearestDist >= SAFE_FAR_DIST then
+        return true, nearestDist
+    end
+
+    return false, nearestDist
 end
 
 ----------------------------------------------------
@@ -876,6 +914,8 @@ local function getGapByIndex(idx)
     end
 end
 
+local CHECK_INTERVAL = 0.03
+
 local function autoFarmLoop()
     print("[Auto Farm] Gap-by-gap levitation started")
 
@@ -922,14 +962,13 @@ local function autoFarmLoop()
 
         local targetPos = Vector3.new(currentGap.X, currentGap.Y, currentGap.Z)
 
-        local isSafe, deltaX = WaveDetector.IsSafeToAdvance()
+        local isSafe, dist = WaveDetector.IsSafeToAdvance()
 
         if not isSafe then
             AutoFly.PauseInPlace()
             print(string.format(
-                "[Auto Farm] ⏸ Wave ΔX = %.1f (< %d) - holding at Gap %d (%s)",
-                deltaX or -1,
-                SAFE_DELTA_X,
+                "[Auto Farm] ⏸ Wave Dist = %.1f - holding at Gap %d (%s)",
+                dist or -1,
                 AutoGapState.CurrentGapIndex,
                 currentGap.Name
             ))
@@ -1143,5 +1182,3 @@ ThemesSection:Dropdown({
     end
 })
 ```
-
-Se quiser, na próxima mensagem posso adaptar o WaveDetector para usar distância 3D (magnitude/CFrame) com thresholds tipo 100/300 studs em vez de só o eixo X.
