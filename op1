@@ -1,3 +1,5 @@
+--- START OF FILE Paste January 31, 2026 - 10:02PM ---
+
 --- START OF FILE text/plain ---
 
 --[[========================================================
@@ -255,6 +257,8 @@ local PlayerFlags = {
     RadioactiveDelay = 0.5,
     AutoUFO = false,
     UFODelay = 0.5,
+    AutoMoney = false, -- [NOVO]
+    MoneyDelay = 0.5,  -- [NOVO]
     AutoSpin = false,
     SpinDelay = 1,
     SpinType = "Radioactive"
@@ -785,7 +789,7 @@ AutoFarmSection:Button({
 })
 
 ----------------------------------------------------
--- [ SISTEMA POTENTE CORRIGIDO ] LOGICA DE AUTO-COLETA
+-- [ SISTEMA POTENTE ] LOGICA DE AUTO-COLETA (MODIFICADO)
 ----------------------------------------------------
 
 -- Loop de Coleta CIRÚRGICA
@@ -813,7 +817,7 @@ task.spawn(function()
             task.wait(PlayerFlags.RadioactiveDelay)
         end
 
-        -- [[ UFO COINS ]] (SISTEMA POTENTE INJETADO)
+        -- [[ UFO COINS ]]
         if PlayerFlags.AutoUFO then
             pcall(function()
                 local eventParts = workspace:FindFirstChild("EventParts")
@@ -844,9 +848,30 @@ task.spawn(function()
                         end
                     end
                 end
+            end)
+            task.wait(PlayerFlags.UFODelay)
+        end
 
-                for _, obj in ipairs(workspace:GetDescendants()) do
-                    if obj.Name == "UFO Coin" or obj.Name == "ufocoin" then
+        -- [[ MONEY COINS - NOVO SISTEMA INJETADO ]]
+        if PlayerFlags.AutoMoney then
+            pcall(function()
+                -- Busca em EventParts (Padrão de spawns de evento)
+                local eventParts = workspace:FindFirstChild("EventParts")
+                if eventParts then
+                    for _, coin in ipairs(eventParts:GetChildren()) do
+                        if (coin.Name:lower():find("money") or coin.Name:lower():find("gold")) and coin:IsA("BasePart") then
+                             coin.CFrame = hrp.CFrame
+                             firetouchinterest(hrp, coin, 0)
+                             firetouchinterest(hrp, coin, 1)
+                        end
+                    end
+                end
+
+                -- Busca no Workspace Geral (Objetos que caem no MoneyEvent)
+                for _, obj in ipairs(workspace:GetChildren()) do
+                    if not PlayerFlags.AutoMoney then break end
+                    -- Identifica moedas de dinheiro pelo nome baseado no MoneyCutscene (Gold/Money)
+                    if (obj.Name:lower():find("money") or obj.Name:lower():find("gold")) and obj.Name:lower():find("coin") then
                         if obj:IsA("BasePart") and obj:FindFirstChildOfClass("TouchInterest") then
                             obj.CFrame = hrp.CFrame
                             firetouchinterest(hrp, obj, 0)
@@ -855,10 +880,10 @@ task.spawn(function()
                     end
                 end
             end)
-            task.wait(PlayerFlags.UFODelay)
+            task.wait(PlayerFlags.MoneyDelay)
         end
 
-        if not PlayerFlags.AutoRadioactive and not PlayerFlags.AutoUFO then
+        if not PlayerFlags.AutoRadioactive and not PlayerFlags.AutoUFO and not PlayerFlags.AutoMoney then
             task.wait(1)
         end
     end
@@ -910,7 +935,7 @@ AutoTabSection:Button({
 })
 
 ----------------------------------------------------
--- [ INTERFACE ] ABA EVENTS (RADIOACTIVE / UFO / SPIN)
+-- [ INTERFACE ] ABA EVENTS (RADIOACTIVE / UFO / MONEY / SPIN)
 ----------------------------------------------------
 local RadioactiveSectionUI = Tabs.Events:Section({
     Title  = "Radioactive Coins",
@@ -921,7 +946,7 @@ local RadioactiveSectionUI = Tabs.Events:Section({
 
 RadioactiveSectionUI:Toggle({
     Title = "Auto Collect Radioactive Coins",
-    Desc  = "Pulls ONLY radioactive coins (No Brainrots).",
+    Desc  = "Pulls ONLY radioactive coins.",
     Icon  = "zap",
     Value = false,
     Callback = function(v) PlayerFlags.AutoRadioactive = v end
@@ -937,7 +962,7 @@ RadioactiveSectionUI:Slider({
 
 local UfoSectionUI = Tabs.Events:Section({
     Title  = "Ufo Coins",
-    Icon   = "coins",
+    Icon   = "rocket",
     Box    = true,
     Opened = true,
 })
@@ -956,6 +981,30 @@ UfoSectionUI:Slider({
     Step  = 0.1,
     Value = { Min = 0.1, Max = 5, Default = 0.5 },
     Callback = function(v) PlayerFlags.UFODelay = v end
+})
+
+-- [[ NOVA SEÇÃO MONEY COINS ]]
+local MoneySectionUI = Tabs.Events:Section({
+    Title  = "Money Coins",
+    Icon   = "dollar-sign",
+    Box    = true,
+    Opened = true,
+})
+
+MoneySectionUI:Toggle({
+    Title = "Auto Collect Money Coins",
+    Desc  = "Bypass MoneyEvent and pull coins.",
+    Icon  = "banknote",
+    Value = false,
+    Callback = function(v) PlayerFlags.AutoMoney = v end
+})
+
+MoneySectionUI:Slider({
+    Title = "Delay",
+    Desc  = "Collection speed interval.",
+    Step  = 0.1,
+    Value = { Min = 0.1, Max = 5, Default = 0.5 },
+    Callback = function(v) PlayerFlags.MoneyDelay = v end
 })
 
 local WheelSectionUI = Tabs.Events:Section({
@@ -1005,7 +1054,7 @@ Tabs.Settings:Section({Title = "Themes", Icon = "palette", Box = true, Opened = 
     Callback = function(t) WindUI:SetTheme(t) end
 })
 
--- Anti-AFK & Fall Protection logic (Mantendo a densidade de linhas)
+-- Anti-AFK & Fall Protection logic
 local VirtualUser = game:GetService("VirtualUser")
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
@@ -1024,7 +1073,7 @@ end)
 
 WindUI:Notify({
     Title = "Hub Injetado",
-    Content = "Abas reorganizadas e Sistemas Potencializados!",
+    Content = "Sistemas de Money Coin Adicionados!",
     Duration = 5,
     Icon = "check"
 })
