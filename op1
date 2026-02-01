@@ -221,6 +221,12 @@ local NetPackage = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"
 local WheelRollRF = NetPackage:WaitForChild("RF/WheelSpin.Roll")
 local WheelCompleteRE = NetPackage:WaitForChild("RE/WheelSpin.Complete")
 
+-- NOVOS REMOTES ADICIONADOS
+local UpgradeRF = NetPackage:WaitForChild("RF/Upgrades.Buy")
+local CollectRE = NetPackage:WaitForChild("RE/Brainrot.Collect")
+local BaseUpgradeRF = NetPackage:WaitForChild("RF/Base.Upgrade")
+local BrainrotUpgradeRF = NetPackage:WaitForChild("RF/Brainrot.Upgrade")
+
 local function getCharacter()
     return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 end
@@ -257,11 +263,53 @@ local PlayerFlags = {
     UFODelay = 0.5,
     AutoSpin = false,
     SpinDelay = 1,
-    SpinType = "Radioactive"
+    SpinType = "Radioactive",
+
+    -- NOVAS FLAGS AUTO
+    AutoCollectMoney = false,
+    AutoBuySpeed = false,
+    AutoBuyCarry = false,
+    AutoUpgradeBase = false,
+    AutoUpgradeBrainrot = false,
+    SelectedBrainrot = "None"
 }
 
 local DEFAULT_JUMPPOWER = 50
 local MAX_SPEED = 1000
+
+----------------------------------------------------
+-- SISTEMA DE IDENTIFICAÇÃO DE BASE
+----------------------------------------------------
+local function getMyBase()
+    local bases = workspace:FindFirstChild("Bases")
+    if not bases then return nil end
+    for _, folder in ipairs(bases:GetChildren()) do
+        for _, slot in ipairs(folder:GetChildren()) do
+            if slot:GetAttribute("Owner") == LocalPlayer.UserId then
+                return slot
+            end
+        end
+    end
+    return nil
+end
+
+local function getBrainrotsInBase()
+    local base = getMyBase()
+    local list = {}
+    if base then
+        local model = base:FindFirstChildWhichIsA("Model")
+        if model then
+            for _, obj in ipairs(model:GetChildren()) do
+                -- Verifica se é um item de Brainrot (normalmente tem um level ou config)
+                if obj:IsA("Model") and (obj:FindFirstChild("Level") or obj:FindFirstChild("Config")) then
+                    table.insert(list, obj.Name)
+                end
+            end
+        end
+    end
+    if #list == 0 then table.insert(list, "None") end
+    return list
+end
 
 ----------------------------------------------------
 -- HUD Speed
@@ -893,20 +941,114 @@ task.spawn(function()
 end)
 
 ----------------------------------------------------
--- ABA AUTO (ANTIGA SELLING)
+-- [ NOVO ] LOGICA DE AUTO FIRESERVER (UPGRADES/COLLECT)
+----------------------------------------------------
+task.spawn(function()
+    while true do
+        -- Auto Collect Brainrot Money
+        if PlayerFlags.AutoCollectMoney then
+            pcall(function()
+                CollectRE:FireServer()
+            end)
+        end
+        
+        -- Auto Buy Speed (1 level per 1s)
+        if PlayerFlags.AutoBuySpeed then
+            pcall(function()
+                UpgradeRF:InvokeServer("Speed")
+            end)
+        end
+
+        -- Auto Buy Carry (1 level per 1s)
+        if PlayerFlags.AutoBuyCarry then
+            pcall(function()
+                UpgradeRF:InvokeServer("CarryCapacity")
+            end)
+        end
+
+        -- Auto Upgrade Base
+        if PlayerFlags.AutoUpgradeBase then
+            pcall(function()
+                BaseUpgradeRF:InvokeServer()
+            end)
+        end
+
+        -- Auto Upgrade Brainrot Selecionado
+        if PlayerFlags.AutoUpgradeBrainrot and PlayerFlags.SelectedBrainrot ~= "None" then
+            pcall(function()
+                BrainrotUpgradeRF:InvokeServer(PlayerFlags.SelectedBrainrot)
+            end)
+        end
+
+        task.wait(1)
+    end
+end)
+
+----------------------------------------------------
+-- ABA AUTO (ATUALIZADA COM FIRESERVERS)
 ----------------------------------------------------
 local AutoTabSection = Tabs.Auto:Section({
-    Title  = "Auto Features",
+    Title  = "Remotes & Upgrades",
     Icon   = "refresh-cw",
     Box    = true,
     Opened = true,
 })
 
+AutoTabSection:Toggle({
+    Title = "Auto Collect Money",
+    Desc  = "Collects money from your brainrots.",
+    Icon  = "coins",
+    Value = false,
+    Callback = function(v) PlayerFlags.AutoCollectMoney = v end
+})
+
+AutoTabSection:Toggle({
+    Title = "Auto Buy Speed (1s)",
+    Desc  = "Buys shop speed upgrade every second.",
+    Icon  = "zap",
+    Value = false,
+    Callback = function(v) PlayerFlags.AutoBuySpeed = v end
+})
+
+AutoTabSection:Toggle({
+    Title = "Auto Buy Carry (1s)",
+    Desc  = "Buys shop carry upgrade every second.",
+    Icon  = "briefcase",
+    Value = false,
+    Callback = function(v) PlayerFlags.AutoBuyCarry = v end
+})
+
+AutoTabSection:Toggle({
+    Title = "Auto Upgrade Base",
+    Desc  = "Fireservers to upgrade your base plot.",
+    Icon  = "home",
+    Value = false,
+    Callback = function(v) PlayerFlags.AutoUpgradeBase = v end
+})
+
+local BrainrotDropdown = AutoTabSection:Dropdown({
+    Title = "Select Brainrot to Upgrade",
+    Desc  = "Identifies items in your base.",
+    Values = getBrainrotsInBase(),
+    Value = "None",
+    Callback = function(v) PlayerFlags.SelectedBrainrot = v end
+})
+
+-- Botão para atualizar a lista de brainrots manualmente se comprar novos
 AutoTabSection:Button({
-    Title = "Selling Soon",
-    Desc  = "Auto sell system in progress.",
-    Icon  = "shopping-cart",
-    Callback = function() end
+    Title = "Refresh Base Items",
+    Icon = "refresh-ccw",
+    Callback = function()
+        BrainrotDropdown:SetValues(getBrainrotsInBase())
+    end
+})
+
+AutoTabSection:Toggle({
+    Title = "Auto Upgrade Selected",
+    Desc  = "Upgrades the brainrot selected above.",
+    Icon  = "trending-up",
+    Value = false,
+    Callback = function(v) PlayerFlags.AutoUpgradeBrainrot = v end
 })
 
 ----------------------------------------------------
@@ -1024,7 +1166,7 @@ end)
 
 WindUI:Notify({
     Title = "Hub Injetado",
-    Content = "Abas reorganizadas e Sistemas Potencializados!",
+    Content = "Sistemas de Auto-Remote Ativados na aba AUTO!",
     Duration = 5,
     Icon = "check"
 })
