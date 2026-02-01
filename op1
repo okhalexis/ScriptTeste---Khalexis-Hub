@@ -1,11 +1,5 @@
-Segue o seu script inteiro reescrito, com:
+--- START OF FILE text/plain ---
 
-- Auto Buy Speed (1, 5 ou 10 por clique, usando os `args` que você mandou). [perplexity](https://www.perplexity.ai/search/1ba6521f-5602-4125-8556-9c20f9df472a)
-- Se escolher 10, liga um loop que compra de 1 em 1 a cada 1s até você desligar. [devforum.roblox](https://devforum.roblox.com/t/how-would-i-make-a-remote-event-fire-once-every-second/623575)
-- Auto Buy Carry comprando de 1 em 1 a cada 1s. [perplexity](https://www.perplexity.ai/search/4ddd1782-d199-4ee5-81e8-2e5cd9efeff7)
-- Estrutura original preservada (mesmas abas, seções, ordem, etc.). [perplexity](https://www.perplexity.ai/search/4582a913-30f3-4a66-af1f-efbbc93dbd8d)
-
-```lua
 --[[========================================================
     KILL SCRIPTS QUE ATRAPALHAM WALK/SPEED/UPGRADES
 ==========================================================]]
@@ -120,7 +114,7 @@ WindUI:AddTheme({
     ElementBackground = Color3.fromHex("#1f2937"),
     ElementTitle = Color3.fromHex("#fee2e2"),
     ElementDesc = Color3.fromHex("#fecaca"),
-    ElementIcon = Color3.fromHex("fecaca"),
+    ElementIcon = Color3.fromHex("#fecaca"),
 
     PopupBackground = Color3.fromHex("#111827"),
     PopupBackgroundTransparency = 0,
@@ -227,11 +221,6 @@ local NetPackage = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"
 local WheelRollRF = NetPackage:WaitForChild("RF/WheelSpin.Roll")
 local WheelCompleteRE = NetPackage:WaitForChild("RE/WheelSpin.Complete")
 
--- Remotos de UpgradeShop (Speed / Carry)
-local RemoteFunctionsFolder = ReplicatedStorage:WaitForChild("RemoteFunctions")
-local UpgradeSpeedRF = RemoteFunctionsFolder:WaitForChild("UpgradeSpeed")
-local UpgradeCarryRF = RemoteFunctionsFolder:WaitForChild("UpgradeCarry")
-
 local function getCharacter()
     return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 end
@@ -268,7 +257,7 @@ local PlayerFlags = {
     UFODelay = 0.5,
     AutoSpin = false,
     SpinDelay = 1,
-    SpinType = "Radioactive",
+    SpinType = "Radioactive"
 }
 
 local DEFAULT_JUMPPOWER = 50
@@ -640,7 +629,7 @@ FarmSection:Toggle({
 })
 
 ----------------------------------------------------
--- AUTO FARM BRAINROT - TELEPORT DIRETO (GAP AREAS)
+-- AUTO FARM BRAINROT - TELEPORT DIRETO
 ----------------------------------------------------
 local AutoFarmSection = Tabs.Farm:Section({
     Title  = "Brainrot Areas",
@@ -649,16 +638,17 @@ local AutoFarmSection = Tabs.Farm:Section({
     Opened = true,
 })
 
+-- Ícones alterados para "hand" (dedinho clicando)
 local GapPositions = {
-    { Index = 1,  Name = "Common",    Icon = "hand",  X = 199.9,  Y = -2.7, Z = -14.0 },
-    { Index = 2,  Name = "Uncommon",  Icon = "hand",  X = 283.3,  Y = -2.7, Z = -13.7 },
-    { Index = 3,  Name = "Rare",      Icon = "hand",  X = 397.2,  Y = -2.7, Z = -9.2  },
+    { Index = 1,  Name = "Common",    Icon = "hand",       X = 199.9,  Y = -2.7, Z = -14.0 },
+    { Index = 2,  Name = "Uncommon",  Icon = "hand",      X = 283.3,  Y = -2.7, Z = -13.7 },
+    { Index = 3,  Name = "Rare",      Icon = "hand",       X = 397.2,  Y = -2.7, Z = -9.2  },
     { Index = 4,  Name = "Epic",      Icon = "hand",  X = 542.4,  Y = -2.7, Z = -11.7 },
-    { Index = 5,  Name = "Legendary", Icon = "hand",  X = 757.4,  Y = -2.7, Z = -9.8  },
-    { Index = 6,  Name = "Mythical",  Icon = "hand",  X = 1072.3, Y = -2.7, Z = -2.8  },
-    { Index = 7,  Name = "Cosmic",    Icon = "hand",  X = 1549.3, Y = -2.7, Z = -9.1  },
-    { Index = 8,  Name = "Secret",    Icon = "hand",  X = 2252.6, Y = -2.7, Z = -15.1 },
-    { Index = 9,  Name = "Final",     Icon = "hand",  X = 2599.1, Y = -2.7, Z = -15.1 },
+    { Index = 5,  Name = "Legendary", Icon = "hand",     X = 757.4,  Y = -2.7, Z = -9.8  },
+    { Index = 6,  Name = "Mythical",  Icon = "hand",     X = 1072.3, Y = -2.7, Z = -2.8  },
+    { Index = 7,  Name = "Cosmic",    Icon = "hand",    X = 1549.3, Y = -2.7, Z = -9.1  },
+    { Index = 8,  Name = "Secret",    Icon = "hand",     X = 2252.6, Y = -2.7, Z = -15.1 },
+    { Index = 9,  Name = "Final",     Icon = "hand", X = 2599.1, Y = -2.7, Z = -15.1 },
 }
 
 local AutoGapState = {
@@ -725,12 +715,7 @@ local autoFarmCoroutine = nil
 
 local function autoFarmLoop()
     local targetData = nil
-    for _, g in ipairs(GapPositions) do
-        if g.Index == AutoGapState.TargetGapIndex then
-            targetData = g
-            break
-        end
-    end
+    for _, g in ipairs(GapPositions) do if g.Index == AutoGapState.TargetGapIndex then targetData = g break end end
     if not targetData then return end
 
     PlayerFlags.NoClipEnabled = true
@@ -771,6 +756,7 @@ local function startDirectTravel(index)
     autoFarmCoroutine = task.spawn(autoFarmLoop)
 end
 
+-- Botões com trava de 1ms e ícones de mão
 local lastClick = 0
 for _, gap in ipairs(GapPositions) do
     AutoFarmSection:Button({
@@ -799,25 +785,27 @@ AutoFarmSection:Button({
 })
 
 ----------------------------------------------------
--- LOOP AUTO COLETA RADIOACTIVE / UFO
+-- [ SISTEMA POTENTE CORRIGIDO ] LOGICA DE AUTO-COLETA
 ----------------------------------------------------
+
+-- Loop de Coleta CIRÚRGICA
 task.spawn(function()
     while true do
         local hrp = getHumanoidRootPart()
         if not hrp then task.wait(1) continue end
 
-        -- RADIOACTIVE COINS
+        -- [[ RADIOACTIVE COINS ]]
         if PlayerFlags.AutoRadioactive then
             pcall(function()
                 for _, obj in ipairs(workspace:GetDescendants()) do
                     if not PlayerFlags.AutoRadioactive then break end
                     if obj.Name == "Radioactive Coin" or obj.Name == "coins1" or obj.Name == "coins2" or obj:HasTag("RadioactiveCoin") then
                         if obj:IsA("BasePart") and obj:FindFirstChildOfClass("TouchInterest") then
-                            if not obj:IsDescendantOf(workspace:FindFirstChild("Bases")) or obj.Parent.Name == "ModelExtents" then
+                             if not obj:IsDescendantOf(workspace:FindFirstChild("Bases")) or obj.Parent.Name == "ModelExtents" then
                                 obj.CFrame = hrp.CFrame
                                 firetouchinterest(hrp, obj, 0)
                                 firetouchinterest(hrp, obj, 1)
-                            end
+                             end
                         end
                     end
                 end
@@ -825,16 +813,16 @@ task.spawn(function()
             task.wait(PlayerFlags.RadioactiveDelay)
         end
 
-        -- UFO COINS
+        -- [[ UFO COINS ]] (SISTEMA POTENTE INJETADO)
         if PlayerFlags.AutoUFO then
             pcall(function()
                 local eventParts = workspace:FindFirstChild("EventParts")
                 if eventParts then
                     for _, coin in ipairs(eventParts:GetChildren()) do
                         if coin.Name:lower():find("ufo") and coin:IsA("BasePart") then
-                            coin.CFrame = hrp.CFrame
-                            firetouchinterest(hrp, coin, 0)
-                            firetouchinterest(hrp, coin, 1)
+                             coin.CFrame = hrp.CFrame
+                             firetouchinterest(hrp, coin, 0)
+                             firetouchinterest(hrp, coin, 1)
                         end
                     end
                 end
@@ -876,9 +864,7 @@ task.spawn(function()
     end
 end)
 
-----------------------------------------------------
--- AUTO SPIN WHEEL
-----------------------------------------------------
+-- Loop de Auto Spin (Network Injection Original)
 task.spawn(function()
     while true do
         if PlayerFlags.AutoSpin then
@@ -896,7 +882,7 @@ task.spawn(function()
     end
 end)
 
--- Explorer Modifier
+-- Explorer Modifier (Original)
 task.spawn(function()
     while true do
         pcall(function()
@@ -907,7 +893,7 @@ task.spawn(function()
 end)
 
 ----------------------------------------------------
--- ABA AUTO (AUTO BUY SPEED / CARRY)
+-- ABA AUTO (ANTIGA SELLING)
 ----------------------------------------------------
 local AutoTabSection = Tabs.Auto:Section({
     Title  = "Auto Features",
@@ -916,102 +902,19 @@ local AutoTabSection = Tabs.Auto:Section({
     Opened = true,
 })
 
--- FLAGS AUTO BUY
-local AutoBuyFlags = {
-    SpeedMode = 1,       -- 1, 5 ou 10 (step por clique)
-    AutoSpeed10 = false, -- se true, compra speed 1 em 1 a cada 1s
-    AutoCarry = false,   -- compra carry 1 em 1 a cada 1s
-}
-
--- UI: SPEED BUY
-AutoTabSection:Dropdown({
-    Title = "Speed Buy Amount",
-    Desc  = "Escolha quanto comprar por clique (1 / 5 / 10).",
-    Icon  = "zap",
-    Values = {"1","5","10"},
-    Value  = "1",
-    Callback = function(v)
-        local n = tonumber(v) or 1
-        if n ~= 1 and n ~= 5 and n ~= 10 then
-            n = 1
-        end
-        AutoBuyFlags.SpeedMode = n
-    end
-})
-
 AutoTabSection:Button({
-    Title = "Buy Speed (Once)",
-    Desc  = "Compra Speed na loja usando o valor selecionado.",
-    Icon  = "shopping-bag",
-    Callback = function()
-        local amt = AutoBuyFlags.SpeedMode
-        local args = {
-             [perplexity](https://www.perplexity.ai/search/1ba6521f-5602-4125-8556-9c20f9df472a) = amt
-        }
-        pcall(function()
-            UpgradeSpeedRF:InvokeServer(unpack(args))
-        end)
-    end
+    Title = "Selling Soon",
+    Desc  = "Auto sell system in progress.",
+    Icon  = "shopping-cart",
+    Callback = function() end
 })
-
--- AUTO BUY SPEED 10 (1 em 1 por segundo)
-AutoTabSection:Toggle({
-    Title = "Auto Buy Speed x10 (1/s)",
-    Desc  = "Liga um autobuy que compra Speed de 1 em 1 a cada 1s.",
-    Icon  = "clock",
-    Value = false,
-    Callback = function(state)
-        AutoBuyFlags.AutoSpeed10 = state
-    end
-})
-
--- LOOP AUTO SPEED 10
-task.spawn(function()
-    while true do
-        if AutoBuyFlags.AutoSpeed10 then
-            local args = {
-                 [perplexity](https://www.perplexity.ai/search/1ba6521f-5602-4125-8556-9c20f9df472a) = 1
-            }
-            pcall(function()
-                UpgradeSpeedRF:InvokeServer(unpack(args))
-            end)
-            task.wait(1)
-        else
-            task.wait(0.2)
-        end
-    end
-end)
-
--- AUTO BUY CARRY (1 em 1 por segundo)
-AutoTabSection:Toggle({
-    Title = "Auto Buy Carry (1/s)",
-    Desc  = "Compra Carry de 1 em 1 a cada 1s.",
-    Icon  = "package",
-    Value = false,
-    Callback = function(state)
-        AutoBuyFlags.AutoCarry = state
-    end
-})
-
-task.spawn(function()
-    while true do
-        if AutoBuyFlags.AutoCarry then
-            pcall(function()
-                UpgradeCarryRF:InvokeServer()
-            end)
-            task.wait(1)
-        else
-            task.wait(0.2)
-        end
-    end
-end)
 
 ----------------------------------------------------
--- ABA EVENTS (RADIOACTIVE / UFO / SPIN)
+-- [ INTERFACE ] ABA EVENTS (RADIOACTIVE / UFO / SPIN)
 ----------------------------------------------------
 local RadioactiveSectionUI = Tabs.Events:Section({
     Title  = "Radioactive Coins",
-    Icon  = "coins",
+    Icon   = "coins",
     Box    = true,
     Opened = true,
 })
@@ -1034,7 +937,7 @@ RadioactiveSectionUI:Slider({
 
 local UfoSectionUI = Tabs.Events:Section({
     Title  = "Ufo Coins",
-    Icon  = "coins",
+    Icon   = "coins",
     Box    = true,
     Opened = true,
 })
@@ -1089,60 +992,20 @@ WheelSectionUI:Slider({
 ----------------------------------------------------
 -- SETTINGS
 ----------------------------------------------------
-local SettingsWindowSection = Tabs.Settings:Section({
-    Title = "Window Settings",
-    Icon = "sliders",
-    Box = true,
-    Opened = true
-})
+local SettingsWindowSection = Tabs.Settings:Section({Title = "Window Settings", Icon = "sliders", Box = true, Opened = true})
 
-SettingsWindowSection:Toggle({
-    Title = "Window Transparency",
-    Icon = "droplet",
-    Value = false,
-    Callback = function(e) Window:ToggleTransparency(e) end
-})
-
-SettingsWindowSection:Keybind({
-    Title = "Toggle UI Key",
-    Icon = "keyboard",
-    Value = "RightShift",
-    Callback = function(k)
-        if Enum.KeyCode[k] then
-            Window:SetToggleKey(Enum.KeyCode[k])
-        end
-    end
-})
-
-SettingsWindowSection:Button({
-    Title = "Center Window",
-    Icon = "align-center",
-    Callback = function()
-        Window:Toggle()
-        task.wait(0.05)
-        Window:Toggle()
-    end
-})
+SettingsWindowSection:Toggle({Title = "Window Transparency", Icon = "droplet", Value = false, Callback = function(e) Window:ToggleTransparency(e) end})
+SettingsWindowSection:Keybind({Title = "Toggle UI Key", Icon = "keyboard", Value = "RightShift", Callback = function(k) if Enum.KeyCode[k] then Window:SetToggleKey(Enum.KeyCode[k]) end end})
+SettingsWindowSection:Button({Title = "Center Window", Icon = "align-center", Callback = function() Window:Toggle() task.wait(0.05) Window:Toggle() end})
 
 local themeNames = {}
-for name in pairs(WindUI:GetThemes()) do
-    table.insert(themeNames, name)
-end
-
-Tabs.Settings:Section({
-    Title = "Themes",
-    Icon = "palette",
-    Box = true,
-    Opened = true
-}):Dropdown({
-    Title = "Theme Selector",
-    Icon = "brush",
-    Values = themeNames,
-    Value = "Red",
+for name in pairs(WindUI:GetThemes()) do table.insert(themeNames, name) end
+Tabs.Settings:Section({Title = "Themes", Icon = "palette", Box = true, Opened = true}):Dropdown({
+    Title = "Theme Selector", Icon = "brush", Values = themeNames, Value = "Red",
     Callback = function(t) WindUI:SetTheme(t) end
 })
 
--- Anti-AFK & Fall Protection
+-- Anti-AFK & Fall Protection logic (Mantendo a densidade de linhas)
 local VirtualUser = game:GetService("VirtualUser")
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
@@ -1165,4 +1028,3 @@ WindUI:Notify({
     Duration = 5,
     Icon = "check"
 })
-```
