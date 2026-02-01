@@ -221,11 +221,105 @@ local NetPackage = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"
 local WheelRollRF = NetPackage:WaitForChild("RF/WheelSpin.Roll")
 local WheelCompleteRE = NetPackage:WaitForChild("RE/WheelSpin.Complete")
 
--- NOVOS REMOTES ADICIONADOS
-local UpgradeRF = NetPackage:WaitForChild("RF/Upgrades.Buy")
-local CollectRE = NetPackage:WaitForChild("RE/Brainrot.Collect")
-local BaseUpgradeRF = NetPackage:WaitForChild("RF/Base.Upgrade")
-local BrainrotUpgradeRF = NetPackage:WaitForChild("RF/Brainrot.Upgrade")
+--[[========================================================
+    SISTEMA DE REMOTE EVENTS - ESCAPE TSUNAMI BRAINROT
+==========================================================]]
+local RemoteEvents = {
+    UpgradeBrainrot = nil,
+    CollectMoney = nil,
+    BuySpeed = nil,
+    BuyCarry = nil,
+    UpgradeBase = nil,
+}
+
+-- Função para encontrar remote events dinamicamente
+local function findRemoteEvent(name)
+    local function searchIn(parent)
+        for _, obj in ipairs(parent:GetDescendants()) do
+            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+                local objName = obj.Name:lower()
+                if objName:find(name:lower()) then
+                    return obj
+                end
+            end
+        end
+        return nil
+    end
+    
+    return searchIn(ReplicatedStorage) or searchIn(NetPackage)
+end
+
+-- Inicializar remote events
+task.spawn(function()
+    task.wait(2)
+    
+    -- Tentar encontrar remotes comuns
+    RemoteEvents.UpgradeBrainrot = findRemoteEvent("upgrade") or findRemoteEvent("levelup") or findRemoteEvent("brainrot")
+    RemoteEvents.CollectMoney = findRemoteEvent("collect") or findRemoteEvent("claim") or findRemoteEvent("money")
+    RemoteEvents.BuySpeed = findRemoteEvent("speed") or findRemoteEvent("buyspeed")
+    RemoteEvents.BuyCarry = findRemoteEvent("carry") or findRemoteEvent("buycarry")
+    RemoteEvents.UpgradeBase = findRemoteEvent("base") or findRemoteEvent("upgradebase") or findRemoteEvent("slot")
+    
+    -- Paths alternativos baseados em decompilação comum
+    if not RemoteEvents.UpgradeBrainrot then
+        RemoteEvents.UpgradeBrainrot = NetPackage:FindFirstChild("RE/Brainrot.Upgrade") or NetPackage:FindFirstChild("RF/Upgrade")
+    end
+    if not RemoteEvents.CollectMoney then
+        RemoteEvents.CollectMoney = NetPackage:FindFirstChild("RE/Money.Collect") or NetPackage:FindFirstChild("RE/Claim")
+    end
+    if not RemoteEvents.BuySpeed then
+        RemoteEvents.BuySpeed = NetPackage:FindFirstChild("RF/Shop.BuySpeed") or NetPackage:FindFirstChild("RF/BuySpeed")
+    end
+    if not RemoteEvents.BuyCarry then
+        RemoteEvents.BuyCarry = NetPackage:FindFirstChild("RF/Shop.BuyCarry") or NetPackage:FindFirstChild("RF/BuyCarry")
+    end
+    if not RemoteEvents.UpgradeBase then
+        RemoteEvents.UpgradeBase = NetPackage:FindFirstChild("RF/Base.Upgrade") or NetPackage:FindFirstChild("RF/UpgradeSlot")
+    end
+end)
+
+-- Função para obter brainrots na base do jogador
+local function getPlayerBrainrots()
+    local brainrots = {}
+    local bases = workspace:FindFirstChild("Bases")
+    if not bases then return brainrots end
+    
+    local playerFolder = bases:FindFirstChild(LocalPlayer.Name)
+    if not playerFolder then return brainrots end
+    
+    for _, slot in ipairs(playerFolder:GetChildren()) do
+        local model = slot:FindFirstChildWhichIsA("Model")
+        if model then
+            local slotNumber = tonumber(slot.Name:match("%d+"))
+            if slotNumber then
+                table.insert(brainrots, {
+                    Slot = slotNumber,
+                    Name = model.Name,
+                    Model = model,
+                    SlotObject = slot
+                })
+            end
+        end
+    end
+    
+    return brainrots
+end
+
+-- Função helper para fireserver seguro
+local function safeFireServer(remote, ...)
+    if not remote then return false end
+    
+    local success, result = pcall(function()
+        if remote:IsA("RemoteFunction") then
+            return remote:InvokeServer(...)
+        elseif remote:IsA("RemoteEvent") then
+            remote:FireServer(...)
+            return true
+        end
+    end)
+    
+    return success, result
+end
 
 local function getCharacter()
     return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -264,52 +358,22 @@ local PlayerFlags = {
     AutoSpin = false,
     SpinDelay = 1,
     SpinType = "Radioactive",
-
-    -- NOVAS FLAGS AUTO
-    AutoCollectMoney = false,
-    AutoBuySpeed = false,
-    AutoBuyCarry = false,
-    AutoUpgradeBase = false,
+    
+    -- NOVOS FLAGS PARA AUTO
     AutoUpgradeBrainrot = false,
-    SelectedBrainrot = "None"
+    SelectedBrainrotSlot = 1,
+    AutoCollectMoney = false,
+    CollectMoneyDelay = 1,
+    AutoBuySpeed = false,
+    SpeedBuyDelay = 1,
+    AutoBuyCarry = false,
+    CarryBuyDelay = 1,
+    AutoUpgradeBase = false,
+    BaseUpgradeDelay = 1,
 }
 
 local DEFAULT_JUMPPOWER = 50
 local MAX_SPEED = 1000
-
-----------------------------------------------------
--- SISTEMA DE IDENTIFICAÇÃO DE BASE
-----------------------------------------------------
-local function getMyBase()
-    local bases = workspace:FindFirstChild("Bases")
-    if not bases then return nil end
-    for _, folder in ipairs(bases:GetChildren()) do
-        for _, slot in ipairs(folder:GetChildren()) do
-            if slot:GetAttribute("Owner") == LocalPlayer.UserId then
-                return slot
-            end
-        end
-    end
-    return nil
-end
-
-local function getBrainrotsInBase()
-    local base = getMyBase()
-    local list = {}
-    if base then
-        local model = base:FindFirstChildWhichIsA("Model")
-        if model then
-            for _, obj in ipairs(model:GetChildren()) do
-                -- Verifica se é um item de Brainrot (normalmente tem um level ou config)
-                if obj:IsA("Model") and (obj:FindFirstChild("Level") or obj:FindFirstChild("Config")) then
-                    table.insert(list, obj.Name)
-                end
-            end
-        end
-    end
-    if #list == 0 then table.insert(list, "None") end
-    return list
-end
 
 ----------------------------------------------------
 -- HUD Speed
@@ -941,115 +1005,336 @@ task.spawn(function()
 end)
 
 ----------------------------------------------------
--- [ NOVO ] LOGICA DE AUTO FIRESERVER (UPGRADES/COLLECT)
+-- ABA AUTO - SISTEMAS DE FIRESERVER
 ----------------------------------------------------
-task.spawn(function()
-    while true do
-        -- Auto Collect Brainrot Money
-        if PlayerFlags.AutoCollectMoney then
-            pcall(function()
-                CollectRE:FireServer()
-            end)
-        end
-        
-        -- Auto Buy Speed (1 level per 1s)
-        if PlayerFlags.AutoBuySpeed then
-            pcall(function()
-                UpgradeRF:InvokeServer("Speed")
-            end)
-        end
 
-        -- Auto Buy Carry (1 level per 1s)
-        if PlayerFlags.AutoBuyCarry then
-            pcall(function()
-                UpgradeRF:InvokeServer("CarryCapacity")
-            end)
-        end
-
-        -- Auto Upgrade Base
-        if PlayerFlags.AutoUpgradeBase then
-            pcall(function()
-                BaseUpgradeRF:InvokeServer()
-            end)
-        end
-
-        -- Auto Upgrade Brainrot Selecionado
-        if PlayerFlags.AutoUpgradeBrainrot and PlayerFlags.SelectedBrainrot ~= "None" then
-            pcall(function()
-                BrainrotUpgradeRF:InvokeServer(PlayerFlags.SelectedBrainrot)
-            end)
-        end
-
-        task.wait(1)
-    end
-end)
-
-----------------------------------------------------
--- ABA AUTO (ATUALIZADA COM FIRESERVERS)
-----------------------------------------------------
-local AutoTabSection = Tabs.Auto:Section({
-    Title  = "Remotes & Upgrades",
-    Icon   = "refresh-cw",
+--[[========================================================
+    AUTO UPGRADE BRAINROT
+==========================================================]]
+local AutoUpgradeBrainrotSection = Tabs.Auto:Section({
+    Title  = "Auto Upgrade Brainrot",
+    Icon   = "arrow-up-circle",
     Box    = true,
     Opened = true,
 })
 
-AutoTabSection:Toggle({
-    Title = "Auto Collect Money",
-    Desc  = "Collects money from your brainrots.",
-    Icon  = "coins",
-    Value = false,
-    Callback = function(v) PlayerFlags.AutoCollectMoney = v end
-})
+-- Dropdown para seleção de slot
+local brainrotSlotOptions = {}
+for i = 1, 50 do
+    table.insert(brainrotSlotOptions, tostring(i))
+end
 
-AutoTabSection:Toggle({
-    Title = "Auto Buy Speed (1s)",
-    Desc  = "Buys shop speed upgrade every second.",
-    Icon  = "zap",
-    Value = false,
-    Callback = function(v) PlayerFlags.AutoBuySpeed = v end
-})
-
-AutoTabSection:Toggle({
-    Title = "Auto Buy Carry (1s)",
-    Desc  = "Buys shop carry upgrade every second.",
-    Icon  = "briefcase",
-    Value = false,
-    Callback = function(v) PlayerFlags.AutoBuyCarry = v end
-})
-
-AutoTabSection:Toggle({
-    Title = "Auto Upgrade Base",
-    Desc  = "Fireservers to upgrade your base plot.",
-    Icon  = "home",
-    Value = false,
-    Callback = function(v) PlayerFlags.AutoUpgradeBase = v end
-})
-
-local BrainrotDropdown = AutoTabSection:Dropdown({
-    Title = "Select Brainrot to Upgrade",
-    Desc  = "Identifies items in your base.",
-    Values = getBrainrotsInBase(),
-    Value = "None",
-    Callback = function(v) PlayerFlags.SelectedBrainrot = v end
-})
-
--- Botão para atualizar a lista de brainrots manualmente se comprar novos
-AutoTabSection:Button({
-    Title = "Refresh Base Items",
-    Icon = "refresh-ccw",
-    Callback = function()
-        BrainrotDropdown:SetValues(getBrainrotsInBase())
+AutoUpgradeBrainrotSection:Dropdown({
+    Title = "Select Brainrot Slot",
+    Desc  = "Choose which slot to upgrade",
+    Icon  = "hash",
+    Values = brainrotSlotOptions,
+    Value = "1",
+    Callback = function(value)
+        PlayerFlags.SelectedBrainrotSlot = tonumber(value)
     end
 })
 
-AutoTabSection:Toggle({
-    Title = "Auto Upgrade Selected",
-    Desc  = "Upgrades the brainrot selected above.",
+AutoUpgradeBrainrotSection:Toggle({
+    Title = "Auto Upgrade Brainrot",
+    Desc  = "Automatically upgrades selected brainrot",
+    Icon  = "arrow-up-circle",
+    Value = false,
+    Callback = function(state)
+        PlayerFlags.AutoUpgradeBrainrot = state
+    end
+})
+
+-- Loop de Auto Upgrade Brainrot
+task.spawn(function()
+    while true do
+        if PlayerFlags.AutoUpgradeBrainrot then
+            pcall(function()
+                local brainrots = getPlayerBrainrots()
+                local targetBrainrot = nil
+                
+                for _, brainrot in ipairs(brainrots) do
+                    if brainrot.Slot == PlayerFlags.SelectedBrainrotSlot then
+                        targetBrainrot = brainrot
+                        break
+                    end
+                end
+                
+                if targetBrainrot then
+                    if RemoteEvents.UpgradeBrainrot then
+                        safeFireServer(RemoteEvents.UpgradeBrainrot, PlayerFlags.SelectedBrainrotSlot)
+                    else
+                        -- Tentativa com paths alternativos
+                        local altPaths = {
+                            "RE/Brainrot.Upgrade",
+                            "RF/Upgrade",
+                            "RE/UpgradeBrainrot",
+                            "RF/LevelUp"
+                        }
+                        for _, path in ipairs(altPaths) do
+                            local remote = NetPackage:FindFirstChild(path)
+                            if remote then
+                                safeFireServer(remote, PlayerFlags.SelectedBrainrotSlot)
+                                break
+                            end
+                        end
+                    end
+                end
+            end)
+            task.wait(1)
+        else
+            task.wait(1)
+        end
+    end
+end)
+
+--[[========================================================
+    AUTO COLLECT MONEY
+==========================================================]]
+local AutoCollectMoneySection = Tabs.Auto:Section({
+    Title  = "Auto Collect Money",
+    Icon   = "dollar-sign",
+    Box    = true,
+    Opened = true,
+})
+
+AutoCollectMoneySection:Toggle({
+    Title = "Auto Collect Money",
+    Desc  = "Collects money from all brainrots",
+    Icon  = "dollar-sign",
+    Value = false,
+    Callback = function(state)
+        PlayerFlags.AutoCollectMoney = state
+    end
+})
+
+AutoCollectMoneySection:Slider({
+    Title = "Collect Delay",
+    Desc  = "Delay between collections (seconds)",
+    Step  = 0.1,
+    Value = { Min = 0.1, Max = 10, Default = 1 },
+    Callback = function(value)
+        PlayerFlags.CollectMoneyDelay = value
+    end
+})
+
+-- Loop de Auto Collect Money
+task.spawn(function()
+    while true do
+        if PlayerFlags.AutoCollectMoney then
+            pcall(function()
+                local brainrots = getPlayerBrainrots()
+                
+                for _, brainrot in ipairs(brainrots) do
+                    if RemoteEvents.CollectMoney then
+                        safeFireServer(RemoteEvents.CollectMoney, brainrot.Slot)
+                    else
+                        -- Tentativa com paths alternativos
+                        local altPaths = {
+                            "RE/Money.Collect",
+                            "RE/Claim",
+                            "RE/CollectCash",
+                            "RF/Collect"
+                        }
+                        for _, path in ipairs(altPaths) do
+                            local remote = NetPackage:FindFirstChild(path)
+                            if remote then
+                                safeFireServer(remote, brainrot.Slot)
+                                break
+                            end
+                        end
+                    end
+                end
+            end)
+            task.wait(PlayerFlags.CollectMoneyDelay)
+        else
+            task.wait(1)
+        end
+    end
+end)
+
+--[[========================================================
+    AUTO BUY SPEED
+==========================================================]]
+local AutoBuySpeedSection = Tabs.Auto:Section({
+    Title  = "Auto Buy Speed",
+    Icon   = "trending-up",
+    Box    = true,
+    Opened = true,
+})
+
+AutoBuySpeedSection:Toggle({
+    Title = "Auto Buy Speed",
+    Desc  = "Buys speed upgrades 1 by 1 every 1s",
     Icon  = "trending-up",
     Value = false,
-    Callback = function(v) PlayerFlags.AutoUpgradeBrainrot = v end
+    Callback = function(state)
+        PlayerFlags.AutoBuySpeed = state
+    end
 })
+
+AutoBuySpeedSection:Slider({
+    Title = "Speed Buy Delay",
+    Desc  = "Delay between purchases (seconds)",
+    Step  = 0.1,
+    Value = { Min = 0.1, Max = 10, Default = 1 },
+    Callback = function(value)
+        PlayerFlags.SpeedBuyDelay = value
+    end
+})
+
+-- Loop de Auto Buy Speed
+task.spawn(function()
+    while true do
+        if PlayerFlags.AutoBuySpeed then
+            pcall(function()
+                if RemoteEvents.BuySpeed then
+                    safeFireServer(RemoteEvents.BuySpeed, 1)
+                else
+                    -- Tentativa com paths alternativos
+                    local altPaths = {
+                        "RF/Shop.BuySpeed",
+                        "RF/BuySpeed",
+                        "RF/PurchaseSpeed",
+                        "RE/BuySpeed"
+                    }
+                    for _, path in ipairs(altPaths) do
+                        local remote = NetPackage:FindFirstChild(path)
+                        if remote then
+                            safeFireServer(remote, 1)
+                            break
+                        end
+                    end
+                end
+            end)
+            task.wait(PlayerFlags.SpeedBuyDelay)
+        else
+            task.wait(1)
+        end
+    end
+end)
+
+--[[========================================================
+    AUTO BUY CARRY
+==========================================================]]
+local AutoBuyCarrySection = Tabs.Auto:Section({
+    Title  = "Auto Buy Carry",
+    Icon   = "package",
+    Box    = true,
+    Opened = true,
+})
+
+AutoBuyCarrySection:Toggle({
+    Title = "Auto Buy Carry",
+    Desc  = "Buys carry upgrades 1 by 1 every 1s",
+    Icon  = "package",
+    Value = false,
+    Callback = function(state)
+        PlayerFlags.AutoBuyCarry = state
+    end
+})
+
+AutoBuyCarrySection:Slider({
+    Title = "Carry Buy Delay",
+    Desc  = "Delay between purchases (seconds)",
+    Step  = 0.1,
+    Value = { Min = 0.1, Max = 10, Default = 1 },
+    Callback = function(value)
+        PlayerFlags.CarryBuyDelay = value
+    end
+})
+
+-- Loop de Auto Buy Carry
+task.spawn(function()
+    while true do
+        if PlayerFlags.AutoBuyCarry then
+            pcall(function()
+                if RemoteEvents.BuyCarry then
+                    safeFireServer(RemoteEvents.BuyCarry, 1)
+                else
+                    -- Tentativa com paths alternativos
+                    local altPaths = {
+                        "RF/Shop.BuyCarry",
+                        "RF/BuyCarry",
+                        "RF/PurchaseCarry",
+                        "RE/BuyCarry"
+                    }
+                    for _, path in ipairs(altPaths) do
+                        local remote = NetPackage:FindFirstChild(path)
+                        if remote then
+                            safeFireServer(remote, 1)
+                            break
+                        end
+                    end
+                end
+            end)
+            task.wait(PlayerFlags.CarryBuyDelay)
+        else
+            task.wait(1)
+        end
+    end
+end)
+
+--[[========================================================
+    AUTO UPGRADE BASE
+==========================================================]]
+local AutoUpgradeBaseSection = Tabs.Auto:Section({
+    Title  = "Auto Upgrade Base",
+    Icon   = "home",
+    Box    = true,
+    Opened = true,
+})
+
+AutoUpgradeBaseSection:Toggle({
+    Title = "Auto Upgrade Base",
+    Desc  = "Automatically upgrades base slots",
+    Icon  = "home",
+    Value = false,
+    Callback = function(state)
+        PlayerFlags.AutoUpgradeBase = state
+    end
+})
+
+AutoUpgradeBaseSection:Slider({
+    Title = "Base Upgrade Delay",
+    Desc  = "Delay between upgrades (seconds)",
+    Step  = 0.1,
+    Value = { Min = 0.1, Max = 10, Default = 1 },
+    Callback = function(value)
+        PlayerFlags.BaseUpgradeDelay = value
+    end
+})
+
+-- Loop de Auto Upgrade Base
+task.spawn(function()
+    while true do
+        if PlayerFlags.AutoUpgradeBase then
+            pcall(function()
+                if RemoteEvents.UpgradeBase then
+                    safeFireServer(RemoteEvents.UpgradeBase)
+                else
+                    -- Tentativa com paths alternativos
+                    local altPaths = {
+                        "RF/Base.Upgrade",
+                        "RF/UpgradeSlot",
+                        "RF/UpgradeBase",
+                        "RE/UpgradeBase"
+                    }
+                    for _, path in ipairs(altPaths) do
+                        local remote = NetPackage:FindFirstChild(path)
+                        if remote then
+                            safeFireServer(remote)
+                            break
+                        end
+                    end
+                end
+            end)
+            task.wait(PlayerFlags.BaseUpgradeDelay)
+        else
+            task.wait(1)
+        end
+    end
+end)
 
 ----------------------------------------------------
 -- [ INTERFACE ] ABA EVENTS (RADIOACTIVE / UFO / SPIN)
@@ -1166,7 +1451,7 @@ end)
 
 WindUI:Notify({
     Title = "Hub Injetado",
-    Content = "Sistemas de Auto-Remote Ativados na aba AUTO!",
+    Content = "Sistema de FireServer AUTO completo ativado!",
     Duration = 5,
     Icon = "check"
 })
