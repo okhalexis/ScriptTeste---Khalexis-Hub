@@ -1,54 +1,9 @@
 --[[========================================================
-    KILL SCRIPTS QUE ATRAPALHAM WALK/SPEED/UPGRADES
+    HUB / CONTROLE PLAYER - CONFIGURAÇÕES DE UI
 ==========================================================]]
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
-local function shouldKillScript(scr)
-    if not scr:IsA("LocalScript") and not scr:IsA("ModuleScript") then
-        return false
-    end
-    local n = scr.Name:lower()
-    if n:find("speed") then return true end
-    if n:find("walk") then return true end
-    if n:find("run") then return true end
-    if n:find("sprint") then return true end
-    if n:find("upgrade") then return true end
-    if n:find("shop") then return true end
-    if n:find("stats") then return true end
-    return false
-end
-
-task.spawn(function()
-    local ps = LocalPlayer:WaitForChild("PlayerScripts", 10)
-    if ps then
-        for _, scr in ipairs(ps:GetDescendants()) do
-            if shouldKillScript(scr) then
-                scr:Destroy()
-            end
-        end
-    end
-
-    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    for _, scr in ipairs(char:GetDescendants()) do
-        if shouldKillScript(scr) then
-            scr:Destroy()
-        end
-    end
-
-    local pg = LocalPlayer:FindFirstChild("PlayerGui")
-    if pg then
-        for _, scr in ipairs(pg:GetDescendants()) do
-            if shouldKillScript(scr) then
-                scr:Destroy()
-            end
-        end
-    end
-end)
-
---[[========================================================
-    HUB / CONTROLE PLAYER - CONFIGURAÇÕES DE UI
-==========================================================]]
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 WindUI:SetNotificationLower(true)
 WindUI:SetFont("rbxassetid://0")
@@ -193,7 +148,7 @@ Window:EditOpenButton({
     Draggable = true,
 })
 
--- ORDEM DAS ABAS ATUALIZADA
+-- ORDEM DAS ABAS
 local Tabs = {
     Player      = Window:Tab({ Title = "loc:TAB_PLAYER",   Icon = "user" }),
     Farm        = Window:Tab({ Title = "loc:TAB_FARM",     Icon = "wheat" }),
@@ -897,7 +852,7 @@ task.spawn(function()
 end)
 
 --[[========================================================
-    NOVOS LOOPS AUTO BUY / REBIRTH
+    LOGICA DE AUTO BUY / UPGRADES (NEW)
 ==========================================================]]
 
 -- Loop Auto Buy Speed (0.5s)
@@ -905,7 +860,8 @@ task.spawn(function()
     while true do
         if PlayerFlags.AutoBuySpeed then
             pcall(function()
-                game:GetService("ReplicatedStorage").RemoteFunctions.UpgradeSpeed:InvokeServer(1)
+                local args = {[1] = 1}
+                game:GetService("ReplicatedStorage").RemoteFunctions.UpgradeSpeed:InvokeServer(unpack(args))
             end)
             task.wait(0.5)
         else
@@ -928,13 +884,15 @@ task.spawn(function()
     end
 end)
 
--- Loop Upgrade Base (1s)
+-- Loop Auto Upgrade Base (1.0s)
 task.spawn(function()
     while true do
         if PlayerFlags.AutoUpgradeBase then
             pcall(function()
-                local net = game:GetService("ReplicatedStorage").Packages.Net:FindFirstChild("RE/Plot.UpgradeBase")
-                if net then net:FireServer() end
+                local remote = game:GetService("ReplicatedStorage").Packages.Net:FindFirstChild("RE/Plot.UpgradeBase")
+                if remote then
+                    remote:FireServer()
+                end
             end)
             task.wait(1)
         else
@@ -943,15 +901,19 @@ task.spawn(function()
     end
 end)
 
--- Loop Auto Rebirth + Speed
+-- Loop Auto Rebirth (Constant)
 task.spawn(function()
     while true do
         if PlayerFlags.AutoRebirth then
             pcall(function()
+                -- Script Rebirth
                 game:GetService("ReplicatedStorage").RemoteFunctions.Rebirth:InvokeServer()
-                game:GetService("ReplicatedStorage").RemoteFunctions.UpgradeSpeed:InvokeServer(1)
+                
+                -- Script Upgrade Speed junto
+                local args = {[1] = 1}
+                game:GetService("ReplicatedStorage").RemoteFunctions.UpgradeSpeed:InvokeServer(unpack(args))
             end)
-            task.wait(0.5)
+            task.wait(0.5) -- Delay curto para não travar
         else
             task.wait(1)
         end
@@ -959,45 +921,53 @@ task.spawn(function()
 end)
 
 ----------------------------------------------------
--- ABA AUTO (ATUALIZADA)
+-- ABA AUTO
 ----------------------------------------------------
 local AutoTabSection = Tabs.Auto:Section({
-    Title  = "Auto Buy Features",
-    Icon   = "shopping-cart",
+    Title  = "Auto Buy & Upgrades",
+    Icon   = "refresh-cw",
     Box    = true,
     Opened = true,
 })
 
 AutoTabSection:Toggle({
     Title = "Auto Buy Speed",
-    Desc  = "Upgrades speed every 0.5s",
+    Desc  = "Upgrades speed every 0.5s.",
     Icon  = "zap",
     Value = false,
-    Callback = function(v) PlayerFlags.AutoBuySpeed = v end
+    Callback = function(state)
+        PlayerFlags.AutoBuySpeed = state
+    end
 })
 
 AutoTabSection:Toggle({
     Title = "Auto Buy Carry",
-    Desc  = "Upgrades carry every 0.5s",
+    Desc  = "Upgrades carry every 0.5s.",
     Icon  = "package",
     Value = false,
-    Callback = function(v) PlayerFlags.AutoBuyCarry = v end
+    Callback = function(state)
+        PlayerFlags.AutoBuyCarry = state
+    end
 })
 
 AutoTabSection:Toggle({
     Title = "Auto Upgrade Base",
-    Desc  = "Upgrades plot base every 1s",
+    Desc  = "Upgrades your base every 1s.",
     Icon  = "home",
     Value = false,
-    Callback = function(v) PlayerFlags.AutoUpgradeBase = v end
+    Callback = function(state)
+        PlayerFlags.AutoUpgradeBase = state
+    end
 })
 
 AutoTabSection:Toggle({
     Title = "Auto Rebirth",
-    Desc  = "Rebirths and upgrades speed",
-    Icon  = "refresh-cw",
+    Desc  = "Automatic Rebirth + Speed Upgrade.",
+    Icon  = "trending-up",
     Value = false,
-    Callback = function(v) PlayerFlags.AutoRebirth = v end
+    Callback = function(state)
+        PlayerFlags.AutoRebirth = state
+    end
 })
 
 ----------------------------------------------------
@@ -1115,7 +1085,7 @@ end)
 
 WindUI:Notify({
     Title = "Hub Injetado",
-    Content = "Auto Buys e Rebirth Ativados na aba Auto!",
+    Content = "Abas reorganizadas e Auto Buy Adicionado!",
     Duration = 5,
     Icon = "check"
 })
