@@ -1,7 +1,3 @@
---- START OF FILE Paste January 31, 2026 - 10:02PM ---
-
---- START OF FILE text/plain ---
-
 --[[========================================================
     KILL SCRIPTS QUE ATRAPALHAM WALK/SPEED/UPGRADES
 ==========================================================]]
@@ -223,6 +219,12 @@ local NetPackage = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"
 local WheelRollRF = NetPackage:WaitForChild("RF/WheelSpin.Roll")
 local WheelCompleteRE = NetPackage:WaitForChild("RE/WheelSpin.Complete")
 
+-- NOVOS REMOTES INJETADOS (ESCAPE TSUNAMI)
+local BuyUpgradeRF = NetPackage:WaitForChild("RF/Upgrades.Buy")
+local CollectMoneyRE = NetPackage:WaitForChild("RE/Brainrot.Collect")
+local BaseUpgradeRF = NetPackage:WaitForChild("RF/Base.Upgrade")
+local BrainrotUpgradeRF = NetPackage:WaitForChild("RF/Brainrot.Upgrade")
+
 local function getCharacter()
     return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 end
@@ -239,7 +241,7 @@ local function getHumanoidRootPart()
     return char:FindFirstChild("HumanoidRootPart")
 end
 
--- PLAYER FLAGS
+-- PLAYER FLAGS (ATUALIZADO COM NOVAS FUNÇÕES)
 local PlayerFlags = {
     SpeedEnabled   = false,
     SpeedValue     = 22,
@@ -257,15 +259,67 @@ local PlayerFlags = {
     RadioactiveDelay = 0.5,
     AutoUFO = false,
     UFODelay = 0.5,
-    AutoMoney = false, -- [NOVO]
-    MoneyDelay = 0.5,  -- [NOVO]
+    AutoMoney = false,
+    MoneyDelay = 0.5,
     AutoSpin = false,
     SpinDelay = 1,
-    SpinType = "Radioactive"
+    SpinType = "Radioactive",
+
+    -- NOVAS FLAGS AUTO-UPGRADE (SISTEMA FIRESERVER)
+    AutoCollectBrainrot = false,
+    AutoUpgradeBase = false,
+    AutoUpgradeShopSpeed = false,
+    AutoUpgradeShopCarry = false,
+    AutoUpgradeBrainrot = false,
+    SelectedBrainrot = "Skibidi Toilet" -- Padrão
 }
 
 local DEFAULT_JUMPPOWER = 50
 local MAX_SPEED = 1000
+
+----------------------------------------------------
+-- [ NOVO SISTEMA ] LOOP DE FIRESERVER (1s)
+----------------------------------------------------
+task.spawn(function()
+    while true do
+        task.wait(1)
+        
+        -- Coletar dinheiro de todos os brainrots
+        if PlayerFlags.AutoCollectBrainrot then
+            pcall(function()
+                CollectMoneyRE:FireServer()
+            end)
+        end
+
+        -- Upar Base
+        if PlayerFlags.AutoUpgradeBase then
+            pcall(function()
+                BaseUpgradeRF:InvokeServer()
+            end)
+        end
+
+        -- Upar Velocidade Shop (1 em 1)
+        if PlayerFlags.AutoUpgradeShopSpeed then
+            pcall(function()
+                BuyUpgradeRF:InvokeServer("Speed")
+            end)
+        end
+
+        -- Upar Carry Shop (1 em 1)
+        if PlayerFlags.AutoUpgradeShopCarry then
+            pcall(function()
+                BuyUpgradeRF:InvokeServer("Carry")
+            end)
+        end
+
+        -- Upar Brainrot Selecionado
+        if PlayerFlags.AutoUpgradeBrainrot then
+            pcall(function()
+                BrainrotUpgradeRF:InvokeServer(PlayerFlags.SelectedBrainrot)
+            end)
+        end
+    end
+end)
 
 ----------------------------------------------------
 -- HUD Speed
@@ -642,7 +696,6 @@ local AutoFarmSection = Tabs.Farm:Section({
     Opened = true,
 })
 
--- Ícones alterados para "hand" (dedinho clicando)
 local GapPositions = {
     { Index = 1,  Name = "Common",    Icon = "hand",       X = 199.9,  Y = -2.7, Z = -14.0 },
     { Index = 2,  Name = "Uncommon",  Icon = "hand",      X = 283.3,  Y = -2.7, Z = -13.7 },
@@ -760,7 +813,6 @@ local function startDirectTravel(index)
     autoFarmCoroutine = task.spawn(autoFarmLoop)
 end
 
--- Botões com trava de 1ms e ícones de mão
 local lastClick = 0
 for _, gap in ipairs(GapPositions) do
     AutoFarmSection:Button({
@@ -789,16 +841,14 @@ AutoFarmSection:Button({
 })
 
 ----------------------------------------------------
--- [ SISTEMA POTENTE ] LOGICA DE AUTO-COLETA (MODIFICADO)
+-- [ SISTEMA POTENTE ] LOGICA DE AUTO-COLETA
 ----------------------------------------------------
 
--- Loop de Coleta CIRÚRGICA
 task.spawn(function()
     while true do
         local hrp = getHumanoidRootPart()
         if not hrp then task.wait(1) continue end
 
-        -- [[ RADIOACTIVE COINS ]]
         if PlayerFlags.AutoRadioactive then
             pcall(function()
                 for _, obj in ipairs(workspace:GetDescendants()) do
@@ -817,7 +867,6 @@ task.spawn(function()
             task.wait(PlayerFlags.RadioactiveDelay)
         end
 
-        -- [[ UFO COINS ]]
         if PlayerFlags.AutoUFO then
             pcall(function()
                 local eventParts = workspace:FindFirstChild("EventParts")
@@ -852,10 +901,8 @@ task.spawn(function()
             task.wait(PlayerFlags.UFODelay)
         end
 
-        -- [[ MONEY COINS - NOVO SISTEMA INJETADO ]]
         if PlayerFlags.AutoMoney then
             pcall(function()
-                -- Busca em EventParts (Padrão de spawns de evento)
                 local eventParts = workspace:FindFirstChild("EventParts")
                 if eventParts then
                     for _, coin in ipairs(eventParts:GetChildren()) do
@@ -866,11 +913,8 @@ task.spawn(function()
                         end
                     end
                 end
-
-                -- Busca no Workspace Geral (Objetos que caem no MoneyEvent)
                 for _, obj in ipairs(workspace:GetChildren()) do
                     if not PlayerFlags.AutoMoney then break end
-                    -- Identifica moedas de dinheiro pelo nome baseado no MoneyCutscene (Gold/Money)
                     if (obj.Name:lower():find("money") or obj.Name:lower():find("gold")) and obj.Name:lower():find("coin") then
                         if obj:IsA("BasePart") and obj:FindFirstChildOfClass("TouchInterest") then
                             obj.CFrame = hrp.CFrame
@@ -889,7 +933,6 @@ task.spawn(function()
     end
 end)
 
--- Loop de Auto Spin (Network Injection Original)
 task.spawn(function()
     while true do
         if PlayerFlags.AutoSpin then
@@ -907,7 +950,6 @@ task.spawn(function()
     end
 end)
 
--- Explorer Modifier (Original)
 task.spawn(function()
     while true do
         pcall(function()
@@ -918,24 +960,67 @@ task.spawn(function()
 end)
 
 ----------------------------------------------------
--- ABA AUTO (ANTIGA SELLING)
+-- [ ATUALIZADA ] ABA AUTO (SISTEMA DE FIRESERVER)
 ----------------------------------------------------
 local AutoTabSection = Tabs.Auto:Section({
-    Title  = "Auto Features",
-    Icon   = "refresh-cw",
+    Title  = "Server Injections (1s Loop)",
+    Icon   = "server",
     Box    = true,
     Opened = true,
 })
 
-AutoTabSection:Button({
-    Title = "Selling Soon",
-    Desc  = "Auto sell system in progress.",
-    Icon  = "shopping-cart",
-    Callback = function() end
+AutoTabSection:Toggle({
+    Title = "Auto Collect Money (All Brainrots)",
+    Desc  = "Coleta dinheiro de todos os brainrots a cada 1s.",
+    Value = false,
+    Callback = function(v) PlayerFlags.AutoCollectBrainrot = v end
+})
+
+AutoTabSection:Toggle({
+    Title = "Auto Upgrade Base",
+    Desc  = "Upa o nível da base a cada 1s.",
+    Value = false,
+    Callback = function(v) PlayerFlags.AutoUpgradeBase = v end
+})
+
+AutoTabSection:Toggle({
+    Title = "Auto Upgrade Speed (Shop)",
+    Desc  = "Upa velocidade na loja (1 em 1) a cada 1s.",
+    Value = false,
+    Callback = function(v) PlayerFlags.AutoUpgradeShopSpeed = v end
+})
+
+AutoTabSection:Toggle({
+    Title = "Auto Upgrade Carry (Shop)",
+    Desc  = "Upa carry na loja (1 em 1) a cada 1s.",
+    Value = false,
+    Callback = function(v) PlayerFlags.AutoUpgradeShopCarry = v end
+})
+
+local BrainrotSectionUI = Tabs.Auto:Section({
+    Title  = "Brainrot Upgrader",
+    Icon   = "trending-up",
+    Box    = true,
+    Opened = true,
+})
+
+BrainrotSectionUI:Dropdown({
+    Title = "Select Brainrot",
+    Desc  = "Qual criatura deseja upar?",
+    Values = {"Skibidi Toilet", "Grimace", "Fanum Tax", "Ohio", "Ice Cream"},
+    Value = "Skibidi Toilet",
+    Callback = function(v) PlayerFlags.SelectedBrainrot = v end
+})
+
+BrainrotSectionUI:Toggle({
+    Title = "Auto Upgrade Selected",
+    Desc  = "Upa a criatura selecionada a cada 1s.",
+    Value = false,
+    Callback = function(v) PlayerFlags.AutoUpgradeBrainrot = v end
 })
 
 ----------------------------------------------------
--- [ INTERFACE ] ABA EVENTS (RADIOACTIVE / UFO / MONEY / SPIN)
+-- [ INTERFACE ] ABA EVENTS
 ----------------------------------------------------
 local RadioactiveSectionUI = Tabs.Events:Section({
     Title  = "Radioactive Coins",
@@ -983,7 +1068,6 @@ UfoSectionUI:Slider({
     Callback = function(v) PlayerFlags.UFODelay = v end
 })
 
--- [[ NOVA SEÇÃO MONEY COINS ]]
 local MoneySectionUI = Tabs.Events:Section({
     Title  = "Money Coins",
     Icon   = "dollar-sign",
@@ -1054,7 +1138,6 @@ Tabs.Settings:Section({Title = "Themes", Icon = "palette", Box = true, Opened = 
     Callback = function(t) WindUI:SetTheme(t) end
 })
 
--- Anti-AFK & Fall Protection logic
 local VirtualUser = game:GetService("VirtualUser")
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
@@ -1073,7 +1156,7 @@ end)
 
 WindUI:Notify({
     Title = "Hub Injetado",
-    Content = "Sistemas de Money Coin Adicionados!",
+    Content = "Sistemas de Upgrade e Coleta 1s Adicionados!",
     Duration = 5,
     Icon = "check"
 })
