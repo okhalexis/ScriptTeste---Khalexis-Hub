@@ -1,13 +1,7 @@
-Aqui está o script reescrito. Mantive toda a estrutura original e adicionei o **Sistema de FireServer** na aba **Auto** (que antes estava vazia com "Selling Soon").
+--- START OF FILE Paste January 31, 2026 - 10:02PM ---
 
-O sistema foi criado para tentar localizar automaticamente os RemoteEvents mais comuns desse tipo de jogo (Brainrot Tycoons) dentro do `ReplicatedStorage`.
+--- START OF FILE text/plain ---
 
-### O que foi adicionado:
-1.  **Aba Auto:** Agora contém opções para Upar Brainrot Específico, Coletar Dinheiro, Upar Base, Upar Velocidade e Upar Carry.
-2.  **Lógica de Loop (1s):** Todos os sistemas rodam em intervalos de 1 segundo conforme solicitado.
-3.  **Seleção de Brainrot:** Adicionei um Dropdown para você selecionar qual Brainrot quer focar o upgrade.
-
-```lua
 --[[========================================================
     KILL SCRIPTS QUE ATRAPALHAM WALK/SPEED/UPGRADES
 ==========================================================]]
@@ -229,6 +223,208 @@ local NetPackage = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"
 local WheelRollRF = NetPackage:WaitForChild("RF/WheelSpin.Roll")
 local WheelCompleteRE = NetPackage:WaitForChild("RE/WheelSpin.Complete")
 
+--[[========================================================
+    SISTEMA DE FIRESERVER - BRAINROT UPGRADE SYSTEM
+==========================================================]]
+local BrainrotSystem = {
+    SelectedBrainrot = nil,
+    AutoUpgradeBrainrot = false,
+    AutoCollectMoney = false,
+    AutoUpgradeBase = false,
+    AutoUpgradeSpeed = false,
+    AutoUpgradeCarry = false,
+    UpgradeDelay = 1,
+}
+
+-- Função para encontrar RemoteEvents do jogo
+local function findRemoteEvent(path)
+    local success, result = pcall(function()
+        local parts = string.split(path, "/")
+        local current = ReplicatedStorage
+        for _, part in ipairs(parts) do
+            current = current:WaitForChild(part, 5)
+            if not current then return nil end
+        end
+        return current
+    end)
+    return success and result or nil
+end
+
+-- Busca dinâmica de RemoteEvents (tenta múltiplos padrões)
+local function findBrainrotRemotes()
+    local patterns = {
+        Upgrade = {
+            "Packages/Net/RE/Brainrot.Upgrade",
+            "RemoteEvents/UpgradeBrainrot",
+            "Brainrot/Upgrade",
+            "RE/Upgrade"
+        },
+        Collect = {
+            "Packages/Net/RE/Brainrot.Collect",
+            "RemoteEvents/CollectBrainrot",
+            "Brainrot/Collect",
+            "RE/Collect"
+        },
+        BaseUpgrade = {
+            "Packages/Net/RE/Base.Upgrade",
+            "RemoteEvents/UpgradeBase",
+            "Base/Upgrade",
+            "RE/BaseUpgrade"
+        },
+        ShopSpeed = {
+            "Packages/Net/RE/Shop.Speed",
+            "RemoteEvents/UpgradeSpeed",
+            "Shop/Speed",
+            "RE/Speed"
+        },
+        ShopCarry = {
+            "Packages/Net/RE/Shop.Carry",
+            "RemoteEvents/UpgradeCarry",
+            "Shop/Carry",
+            "RE/Carry"
+        }
+    }
+    
+    local remotes = {}
+    for key, paths in pairs(patterns) do
+        for _, path in ipairs(paths) do
+            local remote = findRemoteEvent(path)
+            if remote then
+                remotes[key] = remote
+                break
+            end
+        end
+    end
+    
+    return remotes
+end
+
+local BrainrotRemotes = findBrainrotRemotes()
+
+-- Sistema de FireServer para Upar Brainrot Selecionado
+local function upgradeBrainrot(brainrotId)
+    if not BrainrotRemotes.Upgrade then return false end
+    local success = pcall(function()
+        BrainrotRemotes.Upgrade:FireServer("Upgrade", brainrotId)
+    end)
+    return success
+end
+
+-- Sistema de FireServer para Coletar Dinheiro de Todos os Brainrots
+local function collectAllBrainrotMoney()
+    if not BrainrotRemotes.Collect then return false end
+    
+    local bases = workspace:FindFirstChild("Bases")
+    if not bases then return false end
+    
+    local playerFolder = bases:FindFirstChild(LocalPlayer.Name)
+    if not playerFolder then return false end
+    
+    local collected = 0
+    for _, slot in ipairs(playerFolder:GetChildren()) do
+        pcall(function()
+            local brainrotModel = slot:FindFirstChildWhichIsA("Model")
+            if brainrotModel then
+                BrainrotRemotes.Collect:FireServer(slot.Name)
+                collected = collected + 1
+            end
+        end)
+    end
+    
+    return collected > 0
+end
+
+-- Sistema de FireServer para Upar Nível da Base
+local function upgradeBase()
+    if not BrainrotRemotes.BaseUpgrade then return false end
+    local success = pcall(function()
+        BrainrotRemotes.BaseUpgrade:FireServer("Upgrade")
+    end)
+    return success
+end
+
+-- Sistema de FireServer para Upar Velocidade (Upgrade Shop)
+local function upgradeSpeed()
+    if not BrainrotRemotes.ShopSpeed then return false end
+    local success = pcall(function()
+        BrainrotRemotes.ShopSpeed:FireServer("BuySpeed", 1)
+    end)
+    return success
+end
+
+-- Sistema de FireServer para Upar Carry (Upgrade Shop)
+local function upgradeCarry()
+    if not BrainrotRemotes.ShopCarry then return false end
+    local success = pcall(function()
+        BrainrotRemotes.ShopCarry:FireServer("BuyCarry", 1)
+    end)
+    return success
+end
+
+-- Loop de Auto Upgrade Brainrot
+task.spawn(function()
+    while true do
+        if BrainrotSystem.AutoUpgradeBrainrot and BrainrotSystem.SelectedBrainrot then
+            local success = upgradeBrainrot(BrainrotSystem.SelectedBrainrot)
+            if success then
+                task.wait(BrainrotSystem.UpgradeDelay)
+            else
+                task.wait(1)
+            end
+        else
+            task.wait(1)
+        end
+    end
+end)
+
+-- Loop de Auto Collect Money (1s em 1s)
+task.spawn(function()
+    while true do
+        if BrainrotSystem.AutoCollectMoney then
+            collectAllBrainrotMoney()
+            task.wait(1)
+        else
+            task.wait(1)
+        end
+    end
+end)
+
+-- Loop de Auto Upgrade Base (1s em 1s)
+task.spawn(function()
+    while true do
+        if BrainrotSystem.AutoUpgradeBase then
+            upgradeBase()
+            task.wait(1)
+        else
+            task.wait(1)
+        end
+    end
+end)
+
+-- Loop de Auto Upgrade Speed (1s em 1s)
+task.spawn(function()
+    while true do
+        if BrainrotSystem.AutoUpgradeSpeed then
+            upgradeSpeed()
+            task.wait(1)
+        else
+            task.wait(1)
+        end
+    end
+end)
+
+-- Loop de Auto Upgrade Carry (1s em 1s)
+task.spawn(function()
+    while true do
+        if BrainrotSystem.AutoUpgradeCarry then
+            upgradeCarry()
+            task.wait(1)
+        else
+            task.wait(1)
+        end
+    end
+end)
+
 local function getCharacter()
     return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 end
@@ -267,15 +463,7 @@ local PlayerFlags = {
     MoneyDelay = 0.5,
     AutoSpin = false,
     SpinDelay = 1,
-    SpinType = "Radioactive",
-
-    -- NOVOS SISTEMAS DE FIRESERVER
-    AutoUpgradeBrainrot = false,
-    SelectedBrainrotName = "Skibidi", -- Default
-    AutoCollectBrainrotCash = false,
-    AutoUpgradeBase = false,
-    AutoUpgradeSpeed = false,
-    AutoUpgradeCarry = false,
+    SpinType = "Radioactive"
 }
 
 local DEFAULT_JUMPPOWER = 50
@@ -441,7 +629,7 @@ local function startFly()
     if PlayerFlags.FlyEnabled then return end
     local hrp = getHumanoidRootPart()
     local hum = getHumanoid()
-    if not hrp or not hum then return false end
+    if not hrp or not hum then return end
 
     PlayerFlags.FlyEnabled = true
     hum.PlatformStand = true
@@ -801,14 +989,14 @@ AutoFarmSection:Button({
 })
 
 ----------------------------------------------------
--- [ SISTEMA POTENTE ] LOGICA DE AUTO-COLETA
+-- [ SISTEMA POTENTE ] LOGICA DE AUTO-COLETA (MODIFICADO)
 ----------------------------------------------------
+
 task.spawn(function()
     while true do
         local hrp = getHumanoidRootPart()
         if not hrp then task.wait(1) continue end
 
-        -- [[ RADIOACTIVE COINS ]]
         if PlayerFlags.AutoRadioactive then
             pcall(function()
                 for _, obj in ipairs(workspace:GetDescendants()) do
@@ -827,7 +1015,6 @@ task.spawn(function()
             task.wait(PlayerFlags.RadioactiveDelay)
         end
 
-        -- [[ UFO COINS ]]
         if PlayerFlags.AutoUFO then
             pcall(function()
                 local eventParts = workspace:FindFirstChild("EventParts")
@@ -862,7 +1049,6 @@ task.spawn(function()
             task.wait(PlayerFlags.UFODelay)
         end
 
-        -- [[ MONEY COINS ]]
         if PlayerFlags.AutoMoney then
             pcall(function()
                 local eventParts = workspace:FindFirstChild("EventParts")
@@ -875,6 +1061,7 @@ task.spawn(function()
                         end
                     end
                 end
+
                 for _, obj in ipairs(workspace:GetChildren()) do
                     if not PlayerFlags.AutoMoney then break end
                     if (obj.Name:lower():find("money") or obj.Name:lower():find("gold")) and obj.Name:lower():find("coin") then
@@ -922,156 +1109,112 @@ task.spawn(function()
 end)
 
 ----------------------------------------------------
--- [[ NOVO ]] ABA AUTO (Fireservers de Brainrot/Base)
+-- ABA AUTO (BRAINROT UPGRADE SYSTEMS)
 ----------------------------------------------------
 local AutoTabSection = Tabs.Auto:Section({
-    Title  = "Server Actions (1s Interval)",
-    Icon   = "server",
+    Title  = "Brainrot Upgrade",
+    Icon   = "arrow-up-circle",
     Box    = true,
     Opened = true,
 })
 
--- FUNÇÕES HELPER PARA ENCONTRAR REMOTES GENÉRICOS DE TYCOON
--- Essa função tenta achar eventos comuns de "Upgrade" e "Collect" 
--- navegando pelo ReplicatedStorage caso o jogo não exponha direto.
-local function FindRemote(nameVariants)
-    local targets = ReplicatedStorage:GetDescendants()
-    for _, v in ipairs(targets) do
-        if v:IsA("RemoteEvent") then
-            for _, variant in ipairs(nameVariants) do
-                if v.Name:lower():find(variant:lower()) then
-                    return v
-                end
-            end
-        end
-    end
-    return nil
+-- Dropdown para selecionar Brainrot
+local brainrotSlots = {}
+for i = 1, 50 do
+    table.insert(brainrotSlots, "Slot " .. i)
 end
 
--- Tenta cachear os remotes principais
-local UpgradeRemote = FindRemote({"Upgrade", "LevelUp", "Buy"})
-local CollectRemote = FindRemote({"Collect", "Claim", "GetMoney"})
-
 AutoTabSection:Dropdown({
-    Title = "Brainrot To Upgrade",
-    Desc  = "Select which unit to auto-level.",
-    Values = {"Skibidi", "Rizzler", "Sigma", "Chad", "Toilet", "Camera", "Speaker", "TV Man", "G-Man"},
-    Value = "Skibidi",
-    Callback = function(v) PlayerFlags.SelectedBrainrotName = v end
+    Title = "Select Brainrot Slot",
+    Desc  = "Choose which brainrot to upgrade",
+    Values = brainrotSlots,
+    Value = "Slot 1",
+    Callback = function(value)
+        local slotNum = tonumber(value:match("%d+"))
+        BrainrotSystem.SelectedBrainrot = slotNum
+    end
 })
 
 AutoTabSection:Toggle({
     Title = "Auto Upgrade Brainrot",
-    Desc  = "Fires Upgrade event for selected unit.",
-    Icon  = "arrow-up-circle",
+    Desc  = "Upgrades selected brainrot automatically",
+    Icon  = "trending-up",
     Value = false,
-    Callback = function(v) PlayerFlags.AutoUpgradeBrainrot = v end
+    Callback = function(state)
+        BrainrotSystem.AutoUpgradeBrainrot = state
+    end
 })
 
-AutoTabSection:Toggle({
-    Title = "Auto Collect ALL Brainrots",
-    Desc  = "Collects money from everyone (1s).",
-    Icon  = "dollar-sign",
-    Value = false,
-    Callback = function(v) PlayerFlags.AutoCollectBrainrotCash = v end
+AutoTabSection:Slider({
+    Title = "Upgrade Delay",
+    Desc  = "Delay between upgrades (seconds)",
+    Step  = 0.1,
+    Value = { Min = 0.1, Max = 10, Default = 1 },
+    Callback = function(value)
+        BrainrotSystem.UpgradeDelay = value
+    end
 })
 
-AutoTabSection:Toggle({
+local AutoCollectSection = Tabs.Auto:Section({
+    Title  = "Auto Collect Money",
+    Icon   = "dollar-sign",
+    Box    = true,
+    Opened = true,
+})
+
+AutoCollectSection:Toggle({
+    Title = "Auto Collect Brainrot Money",
+    Desc  = "Collects money from ALL brainrots (1s/1s)",
+    Icon  = "coins",
+    Value = false,
+    Callback = function(state)
+        BrainrotSystem.AutoCollectMoney = state
+    end
+})
+
+local AutoBaseSection = Tabs.Auto:Section({
+    Title  = "Base Upgrade",
+    Icon   = "home",
+    Box    = true,
+    Opened = true,
+})
+
+AutoBaseSection:Toggle({
     Title = "Auto Upgrade Base",
-    Desc  = "Levels up your base automatically.",
-    Icon  = "home",
+    Desc  = "Upgrades base level (1s/1s)",
+    Icon  = "arrow-up",
     Value = false,
-    Callback = function(v) PlayerFlags.AutoUpgradeBase = v end
+    Callback = function(state)
+        BrainrotSystem.AutoUpgradeBase = state
+    end
 })
 
-AutoTabSection:Toggle({
+local AutoShopSection = Tabs.Auto:Section({
+    Title  = "Upgrade Shop",
+    Icon   = "shopping-bag",
+    Box    = true,
+    Opened = true,
+})
+
+AutoShopSection:Toggle({
     Title = "Auto Upgrade Speed",
-    Desc  = "Buys Speed from Upgrade Shop.",
+    Desc  = "Upgrades speed +1 (1s/1s)",
     Icon  = "zap",
     Value = false,
-    Callback = function(v) PlayerFlags.AutoUpgradeSpeed = v end
+    Callback = function(state)
+        BrainrotSystem.AutoUpgradeSpeed = state
+    end
 })
 
-AutoTabSection:Toggle({
+AutoShopSection:Toggle({
     Title = "Auto Upgrade Carry",
-    Desc  = "Buys Carry from Upgrade Shop.",
+    Desc  = "Upgrades carry +1 (1s/1s)",
     Icon  = "package",
     Value = false,
-    Callback = function(v) PlayerFlags.AutoUpgradeCarry = v end
-})
-
--- LOOP LÓGICO DE FIRESERVER (INTERVALO DE 1 SEGUNDO)
-task.spawn(function()
-    while true do
-        -- 1. UPAR BRAINROT SELECIONADO
-        if PlayerFlags.AutoUpgradeBrainrot then
-            if UpgradeRemote then
-                -- Tenta disparar usando o nome como argumento
-                pcall(function() UpgradeRemote:FireServer(PlayerFlags.SelectedBrainrotName) end)
-                -- Tenta disparar procurando um objeto correspondente no Tycoon (Backup)
-                pcall(function()
-                   local tycoon = workspace.Tycoons:FindFirstChild(LocalPlayer.Name) or workspace.Bases:FindFirstChild(LocalPlayer.Name)
-                   if tycoon then
-                       local unit = tycoon:FindFirstChild(PlayerFlags.SelectedBrainrotName, true)
-                       if unit then UpgradeRemote:FireServer(unit) end
-                   end
-                end)
-            end
-        end
-
-        -- 2. COLETAR DINHEIRO DE TODOS OS BRAINROTS
-        if PlayerFlags.AutoCollectBrainrotCash then
-            if CollectRemote then
-                pcall(function()
-                    -- Dispara um "CollectAll" genérico se existir
-                    CollectRemote:FireServer("All")
-                    
-                    -- Ou itera sobre os Brainrots e coleta um por um
-                    local tycoon = workspace.Tycoons:FindFirstChild(LocalPlayer.Name) or workspace.Bases:FindFirstChild(LocalPlayer.Name)
-                    if tycoon then
-                        local items = tycoon:FindFirstChild("PurchasedObjects") or tycoon
-                        for _, item in ipairs(items:GetChildren()) do
-                            if item:IsA("Model") and item:FindFirstChild("Collector") then
-                                CollectRemote:FireServer(item)
-                            end
-                        end
-                    end
-                end)
-            end
-        end
-
-        -- 3. UPAR BASE
-        if PlayerFlags.AutoUpgradeBase then
-            local baseUpgradeRemote = FindRemote({"UpgradeBase", "BaseUpgrade", "LevelBase"})
-            if baseUpgradeRemote then
-                pcall(function() baseUpgradeRemote:FireServer() end)
-            elseif UpgradeRemote then
-                pcall(function() UpgradeRemote:FireServer("Base") end)
-            end
-        end
-
-        -- 4. UPAR VELOCIDADE (SHOP)
-        if PlayerFlags.AutoUpgradeSpeed then
-            -- Tenta achar remote específico de Shop ou usar o genérico com argumento
-            local shopRemote = FindRemote({"Shop", "BuyUpgrade"}) or UpgradeRemote
-            if shopRemote then
-                pcall(function() shopRemote:FireServer("Speed") end)
-                pcall(function() shopRemote:FireServer("WalkSpeed") end)
-            end
-        end
-
-        -- 5. UPAR CARRY (SHOP)
-        if PlayerFlags.AutoUpgradeCarry then
-            local shopRemote = FindRemote({"Shop", "BuyUpgrade"}) or UpgradeRemote
-            if shopRemote then
-                pcall(function() shopRemote:FireServer("Carry") end)
-                pcall(function() shopRemote:FireServer("Capacity") end)
-            end
-        end
-
-        task.wait(1) -- Intervalo de 1 segundo conforme pedido
+    Callback = function(state)
+        BrainrotSystem.AutoUpgradeCarry = state
     end
-end)
+})
 
 ----------------------------------------------------
 -- [ INTERFACE ] ABA EVENTS (RADIOACTIVE / UFO / MONEY / SPIN)
@@ -1209,9 +1352,8 @@ task.spawn(function()
 end)
 
 WindUI:Notify({
-    Title = "Hub Atualizado",
-    Content = "Sistemas de Auto Upgrade/Collect (FireServer) adicionados!",
+    Title = "Hub Injetado",
+    Content = "Sistemas FireServer Implementados!",
     Duration = 5,
     Icon = "check"
 })
-```
