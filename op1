@@ -148,7 +148,7 @@ Window:EditOpenButton({
     Draggable = true,
 })
 
--- ORDEM DAS ABAS
+-- ORDEM DAS ABAS ATUALIZADA
 local Tabs = {
     Player      = Window:Tab({ Title = "loc:TAB_PLAYER",   Icon = "user" }),
     Farm        = Window:Tab({ Title = "loc:TAB_FARM",     Icon = "wheat" }),
@@ -410,34 +410,35 @@ local function stopFly()
 end
 
 RunService.RenderStepped:Connect(function()
-    if not PlayerFlags.FlyEnabled then return end
-    local hrp = getHumanoidRootPart()
-    local hum = getHumanoid()
-    if not hrp or not hum then
-        stopFly()
-        return
+    if PlayerFlags.FlyEnabled then
+        local hrp = getHumanoidRootPart()
+        local hum = getHumanoid()
+        if not hrp or not hum then
+            stopFly()
+            return
+        end
+
+        local cam = workspace.CurrentCamera
+        if not cam then return end
+
+        local moveDir = Vector3.zero
+        local cf = cam.CFrame
+        local forward = cf.LookVector
+        local right = cf.RightVector
+
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir += forward end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir -= forward end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir += right end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir -= right end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir += Vector3.new(0,1,0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir -= Vector3.new(0,1,0) end
+
+        if moveDir.Magnitude > 0 then moveDir = moveDir.Unit end
+        local vel = moveDir * PlayerFlags.FlySpeed
+
+        if FlyVelocity then FlyVelocity.Velocity = vel end
+        if FlyGyro then FlyGyro.CFrame = cf end
     end
-
-    local cam = workspace.CurrentCamera
-    if not cam then return end
-
-    local moveDir = Vector3.zero
-    local cf = cam.CFrame
-    local forward = cf.LookVector
-    local right = cf.RightVector
-
-    if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir += forward end
-    if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir -= forward end
-    if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir += right end
-    if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir -= right end
-    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir += Vector3.new(0,1,0) end
-    if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir -= Vector3.new(0,1,0) end
-
-    if moveDir.Magnitude > 0 then moveDir = moveDir.Unit end
-    local vel = moveDir * PlayerFlags.FlySpeed
-
-    if FlyVelocity then FlyVelocity.Velocity = vel end
-    if FlyGyro then FlyGyro.CFrame = cf end
 end)
 
 UserInputService.InputBegan:Connect(function(input, gp)
@@ -851,16 +852,16 @@ task.spawn(function()
     end
 end)
 
---[[========================================================
-    LOGICA DE AUTO BUY / UPGRADES (NEW)
-==========================================================]]
+----------------------------------------------------
+-- [ NOVOS LOOPS: AUTO BUY & REBIRTH ]
+----------------------------------------------------
 
--- Loop Auto Buy Speed (0.5s)
+-- Auto Buy Speed (0.5s)
 task.spawn(function()
     while true do
         if PlayerFlags.AutoBuySpeed then
             pcall(function()
-                local args = {[1] = 1}
+                local args = { [1] = 1 }
                 game:GetService("ReplicatedStorage").RemoteFunctions.UpgradeSpeed:InvokeServer(unpack(args))
             end)
             task.wait(0.5)
@@ -870,7 +871,7 @@ task.spawn(function()
     end
 end)
 
--- Loop Auto Buy Carry (0.5s)
+-- Auto Buy Carry (0.5s)
 task.spawn(function()
     while true do
         if PlayerFlags.AutoBuyCarry then
@@ -884,15 +885,12 @@ task.spawn(function()
     end
 end)
 
--- Loop Auto Upgrade Base (1.0s)
+-- Auto Upgrade Base (1s)
 task.spawn(function()
     while true do
         if PlayerFlags.AutoUpgradeBase then
             pcall(function()
-                local remote = game:GetService("ReplicatedStorage").Packages.Net:FindFirstChild("RE/Plot.UpgradeBase")
-                if remote then
-                    remote:FireServer()
-                end
+                game:GetService("ReplicatedStorage").Packages.Net:FindFirstChild("RE/Plot.UpgradeBase"):FireServer()
             end)
             task.wait(1)
         else
@@ -901,7 +899,7 @@ task.spawn(function()
     end
 end)
 
--- Loop Auto Rebirth (Constant)
+-- Auto Rebirth (At all times)
 task.spawn(function()
     while true do
         if PlayerFlags.AutoRebirth then
@@ -909,65 +907,55 @@ task.spawn(function()
                 -- Script Rebirth
                 game:GetService("ReplicatedStorage").RemoteFunctions.Rebirth:InvokeServer()
                 
-                -- Script Upgrade Speed junto
-                local args = {[1] = 1}
+                -- Script Upgrade Speed (Atrelado ao Rebirth)
+                local args = { [1] = 1 }
                 game:GetService("ReplicatedStorage").RemoteFunctions.UpgradeSpeed:InvokeServer(unpack(args))
             end)
-            task.wait(0.5) -- Delay curto para não travar
-        else
-            task.wait(1)
         end
+        task.wait(0.1) -- Pequeno delay para evitar crash, rodando quase instantaneamente
     end
 end)
 
 ----------------------------------------------------
--- ABA AUTO
+-- ABA AUTO (REFORMULADA)
 ----------------------------------------------------
-local AutoTabSection = Tabs.Auto:Section({
-    Title  = "Auto Buy & Upgrades",
+local AutoSection = Tabs.Auto:Section({
+    Title  = "Auto Buy & Systems",
     Icon   = "refresh-cw",
     Box    = true,
     Opened = true,
 })
 
-AutoTabSection:Toggle({
+AutoSection:Toggle({
     Title = "Auto Buy Speed",
-    Desc  = "Upgrades speed every 0.5s.",
+    Desc  = "Upgrades Speed every 0.5s",
     Icon  = "zap",
     Value = false,
-    Callback = function(state)
-        PlayerFlags.AutoBuySpeed = state
-    end
+    Callback = function(v) PlayerFlags.AutoBuySpeed = v end
 })
 
-AutoTabSection:Toggle({
+AutoSection:Toggle({
     Title = "Auto Buy Carry",
-    Desc  = "Upgrades carry every 0.5s.",
+    Desc  = "Upgrades Carry every 0.5s",
     Icon  = "package",
     Value = false,
-    Callback = function(state)
-        PlayerFlags.AutoBuyCarry = state
-    end
+    Callback = function(v) PlayerFlags.AutoBuyCarry = v end
 })
 
-AutoTabSection:Toggle({
+AutoSection:Toggle({
     Title = "Auto Upgrade Base",
-    Desc  = "Upgrades your base every 1s.",
+    Desc  = "Upgrades Base every 1s",
     Icon  = "home",
     Value = false,
-    Callback = function(state)
-        PlayerFlags.AutoUpgradeBase = state
-    end
+    Callback = function(v) PlayerFlags.AutoUpgradeBase = v end
 })
 
-AutoTabSection:Toggle({
+AutoSection:Toggle({
     Title = "Auto Rebirth",
-    Desc  = "Automatic Rebirth + Speed Upgrade.",
+    Desc  = "Automatic Rebirth & Speed Upgrade",
     Icon  = "trending-up",
     Value = false,
-    Callback = function(state)
-        PlayerFlags.AutoRebirth = state
-    end
+    Callback = function(v) PlayerFlags.AutoRebirth = v end
 })
 
 ----------------------------------------------------
@@ -1085,7 +1073,7 @@ end)
 
 WindUI:Notify({
     Title = "Hub Injetado",
-    Content = "Abas reorganizadas e Auto Buy Adicionado!",
+    Content = "Estrutura Original Mantida + Auto Systems!",
     Duration = 5,
     Icon = "check"
 })
