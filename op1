@@ -1,6 +1,3 @@
-Abaixo está o SEU script inteiro reescrito, só com adições na aba **Auto** para criar: Auto Buy Speed (0.5s), Auto Buy Carry (0.5s), Upgrade Base (1s) e Auto Rebirth (rodando Rebirth + UpgradeSpeed). Não mexi em nada do resto.
-
-```lua
 --[[========================================================
     KILL SCRIPTS QUE ATRAPALHAM WALK/SPEED/UPGRADES
 ==========================================================]]
@@ -258,7 +255,13 @@ local PlayerFlags = {
     UFODelay = 0.5,
     AutoSpin = false,
     SpinDelay = 1,
-    SpinType = "Radioactive"
+    SpinType = "Radioactive",
+
+    -- AUTO SISTEMAS (NOVOS)
+    AutoBuySpeed = false,
+    AutoBuyCarry = false,
+    AutoUpgradeBase = false,
+    AutoRebirth = false,
 }
 
 local DEFAULT_JUMPPOWER = 50
@@ -903,25 +906,15 @@ local AutoTabSection = Tabs.Auto:Section({
     Opened = true,
 })
 
-AutoTabSection:Button({
-    Title = "Selling Soon",
-    Desc  = "Auto sell system in progress.",
-    Icon  = "shopping-cart",
-    Callback = function() end
+-- AUTO BUY / UPGRADE / REBIRTH (NOVO SISTEMA)
+local AutoBuySection = Tabs.Auto:Section({
+    Title  = "Auto Upgrades",
+    Icon   = "zap",
+    Box    = true,
+    Opened = true,
 })
 
-----------------------------------------------------
--- NOVOS SISTEMAS AUTO BUY / UPGRADE / REBIRTH
-----------------------------------------------------
--- flags para loops
-local AutoFlags = {
-    AutoBuySpeed = false,
-    AutoBuyCarry = false,
-    AutoUpgradeBase = false,
-    AutoRebirth = false,
-}
-
--- helper getNil (como você mandou)
+-- Função auxiliar getNil (para compatibilidade com seu snippet)
 local function getNil(name, class)
     for _, v in pairs(getnilinstances()) do
         if v.ClassName == class and v.Name == name then
@@ -930,122 +923,114 @@ local function getNil(name, class)
     end
 end
 
--- AUTO BUY SPEED (0.5s)
-local function autoBuySpeedLoop()
-    task.spawn(function()
-        while AutoFlags.AutoBuySpeed do
-            local args = {
-                 [perplexity](https://www.perplexity.ai/search/a36b3c94-da0d-4b88-8e16-0d808de98737) = 1
-            }
+-- Referências de RemoteFunctions / Events
+local UpgradeSpeedRF = ReplicatedStorage:FindFirstChild("RemoteFunctions") and ReplicatedStorage.RemoteFunctions:FindFirstChild("UpgradeSpeed")
+local UpgradeCarryRF = ReplicatedStorage:FindFirstChild("RemoteFunctions") and ReplicatedStorage.RemoteFunctions:FindFirstChild("UpgradeCarry")
+local RebirthRF      = ReplicatedStorage:FindFirstChild("RemoteFunctions") and ReplicatedStorage.RemoteFunctions:FindFirstChild("Rebirth")
+local UpgradeBaseRE  = NetPackage:FindFirstChild("RE/Plot.UpgradeBase")
+
+-- Auto Buy Speed
+task.spawn(function()
+    while true do
+        if PlayerFlags.AutoBuySpeed and UpgradeSpeedRF then
             pcall(function()
-                game:GetService("ReplicatedStorage").RemoteFunctions.UpgradeSpeed:InvokeServer(unpack(args))
+                local args = { [1] = 1 }
+                UpgradeSpeedRF:InvokeServer(unpack(args))
             end)
-            task.wait(0.5)
         end
-    end)
-end
+        task.wait(0.5)
+    end
+end)
 
--- AUTO BUY CARRY (0.5s)
-local function autoBuyCarryLoop()
-    task.spawn(function()
-        while AutoFlags.AutoBuyCarry do
+-- Auto Buy Carry
+task.spawn(function()
+    while true do
+        if PlayerFlags.AutoBuyCarry and UpgradeCarryRF then
             pcall(function()
-                game:GetService("ReplicatedStorage").RemoteFunctions.UpgradeCarry:InvokeServer()
+                UpgradeCarryRF:InvokeServer()
             end)
-            task.wait(0.5)
         end
-    end)
-end
+        task.wait(0.5)
+    end
+end)
 
--- UPGRADE BASE (1s)
-local function autoUpgradeBaseLoop()
-    task.spawn(function()
-        while AutoFlags.AutoUpgradeBase do
+-- Auto Upgrade Base
+task.spawn(function()
+    while true do
+        if PlayerFlags.AutoUpgradeBase and UpgradeBaseRE then
             pcall(function()
-                game:GetService("ReplicatedStorage").Packages.Net:FindFirstChild("RE/Plot.UpgradeBase"):FireServer()
+                UpgradeBaseRE:FireServer()
             end)
-            task.wait(1)
         end
-    end)
-end
+        task.wait(1)
+    end
+end)
 
--- AUTO REBIRTH: Rebirth + UpgradeSpeed(1)
-local function autoRebirthLoop()
-    task.spawn(function()
-        while AutoFlags.AutoRebirth do
+-- Auto Rebirth (Rebirth + UpgradeSpeed)
+task.spawn(function()
+    while true do
+        if PlayerFlags.AutoRebirth then
             pcall(function()
-                -- Rebirth
-                game:GetService("ReplicatedStorage").RemoteFunctions.Rebirth:InvokeServer()
-                -- UpgradeSpeed 1 (com getNil igual você mandou, caso precise em nil)
-                local args = {
-                     [perplexity](https://www.perplexity.ai/search/a36b3c94-da0d-4b88-8e16-0d808de98737) = 1
-                }
-                game:GetService("ReplicatedStorage").RemoteFunctions.UpgradeSpeed:InvokeServer(unpack(args))
+                if RebirthRF then
+                    RebirthRF:InvokeServer()
+                end
+                if UpgradeSpeedRF then
+                    local args = { [1] = 1 }
+                    UpgradeSpeedRF:InvokeServer(unpack(args))
+                end
             end)
-            -- sem wait muito grande pra ficar sempre tentando
-            task.wait(0.5)
         end
-    end)
-end
+        task.wait(0.5)
+    end
+end)
 
--- UI NA ABA AUTO
-local AutoBuySection = Tabs.Auto:Section({
-    Title  = "Auto Buy / Rebirth",
-    Icon   = "zap",
-    Box    = true,
-    Opened = true,
-})
-
+-- Toggles na UI (seguindo modelo da aba Player)
 AutoBuySection:Toggle({
     Title = "Auto Buy Speed",
-    Desc  = "Buys Speed every 0.5s.",
-    Icon  = "fast-forward",
+    Desc  = "Compra Speed a cada 0.5s.",
+    Icon  = "zap",
     Value = false,
     Callback = function(state)
-        AutoFlags.AutoBuySpeed = state
-        if state then
-            autoBuySpeedLoop()
-        end
+        PlayerFlags.AutoBuySpeed = state
     end
 })
 
 AutoBuySection:Toggle({
     Title = "Auto Buy Carry",
-    Desc  = "Buys Carry every 0.5s.",
-    Icon  = "package",
+    Desc  = "Compra Carry a cada 0.5s.",
+    Icon  = "shopping-bag",
     Value = false,
     Callback = function(state)
-        AutoFlags.AutoBuyCarry = state
-        if state then
-            autoBuyCarryLoop()
-        end
+        PlayerFlags.AutoBuyCarry = state
     end
 })
 
 AutoBuySection:Toggle({
     Title = "Auto Upgrade Base",
-    Desc  = "Upgrades Base every 1s.",
+    Desc  = "Upgrade Base a cada 1s.",
     Icon  = "home",
     Value = false,
     Callback = function(state)
-        AutoFlags.AutoUpgradeBase = state
-        if state then
-            autoUpgradeBaseLoop()
-        end
+        PlayerFlags.AutoUpgradeBase = state
     end
 })
 
 AutoBuySection:Toggle({
     Title = "Auto Rebirth",
-    Desc  = "Rebirth + Speed upgrade loop.",
-    Icon  = "refresh-ccw",
+    Desc  = "Rebirth + UpgradeSpeed em loop.",
+    Icon  = "repeat",
     Value = false,
     Callback = function(state)
-        AutoFlags.AutoRebirth = state
-        if state then
-            autoRebirthLoop()
-        end
+        PlayerFlags.AutoRebirth = state
     end
+})
+
+-- Placeholder antigo
+AutoTabSection:Button({
+    Title = "Selling Soon",
+    Desc  = "Auto sell system in progress.",
+    Icon  = "shopping-cart",
+    Callback = function() end
 })
 
 ----------------------------------------------------
@@ -1167,6 +1152,3 @@ WindUI:Notify({
     Duration = 5,
     Icon = "check"
 })
-```
-
-Se quiser, na próxima mensagem a gente troca ícones/nome das opções da aba Auto ou adiciona sliders de delay pra cada auto buy. [perplexity](https://www.perplexity.ai/search/a36b3c94-da0d-4b88-8e16-0d808de98737)
