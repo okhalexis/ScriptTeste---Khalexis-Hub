@@ -985,7 +985,7 @@ task.spawn(function()
 end)
 
 ----------------------------------------------------
--- ABA AUTO
+-- ABA AUTO (TOGGLES IGUAL INSTANT STEAL)
 ----------------------------------------------------
 local AutoTabSection = Tabs.Auto:Section({
     Title  = "Auto Features",
@@ -996,9 +996,10 @@ local AutoTabSection = Tabs.Auto:Section({
 
 local UpgradeSpeedRF = ReplicatedStorage:FindFirstChild("RemoteFunctions") and ReplicatedStorage.RemoteFunctions:FindFirstChild("UpgradeSpeed")
 local UpgradeCarryRF = ReplicatedStorage:FindFirstChild("RemoteFunctions") and ReplicatedStorage.RemoteFunctions:FindFirstChild("UpgradeCarry")
-local RebirthRF = ReplicatedStorage:FindFirstChild("RemoteFunctions") and ReplicatedStorage.RemoteFunctions:FindFirstChild("Rebirth")
-local UpgradeBaseRE = NetPackage:FindFirstChild("RE/Plot.UpgradeBase")
+local RebirthRF      = ReplicatedStorage:FindFirstChild("RemoteFunctions") and ReplicatedStorage.RemoteFunctions:FindFirstChild("Rebirth")
+local UpgradeBaseRE  = NetPackage:FindFirstChild("RE/Plot.UpgradeBase")
 
+-- loops de auto (checando flags)
 task.spawn(function()
     while true do
         if PlayerFlags.AutoBuySpeed and UpgradeSpeedRF then
@@ -1048,75 +1049,43 @@ task.spawn(function()
     end
 end)
 
-Tabs.Auto:Button({
+AutoTabSection:Toggle({
     Title = "Auto Buy Speed",
-    Desc = "OFF",
-    Color = Color3.fromHex("#ff4444"),
-    Justify = "Center",
-    IconAlign = "Left",
-    Icon = "zap",
-    Callback = function()
-        PlayerFlags.AutoBuySpeed = not PlayerFlags.AutoBuySpeed
-        WindUI:Notify({
-            Title = "Auto Buy Speed",
-            Content = PlayerFlags.AutoBuySpeed and "Ativado" or "Desativado",
-            Duration = 2,
-            Icon = "zap",
-        })
+    Desc  = "Compra Speed a cada 0.5s.",
+    Icon  = "zap",
+    Value = false,
+    Callback = function(state)
+        PlayerFlags.AutoBuySpeed = state
     end,
 })
 
-Tabs.Auto:Button({
+AutoTabSection:Toggle({
     Title = "Auto Buy Carry",
-    Desc = "OFF",
-    Color = Color3.fromHex("#ff4444"),
-    Justify = "Center",
-    IconAlign = "Left",
-    Icon = "shopping-bag",
-    Callback = function()
-        PlayerFlags.AutoBuyCarry = not PlayerFlags.AutoBuyCarry
-        WindUI:Notify({
-            Title = "Auto Buy Carry",
-            Content = PlayerFlags.AutoBuyCarry and "Ativado" or "Desativado",
-            Duration = 2,
-            Icon = "shopping-bag",
-        })
+    Desc  = "Compra Carry a cada 0.5s.",
+    Icon  = "shopping-bag",
+    Value = false,
+    Callback = function(state)
+        PlayerFlags.AutoBuyCarry = state
     end,
 })
 
-Tabs.Auto:Button({
+AutoTabSection:Toggle({
     Title = "Auto Upgrade Base",
-    Desc = "OFF",
-    Color = Color3.fromHex("#ff4444"),
-    Justify = "Center",
-    IconAlign = "Left",
-    Icon = "home",
-    Callback = function()
-        PlayerFlags.AutoUpgradeBase = not PlayerFlags.AutoUpgradeBase
-        WindUI:Notify({
-            Title = "Auto Upgrade Base",
-            Content = PlayerFlags.AutoUpgradeBase and "Ativado" or "Desativado",
-            Duration = 2,
-            Icon = "home",
-        })
+    Desc  = "Upgrade Base a cada 0.5s.",
+    Icon  = "home",
+    Value = false,
+    Callback = function(state)
+        PlayerFlags.AutoUpgradeBase = state
     end,
 })
 
-Tabs.Auto:Button({
+AutoTabSection:Toggle({
     Title = "Auto Rebirth",
-    Desc = "OFF",
-    Color = Color3.fromHex("#ff4444"),
-    Justify = "Center",
-    IconAlign = "Left",
-    Icon = "repeat",
-    Callback = function()
-        PlayerFlags.AutoRebirth = not PlayerFlags.AutoRebirth
-        WindUI:Notify({
-            Title = "Auto Rebirth",
-            Content = PlayerFlags.AutoRebirth and "Ativado" or "Desativado",
-            Duration = 2,
-            Icon = "repeat",
-        })
+    Desc  = "Rebirth + UpgradeSpeed em loop.",
+    Icon  = "repeat",
+    Value = false,
+    Callback = function(state)
+        PlayerFlags.AutoRebirth = state
     end,
 })
 
@@ -1270,7 +1239,7 @@ ThemeSection:Dropdown({
     Title = "Theme Selector",
     Icon  = "brush",
     Values = themeNames,
-    Value  = "Red",
+    Value = "Red",
     Callback = function(t)
         WindUI:SetTheme(t)
     end,
