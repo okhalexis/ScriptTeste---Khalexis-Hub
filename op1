@@ -1,7 +1,7 @@
 --[[========================================================
     KILL SCRIPTS QUE ATRAPALHAM WALK/SPEED/UPGRADES
 ==========================================================]]
-local Players = game:GetService("Players)
+local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 local function shouldKillScript(scr)
@@ -985,7 +985,7 @@ task.spawn(function()
 end)
 
 ----------------------------------------------------
--- ABA AUTO (USANDO LÓGICA DE BOTÕES DO WINDUI)
+-- ABA AUTO
 ----------------------------------------------------
 local AutoTabSection = Tabs.Auto:Section({
     Title  = "Auto Features",
@@ -994,25 +994,16 @@ local AutoTabSection = Tabs.Auto:Section({
     Opened = true,
 })
 
--- Remotes
-local UpgradeSpeedRF = ReplicatedStorage:FindFirstChild("RemoteFunctions")
-    and ReplicatedStorage.RemoteFunctions:FindFirstChild("UpgradeSpeed")
-
-local UpgradeCarryRF = ReplicatedStorage:FindFirstChild("RemoteFunctions")
-    and ReplicatedStorage.RemoteFunctions:FindFirstChild("UpgradeCarry")
-
-local RebirthRF = ReplicatedStorage:FindFirstChild("RemoteFunctions")
-    and ReplicatedStorage.RemoteFunctions:FindFirstChild("Rebirth")
-
+local UpgradeSpeedRF = ReplicatedStorage:FindFirstChild("RemoteFunctions") and ReplicatedStorage.RemoteFunctions:FindFirstChild("UpgradeSpeed")
+local UpgradeCarryRF = ReplicatedStorage:FindFirstChild("RemoteFunctions") and ReplicatedStorage.RemoteFunctions:FindFirstChild("UpgradeCarry")
+local RebirthRF = ReplicatedStorage:FindFirstChild("RemoteFunctions") and ReplicatedStorage.RemoteFunctions:FindFirstChild("Rebirth")
 local UpgradeBaseRE = NetPackage:FindFirstChild("RE/Plot.UpgradeBase")
 
--- Loops
 task.spawn(function()
     while true do
         if PlayerFlags.AutoBuySpeed and UpgradeSpeedRF then
             pcall(function()
-                local args = { [1] = 1 }
-                UpgradeSpeedRF:InvokeServer(unpack(args))
+                UpgradeSpeedRF:InvokeServer(1)
             end)
         end
         task.wait(0.5)
@@ -1049,8 +1040,7 @@ task.spawn(function()
                     RebirthRF:InvokeServer()
                 end
                 if UpgradeSpeedRF then
-                    local args = { [1] = 1 }
-                    UpgradeSpeedRF:InvokeServer(unpack(args))
+                    UpgradeSpeedRF:InvokeServer(1)
                 end
             end)
         end
@@ -1058,71 +1048,76 @@ task.spawn(function()
     end
 end)
 
--- Botão Auto Buy Speed
-local AutoSpeedButton = Tabs.Auto:Button({
+Tabs.Auto:Button({
     Title = "Auto Buy Speed",
-    Desc = "Compra Speed a cada 0.5s.",
-    Color = Color3.fromHex("#a2ff30"),
+    Desc = "OFF",
+    Color = Color3.fromHex("#ff4444"),
     Justify = "Center",
     IconAlign = "Left",
     Icon = "zap",
     Callback = function()
         PlayerFlags.AutoBuySpeed = not PlayerFlags.AutoBuySpeed
-        AutoSpeedButton:SetDesc(PlayerFlags.AutoBuySpeed and "ON - comprando Speed" or "OFF - parado")
+        WindUI:Notify({
+            Title = "Auto Buy Speed",
+            Content = PlayerFlags.AutoBuySpeed and "Ativado" or "Desativado",
+            Duration = 2,
+            Icon = "zap",
+        })
     end,
 })
 
--- Botão Auto Buy Carry
-local AutoCarryButton = Tabs.Auto:Button({
+Tabs.Auto:Button({
     Title = "Auto Buy Carry",
-    Desc = "Compra Carry a cada 0.5s.",
-    Color = Color3.fromHex("#a2ff30"),
+    Desc = "OFF",
+    Color = Color3.fromHex("#ff4444"),
     Justify = "Center",
     IconAlign = "Left",
     Icon = "shopping-bag",
     Callback = function()
         PlayerFlags.AutoBuyCarry = not PlayerFlags.AutoBuyCarry
-        AutoCarryButton:SetDesc(PlayerFlags.AutoBuyCarry and "ON - comprando Carry" or "OFF - parado")
+        WindUI:Notify({
+            Title = "Auto Buy Carry",
+            Content = PlayerFlags.AutoBuyCarry and "Ativado" or "Desativado",
+            Duration = 2,
+            Icon = "shopping-bag",
+        })
     end,
 })
 
--- Botão Auto Upgrade Base
-local AutoBaseButton = Tabs.Auto:Button({
+Tabs.Auto:Button({
     Title = "Auto Upgrade Base",
-    Desc = "Upgrade Base a cada 0.5s.",
-    Color = Color3.fromHex("#a2ff30"),
+    Desc = "OFF",
+    Color = Color3.fromHex("#ff4444"),
     Justify = "Center",
     IconAlign = "Left",
     Icon = "home",
     Callback = function()
         PlayerFlags.AutoUpgradeBase = not PlayerFlags.AutoUpgradeBase
-        AutoBaseButton:SetDesc(PlayerFlags.AutoUpgradeBase and "ON - upando base" or "OFF - parado")
+        WindUI:Notify({
+            Title = "Auto Upgrade Base",
+            Content = PlayerFlags.AutoUpgradeBase and "Ativado" or "Desativado",
+            Duration = 2,
+            Icon = "home",
+        })
     end,
 })
 
--- Botão Auto Rebirth
-local AutoRebirthButton = Tabs.Auto:Button({
+Tabs.Auto:Button({
     Title = "Auto Rebirth",
-    Desc = "Rebirth + UpgradeSpeed em loop.",
-    Color = Color3.fromHex("#a2ff30"),
+    Desc = "OFF",
+    Color = Color3.fromHex("#ff4444"),
     Justify = "Center",
     IconAlign = "Left",
     Icon = "repeat",
     Callback = function()
         PlayerFlags.AutoRebirth = not PlayerFlags.AutoRebirth
-        AutoRebirthButton:SetDesc(PlayerFlags.AutoRebirth and "ON - rebirth loop" or "OFF - parado")
+        WindUI:Notify({
+            Title = "Auto Rebirth",
+            Content = PlayerFlags.AutoRebirth and "Ativado" or "Desativado",
+            Duration = 2,
+            Icon = "repeat",
+        })
     end,
-})
-
--- Botão placeholder antigo
-local SellingSoonButton = Tabs.Auto:Button({
-    Title = "Selling Soon",
-    Desc  = "Auto sell system in progress.",
-    Color = Color3.fromHex("#ffffff"),
-    Justify = "Center",
-    IconAlign = "Left",
-    Icon  = "shopping-cart",
-    Callback = function() end,
 })
 
 ----------------------------------------------------
