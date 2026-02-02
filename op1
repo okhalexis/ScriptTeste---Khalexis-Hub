@@ -260,6 +260,8 @@ local PlayerFlags = {
     AutoBuyCarry = false,
     AutoUpgradeBase = false,
     AutoRebirth = false,
+
+    AutoCollectCash = false,
 }
 
 local DEFAULT_JUMPPOWER = 50
@@ -1049,6 +1051,67 @@ task.spawn(function()
     end
 end)
 
+-- AUTO COLLECT CASH: identificar base do player e dar "toque fantasma" em todas as Collect
+local function getPlayerBase()
+    local basesFolder = workspace:FindFirstChild("Bases")
+    if not basesFolder then return nil end
+
+    local uid = tostring(LocalPlayer.UserId)
+
+    -- tenta por UserId dentro do nome
+    for _, base in ipairs(basesFolder:GetChildren()) do
+        if typeof(base.Name) == "string" and base.Name:find(uid) then
+            return base
+        end
+    end
+
+    -- fallback: nome do player
+    local byName = basesFolder:FindFirstChild(LocalPlayer.Name)
+    if byName then
+        return byName
+    end
+
+    return nil
+end
+
+task.spawn(function()
+    while true do
+        if PlayerFlags.AutoCollectCash then
+            local base = getPlayerBase()
+            if base then
+                local slots = base:FindFirstChild("Slots")
+                if slots then
+                    for _, slot in ipairs(slots:GetChildren()) do
+                        local collect = slot:FindFirstChild("Collect")
+                        if collect then
+                            for _, obj in ipairs(collect:GetDescendants()) do
+                                if obj:IsA("ProximityPrompt") then
+                                    pcall(function()
+                                        fireproximityprompt(obj)
+                                    end)
+                                end
+                            end
+                        end
+
+                        local collectMoneyGui = slot:FindFirstChild("CollectMoneyGui", true)
+                        if collectMoneyGui then
+                            for _, obj in ipairs(collectMoneyGui:GetDescendants()) do
+                                if obj:IsA("ProximityPrompt") then
+                                    pcall(function()
+                                        fireproximityprompt(obj)
+                                    end)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        task.wait(2)
+    end
+end)
+
 AutoTabSection:Toggle({
     Title = "Auto Buy Speed",
     Desc  = "Compra Speed a cada 0.5s.",
@@ -1086,6 +1149,16 @@ AutoTabSection:Toggle({
     Value = false,
     Callback = function(state)
         PlayerFlags.AutoRebirth = state
+    end,
+})
+
+AutoTabSection:Toggle({
+    Title = "Auto Collect Cash",
+    Desc  = "Coleta o dinheiro de todos os slots da sua base a cada 2s.",
+    Icon  = "dollar-sign",
+    Value = false,
+    Callback = function(state)
+        PlayerFlags.AutoCollectCash = state
     end,
 })
 
