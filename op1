@@ -1,9 +1,10 @@
 --[[
 
-    -- Khalexis Hub - Versão v8.8 (NO LOOP VERIFICATION)
+    -- Khalexis Hub - Versão v8.9 (AUTO GAME DETECTOR)
     -- STATUS: CORRIGIDO
     -- WHITESCREEN: REMOVIDA.
-    -- BUGS: Removido o loop de verificação constante de Key que causava travamentos.
+    -- KEY SYSTEM: Loop removido (Verifica apenas 1 vez).
+    -- DETECÇÃO: Adicionado sistema que identifica o jogo e coloca no topo.
 
 --]]
 
@@ -27,7 +28,7 @@ end
 
 -- RESETA a verificação de execução única para permitir re-execução
 getgenv().RedExecutorKeySys = false 
--- Desliga loops de segurança antigos (caso tenha algum rodando de versões anteriores)
+-- Desliga loops de segurança antigos
 getgenv().KhalexisSecurityLoop = false
 
 -- ==========================================
@@ -181,7 +182,8 @@ local LoadingScreen, StopLoadingAnim
 local HubOpen = false
 local ToggleButton 
 local HasShownWelcome = false
-local CreateKeyUI -- Declaração antecipada
+local CreateKeyUI 
+local DetectedGameCategory = nil -- Variável global para detecção
 
 -- ==========================================
 -- SISTEMA DE NOTIFICAÇÃO (TOAST)
@@ -196,7 +198,6 @@ function KhalexisToast(title, text, type, duration)
 
     local targetParent = nil
     
-    -- CONFIGURAÇÃO DE POSIÇÃO
     local startPosition = UDim2.new(0.5, 0, 0.20, 0) 
     local keyGui = CoreGui:FindFirstChild("KhalexisKeySystem")
 
@@ -430,23 +431,19 @@ local function showLoadingScreen()
     local frame = Instance.new("Frame")
     frame.Name = "LoadingFrame"
     frame.Size = UDim2.new(0, 300, 0, 120)
-    -- CENTRALIZAÇÃO EXATA
     frame.AnchorPoint = Vector2.new(0.5, 0.5)
-    -- LEVE AJUSTE PARA CIMA (0.40)
     frame.Position = UDim2.new(0.5, 0, 0.40, 0)
     frame.BackgroundColor3 = Colors.Main
     frame.BorderSizePixel = 0
     frame.Parent = ScreenGui
     applyRoundedCorners(frame, 16)
 
-    -- Aplicar escala
     local scaler = Instance.new("UIScale")
     scaler.Scale = currentScale
     scaler.Parent = frame
 
     local border = Instance.new("UIStroke")
     border.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    -- [VISUAL UPDATE] Borda Laranja
     border.Color = Colors.Accent
     border.Thickness = 2
     border.Parent = frame
@@ -498,10 +495,37 @@ local function showLoadingScreen()
 end
 
 local function createHub()
+    -- ==========================================
+    -- DETECÇÃO DE JOGO (NOVO)
+    -- ==========================================
+    local GameMap = {
+        [13772394625] = "Blade Ball",
+        [1730877806] = "Grand Piece Online",
+        [131623223084840] = "Escape Tsunami For Brainrots",
+        [130247632398296] = "Anime Fighting Simulator: Endless",
+        [131079272918660] = "Devil Hunter"
+    }
+    
+    -- Verifica PlaceId (mais comum) e GameId (caso seja universe)
+    local pid = game.PlaceId
+    local gid = game.GameId
+    
+    if GameMap[pid] then
+        DetectedGameCategory = GameMap[pid]
+    elseif GameMap[gid] then
+        DetectedGameCategory = GameMap[gid]
+    end
+
+    if DetectedGameCategory then
+        -- Opcional: Avisar o usuário que o jogo foi detectado
+        -- KhalexisToast("Jogo Detectado", "Categoria: " .. DetectedGameCategory, "Info", 4)
+    end
+
+    -- ==========================================
+    
     local animationContainer = Instance.new("Frame")
     animationContainer.Name = "AnimationContainer"
     animationContainer.Size = UDim2.new(0, 450, 0, 340)
-    -- AJUSTE DE POSIÇÃO: 0.40 (Um pouquinho mais para cima)
     animationContainer.AnchorPoint = Vector2.new(0.5, 0.5)
     animationContainer.Position = UDim2.new(0.5, 0, 0.40, 0)
     animationContainer.BackgroundTransparency = 1
@@ -529,9 +553,6 @@ local function createHub()
     -- [VISUAL UPDATE] Borda Laranja Sólida (sem gradiente)
     hubBorder.Color = Colors.Accent
     hubBorder.Parent=frame
-
-    -- Removed gradient to match "bordinha laranja" request completely
-    -- local hubGradient=Instance.new("UIGradient") ...
 
     local draggingHub = false
     local dragInputHub, dragStartHub, startPosHub
@@ -744,9 +765,6 @@ local function createHub()
     layoutCategory.HorizontalAlignment = Enum.HorizontalAlignment.Center
     layoutCategory.Parent = categoryContainer
 
-    -- REMOVIDO: layoutCategory:GetPropertyChangedSignal("AbsoluteContentSize") 
-    -- Não é mais necessário pois AutomaticCanvasSize faz isso nativamente em qualquer escala.
-
     searchBox:GetPropertyChangedSignal("Text"):Connect(function() 
         local s = searchBox.Text:lower(); 
         for _, b in ipairs(categoryContainer:GetChildren()) do 
@@ -808,9 +826,6 @@ local function createHub()
     layoutScript.FillDirection=Enum.FillDirection.Vertical
     layoutScript.HorizontalAlignment=Enum.HorizontalAlignment.Center
     layoutScript.Parent=scriptContainer
-
-    -- REMOVIDO: layoutScript:GetPropertyChangedSignal("AbsoluteContentSize")
-    -- Não é mais necessário.
 
     local footerBackground=Instance.new("Frame")
     footerBackground.Name="FooterBackground"
@@ -1233,11 +1248,11 @@ local function createHub()
     end
 
     updatesTextFormatted = {
-        {Text = "📣 Khalexis Hub V2.8 📣", Color = Color3.fromRGB(255, 255, 255), Font = HUB_FONT},
+        {Text = "📣 Khalexis Hub V2.9 📣", Color = Color3.fromRGB(255, 255, 255), Font = HUB_FONT},
         {Text = "--- UPDATES ---", Color = Color3.fromRGB(220, 220, 220), Font = HUB_FONT},
         {Text = "", Color = Color3.fromRGB(220, 220, 220)},
-        {Text = "NOVOS SCRIPTS", Color = Color3.fromRGB(255, 215, 0), Font = HUB_FONT},
-        {Text = "+2 Escape Tsunami", Color = Color3.fromRGB(220, 220, 220)},
+        {Text = "SISTEMA", Color = Color3.fromRGB(255, 215, 0), Font = HUB_FONT},
+        {Text = "Auto Detecção de Jogo", Color = Color3.fromRGB(220, 220, 220)},
     }
 
     -- ==========================================
@@ -1446,6 +1461,20 @@ loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/34824c86db1eba
         end
         updatesButtonInstance.TextColor3 = Color3.fromRGB(255, 215, 0)
         displayUpdates()
+    end
+    
+    -- SE UM JOGO FOI DETECTADO, SIMULA O CLIQUE NO BOTÃO
+    if DetectedGameCategory then
+        local targetBtn = categoryContainer:FindFirstChild(DetectedGameCategory:gsub("%s+", ""))
+        -- Pequeno delay para garantir que tudo carregou
+        task.delay(0.2, function()
+            if targetBtn then
+                -- Força o clique para abrir a categoria
+                for _, connection in pairs(getconnections(targetBtn.MouseButton1Click)) do
+                    connection:Fire()
+                end
+            end
+        end)
     end
 
     return animationContainer
