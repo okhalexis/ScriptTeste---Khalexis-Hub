@@ -1250,8 +1250,8 @@ local function createHub()
     updatesTextFormatted = {
         {Text = "📣 Khalexis Hub V2.9 📣", Color = Color3.fromRGB(255, 255, 255), Font = HUB_FONT},
         {Text = "--- UPDATES ---", Color = Color3.fromRGB(220, 220, 220), Font = HUB_FONT},
-        {Text = "", Color = Color3.fromRGB(220, 220, 220)},
-        {Text = "SISTEMA", Color = Color3.fromRGB(255, 215, 0), Font = HUB_FONT},
+        {Text = "Sistema de Identificação Corrigido", Color = Color3.fromRGB(220, 220, 220)},
+        {Text = "Bug da Key Corrigido", Color = Color3.fromRGB(255, 215, 0), Font = HUB_FONT},
         {Text = "Auto Detecção de Jogo", Color = Color3.fromRGB(220, 220, 220)},
     }
 
@@ -1260,7 +1260,7 @@ local function createHub()
     -- ==========================================
     local stealScripts = {
         {Name = "LEMON HUB", Func = function() loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/c4281c3937ebd537cb9e860182e41141.lua"))() end},
-        {Name = "STELLAR", Func = function() loadstring(game:HttpGet("https://pastebin.com/raw/8xPiNRhB"))() end}, 
+        {Name = "STELLAR", Func = function() loadstring(game:HttpGet("https://pastebin.com/raw/8xPiNRhB"))() end},
         {Name = "DELFISCRIPT", Func = function() loadstring(game:HttpGet('https://pastefy.app/AHeQea76/raw'))() end}, 
         {Name = "SCRIPT", Func = function() loadstring(game:HttpGet("https://pastebin.com/raw/66wu1dv5"))() end}, 
         {Name = "Zen Hub", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Gregy677/Gunmods-strucid/main/Steal%20a%20brain%20rot",true))() end},
