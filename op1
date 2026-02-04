@@ -1,33 +1,39 @@
--- Docs 
--- https://github.com/Cobru1/expert-octo-doodle/tree/main 
+--DETAILED DOCS https://github.com/AsuraXowner/Sentinel-Open-Source/blob/main/SentinelKeySystem/README.md
+local Junkie = loadstring(game:HttpGet("https://jnkie.com/sdk/library.lua"))()
+Junkie.service = "Khalexis Hub - Key"
+Junkie.identifier = "1003768"
+Junkie.provider = "Khalexis Hub - Key"
 
-local Arqel = loadstring(game:HttpGet("https://raw.githubusercontent.com/Cobru1/expert-octo-doodle/refs/heads/main/ArqelUi.luau"))()
+getgenv().SCRIPT_KEY = nil
 
-Arqel.Appearance.Title = "Junkie"
-Arqel.Appearance.Icon = "rbxassetid://134697043118282"
-Arqel.Links.Discord = "Discord.gg/jnkie"
-Arqel.Storage.FileName = "Jnkie_key"
+local SentinelUI = loadstring(game:HttpGet("https://sentinel1.vercel.app/get/Keysystem.lua"))()
+local AuthorizeToken = crypt.hash(tick()..tostring(math.random()), "sha256")-- This generates a unique key to prevent key bypassing. Do not modify.
 
+-- Configuration
+SentinelUI.Keys.MainTitle    = "Junkie"-- The title
+SentinelUI.Keys.MainDesc     = "Please enter your key to continue"-- The subtitle
+SentinelUI.Keys.Directory    = "KeyData" -- file name where the key saves (Change this)
+SentinelUI.Keys.Assets.Logo  = {ID='rbxassetid://86119635566201', Size=UDim2.new(0, 95, 0, 95)}-- Your logo Image ID and Image Size
+--SentinelUI.Keys.DiscordLink    = "discord server link here" -- discord server link only works if premium is true
 
+local function OnKeyVerified()
+    return
+end
 
-Arqel.Theme.Accent = Color3.fromRGB(110, 60, 255)
-Arqel.Theme.AccentHover = Color3.fromRGB(130, 90, 255)
-Arqel.Theme.Background = Color3.fromRGB(10, 10, 20)
-Arqel.Theme.Header = Color3.fromRGB(15, 15, 30)
-Arqel.Theme.Input = Color3.fromRGB(20, 20, 40)
-Arqel.Theme.Text = Color3.fromRGB(255, 255, 255)
-Arqel.Theme.TextDim = Color3.fromRGB(160, 160, 200)
-Arqel.Theme.Success = Color3.fromRGB(0, 220, 180)
-Arqel.Theme.Error = Color3.fromRGB(255, 70, 90)
-Arqel.Theme.StatusIdle = Color3.fromRGB(120, 100, 200)
-
-
-
-
-
-Arqel:LaunchJunkie({
-    Service = "Khalexis Hub - Key",
-    Identifier = "1003768",
-    Provider = "Khalexis Hub - Key"
+SentinelUI.Initialize({
+    KeyLink = Junkie.get_key_link(),
+    Token = AuthorizeToken,
+    MainLoader = OnKeyVerified,
+    --Keyless true, --keyless mode
+    --Premium true, --remvoes get key button and puts discord link
+    Function = function(userInput)
+        getgenv().SCRIPT_KEY = userInput
+        local result = Junkie.check_key(userInput)
+        if result and (result.valid or result.message == "KEY_VALID" or result.message == "KEYLESS") then
+            SentinelUI.Authorize(AuthorizeToken)
+        else
+            SentinelUI.Fail()
+        end
+    end
 })
     
