@@ -1248,10 +1248,12 @@ local function createHub()
     end
 
     updatesTextFormatted = {
-        {Text = "📣 Khalexis Hub V2.9 📣", Color = Color3.fromRGB(255, 255, 255), Font = HUB_FONT},
+        {Text = "📣 Khalexis Hub V3.0 📣", Color = Color3.fromRGB(255, 255, 255), Font = HUB_FONT},
         {Text = "--- UPDATES ---", Color = Color3.fromRGB(220, 220, 220), Font = HUB_FONT},
-        {Text = "Sistema de Identificação Corrigido", Color = Color3.fromRGB(220, 220, 220)},
-        {Text = "Bug da Key Corrigido", Color = Color3.fromRGB(255, 215, 0), Font = HUB_FONT},
+        {Text = "NOVOS SCRIPTS E CATEGORIAS", Color = Color3.fromRGB(220, 220, 220)},
+        {Text = "+5 Scripts Escape Tsunami", Color = Color3.fromRGB(255, 215, 0), Font = HUB_FONT},
+        {Text = "+1 Hide the Button", Color = Color3.fromRGB(255, 215, 0), Font = HUB_FONT},
+        {Text = "Categoria Hide the Button Adicionada", Color = Color3.fromRGB(255, 215, 0), Font = HUB_FONT},
         {Text = "Auto Detecção de Jogo", Color = Color3.fromRGB(220, 220, 220)},
     }
 
@@ -1396,6 +1398,11 @@ loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/34824c86db1eba
         {Name = "PROJECT TREVOUS", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/ImNotRox1/Trevous-Hub/refs/heads/main/blade-ball.lua"))() end}
     }
     local EscapeTsunamiForBrainrotsScripts = {
+        {Name = "KLS HUB ( NOVO )", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/okhalexis/script-escape-tsunami/refs/heads/main/khalexishub"))() end},
+        {Name = "LUCKY HUB ( NOVO )", Func = function() loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Esxhub-96530"))() end},
+        {Name = "DELFI AUTO-TP ( NOVO )", Func = function() loadstring(game:HttpGet("https://pastefy.app/UhPJUVrr/raw"))() end},
+        {Name = "BLESSEDHUBX ( NOVO )", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/mynamewendel-ctrl/Blessed-Hub-X-/refs/heads/main/Escape%20Tsunami%20For%20Brainrots.lua"))() end},
+        {Name = "YT OSAKATP2 HUB ( NOVO )", Func = function() loadstring(game:HttpGet("https://api.jnkie.com/api/v1/luascripts/public/8e2c5b19b84daed32cd69c30b5bdc08a9b063d141ae873c14154b2d44e277eaa/download"))() end},
         {Name = "SOLIX HUB", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/meobeo8/a/a/a"))() end},
         {Name = "SPEED HUB X", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua", true))() end},
         {Name = "AXON HUB", Func = function() loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/97c3f6db55a2cf72141537a85458e5a7.lua"))() end},
@@ -1414,7 +1421,7 @@ loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/34824c86db1eba
         {Name = "LEGEND HUB", Func = function() loadstring(game:HttpGet("https://pastefy.app/ULaWpxKm/raw"))() end}
     }
     local FindTheButtonScripts = {   
-        {Name = "ZYROXPLOIT", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/ZyroOnTop/Hind-The-Button/refs/heads/main/ByZyro"))() end}
+        {Name = "ZYROXPLOIT ( NOVO )", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/ZyroOnTop/Hind-The-Button/refs/heads/main/ByZyro"))() end}
     }
 
     local updatesButtonInstance = createCategoryButton("📣 Atualizações 📣", nil, 1)
@@ -1743,7 +1750,7 @@ CreateKeyUI = function()
     -- AÇÕES DOS BOTÕES COM NOTIFICAÇÃO E COPY
     GetKeyButton.MouseButton1Click:Connect(function()
         -- [[ LINK DE PEGAR KEY AQUI ]] --
-        local link = "https://rekonise.com/key-parte-unica-g284k" 
+        local link = "https://discord.gg/VzBKS3U4JA"
         SafeOpenLink(link, "Link Key")
     end)
 
