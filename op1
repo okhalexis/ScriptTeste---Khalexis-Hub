@@ -1267,8 +1267,8 @@ local function createHub()
         {Name = "Dofug", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/OneClye1/dofug/refs/heads/main/dofug.txt"))() end}
     }
     local noiteScripts = {
-        {Name = "SPOLARIUM HUB ( key )", Func = function() loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/2ead9862009d1eaa48c5384bd02dba73.lua"))() end},
-        {Name = "H4X HUB ( key )", Func = function() loadstring(game:HttpGet("https://H4xScripts.xyz/loader"))() end},
+        {Name = "SPOLARIUM HUB", Func = function() loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/2ead9862009d1eaa48c5384bd02dba73.lua"))() end},
+        {Name = "H4X HUB", Func = function() loadstring(game:HttpGet("https://H4xScripts.xyz/loader"))() end},
         {Name = "RAYFIELD", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/jokerbiel13/FourHub/refs/heads/main/FourHub.lua"))() end},
         {Name = "FOXNAME", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/caomod2077/Script/refs/heads/main/FoxnameHub.lua"))() end}, 
         {Name = "Farm Diamante", Func = function() loadstring(game:HttpGet('https://raw.githubusercontent.com/caomod2077/Script/refs/heads/main/FNDayFarm.lua'))() end},
@@ -1301,10 +1301,10 @@ local function createHub()
     }
     local forsakenScripts = {{Name = "SNT HUB", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Snowt69/SNT-HUB/refs/heads/main/Forsaken"))() end}}
     local pegueOPeixeScripts = {
-        {Name = "UB HUB ( key )", Func = function() loadstring(game:HttpGet("https://gitlab.com/r_soft/main/-/raw/main/LoadUB.lua"))() end},
-        {Name = "ASHLABS HUB ( key )", Func = function() loadstring(game:HttpGet("https://ashlabs.me/api/game?name=fish-it.lua", true))() end},
-        {Name = "RYZEN HUB ( key )", Func = function() loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/178c353fa8240cbf61835f4c6f76112e.lua"))() end},
-        {Name = "SPEED HUB X ( key )", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua", true))() end},
+        {Name = "UB HUB", Func = function() loadstring(game:HttpGet("https://gitlab.com/r_soft/main/-/raw/main/LoadUB.lua"))() end},
+        {Name = "ASHLABS HUB", Func = function() loadstring(game:HttpGet("https://ashlabs.me/api/game?name=fish-it.lua", true))() end},
+        {Name = "RYZEN HUB", Func = function() loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/178c353fa8240cbf61835f4c6f76112e.lua"))() end},
+        {Name = "SPEED HUB X", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua", true))() end},
         {Name = "KENNIEL HUB", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Kenniel123/Universal-Loader/refs/heads/main/MultiGame"))() end},
         {Name = "727EXE HUB", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/arcadeisreal/717exe---Fish-It/refs/heads/main/loader.lua"))() end},
         {Name = "Seraphin Hub", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/nniellx/SeraphinHub/main/SeraphinMain.lua"))() end},
@@ -1357,14 +1357,14 @@ local function createHub()
         {Name = "Tora IsMe", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/gumanba/Scripts/main/DeadlyDelivery"))() end}
     }
     local theForgeScripts = {
-        {Name = "SOLIX HUB ( key )", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/meobeo8/a/a/a"))() end},
-        {Name = "BLACKHUB ( key )", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Skibidiking123/Fisch1/refs/heads/main/FischMain"))() end},
-        {Name = "ZENITH HUB ( key )", Func = function() script_key="LQieOngTuTWRNxVwfcxpCJRZtYAGKoQT";
+        {Name = "SOLIX HUB", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/meobeo8/a/a/a"))() end},
+        {Name = "BLACKHUB", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Skibidiking123/Fisch1/refs/heads/main/FischMain"))() end},
+        {Name = "ZENITH HUB", Func = function() script_key="LQieOngTuTWRNxVwfcxpCJRZtYAGKoQT";
 loadstring(game:HttpGet("https://zenithhub.cloud/panel/script"))() end},
-        {Name = "NOUSIGI HUB ( key )", Func = function() loadstring(game:HttpGet("https://nousigi.com/loader.lua"))() end},
-        {Name = "AIRFLOW HUB ( key )", Func = function() loadstring(game:HttpGet("https://airflowscript.com/loader"))() end},
-        {Name = "CHIYO HUB ( key )", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/kaisenlmao/loader/refs/heads/main/chiyo.lua"))() end},
-        {Name = "SPEED HUB X ( key )", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua", true))() end},
+        {Name = "NOUSIGI HUB", Func = function() loadstring(game:HttpGet("https://nousigi.com/loader.lua"))() end},
+        {Name = "AIRFLOW HUB", Func = function() loadstring(game:HttpGet("https://airflowscript.com/loader"))() end},
+        {Name = "CHIYO HUB", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/kaisenlmao/loader/refs/heads/main/chiyo.lua"))() end},
+        {Name = "SPEED HUB X", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua", true))() end},
         {Name = "POLLUTED HUB", Func = function() loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/ecfcccea43f60fa4c46009f854c06a52.lua"))() end},
         {Name = "NOVA HUB", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/luareflection/public-novahub/refs/heads/main/forge/loader.luau"))() end},
         {Name = "HAZE HUB", Func = function() loadstring(game:HttpGet("https://haze.wtf/api/script"))() end}, 
@@ -1377,17 +1377,17 @@ loadstring(game:HttpGet("https://zenithhub.cloud/panel/script"))() end},
         {Name = "PEPEHOOCK", Func = function() script_key="NO KEY REQUIRED CURRENTLY"; loadstring(game:HttpGet("https://raw.githubusercontent.com/GiftStein1/pepehook-loader/refs/heads/main/loader.lua"))() end}
     }
     local grandPieceOnlineScripts = {
-        {Name = "SWITCHHUB ( key )", Func = function() loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/3ff0c2bb5eae1c1a397a7a8e715b8e.lua"))() end},
+        {Name = "SWITCHHUB", Func = function() loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/3ff0c2bb5eae1c1a397a7a8e715b8e.lua"))() end},
         {Name = "KAIZENSCRIPT", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/bestocheetos/GPOKAIZEN/refs/heads/main/kizaru0k"))() end},
         {Name = "DEVIL FRUIT NOTIFIER", Func = function() loadstring(game:HttpGet('https://raw.githubusercontent.com/ArponAG/Scripts/main/gpo.lua', true))() end},
         {Name = "MANDY", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/MaybeNotMandy/GPO/refs/heads/main/Candy"))() end}
     }
     local afsInfinityScripts = {
-        {Name = "YUTO HUB ( key )", Func = function() repeat wait() until game:IsLoaded()
+        {Name = "YUTO HUB", Func = function() repeat wait() until game:IsLoaded()
 loadstring(game:HttpGet(('https://raw.githubusercontent.com/Binintrozza/yutv2e/main/Yutohub')))() end},
-        {Name = "IMP HUB ( key )", Func = function() script_key = "";
+        {Name = "IMP HUB", Func = function() script_key = "";
 loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/34824c86db1eba5e5e39c7c2d6d7fdfe.lua"))() end},
-        {Name = "NSHUB ( key )", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/OhhMyGehlee/sh/refs/heads/main/a"))() end},
+        {Name = "NSHUB", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/OhhMyGehlee/sh/refs/heads/main/a"))() end},
         {Name = "SERAPH HUB", Func = function() loadstring(game:HttpGet("https://pastebin.com/raw/zu3xEPnv"))() end},
         {Name = "SHADOW HUB", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/ShadowXScript/Shadow-Hub/refs/heads/main/AFSE/loader.lua"))() end}
     }
@@ -1396,12 +1396,12 @@ loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/34824c86db1eba
         {Name = "PROJECT TREVOUS", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/ImNotRox1/Trevous-Hub/refs/heads/main/blade-ball.lua"))() end}
     }
     local EscapeTsunamiForBrainrotsScripts = {
-        {Name = "SOLIX HUB ( key )", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/meobeo8/a/a/a"))() end},
-        {Name = "SPEED HUB X ( key )", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua", true))() end},
-        {Name = "AXON HUB ( key )", Func = function() loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/97c3f6db55a2cf72141537a85458e5a7.lua"))() end},
-        {Name = "EKUVE HUB ( key )", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/ekuve/ekuvehub/main/main.lua"))() end},
-        {Name = "WARP HUB ( key )", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/1heo2fine/idk/main/script.lua"))() end},
-        {Name = "LEGEND HUB ( key )", Func = function() loadstring(game:HttpGet("https://pastefy.app/ULaWpxKm/raw"))() end},
+        {Name = "SOLIX HUB", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/meobeo8/a/a/a"))() end},
+        {Name = "SPEED HUB X", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/AhmadV99/Speed-Hub-X/main/Speed%20Hub%20X.lua", true))() end},
+        {Name = "AXON HUB", Func = function() loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/97c3f6db55a2cf72141537a85458e5a7.lua"))() end},
+        {Name = "EKUVE HUB", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/ekuve/ekuvehub/main/main.lua"))() end},
+        {Name = "WARP HUB", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/1heo2fine/idk/main/script.lua"))() end},
+        {Name = "LEGEND HUB", Func = function() loadstring(game:HttpGet("https://pastefy.app/ULaWpxKm/raw"))() end},
         {Name = "MYSTRIX HUB", Func = function() loadstring(game:HttpGet("https://github.com/OxyCoder32/Crackers/raw/refs/heads/main/Mystrix%20Hub"))() end},
         {Name = "KENGER HUB", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/iw929wiwiw/EscapesTsunami/refs/heads/main/Kenger%20Hub"))() end},
         {Name = "BLESSED HUB X", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/mynamewendel-ctrl/Blessed-Hub-X-/refs/heads/main/Escape%20Tsunami%20For%20Brainrots.lua"))() end},
@@ -1411,7 +1411,10 @@ loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/34824c86db1eba
         {Name = "IWASHERE67", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/donthackmeblud-lab/Tinkering/refs/heads/Escape-Tsunami-For-Brainrots!/Escape%20Tsunami%20For%20Brainrots!", false))() end}
     }
     local DevilHunterScripts = {   
-        {Name = "LEGEND HUB ( key )", Func = function() loadstring(game:HttpGet("https://pastefy.app/ULaWpxKm/raw"))() end}
+        {Name = "LEGEND HUB", Func = function() loadstring(game:HttpGet("https://pastefy.app/ULaWpxKm/raw"))() end}
+    }
+    local FindTheButtonScripts = {   
+        {Name = "ZYROXPLOIT", Func = function() loadstring(game:HttpGet("https://raw.githubusercontent.com/ZyroOnTop/Hind-The-Button/refs/heads/main/ByZyro"))() end}
     }
 
     local updatesButtonInstance = createCategoryButton("📣 Atualizações 📣", nil, 1)
@@ -1452,6 +1455,7 @@ loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/34824c86db1eba
     createCategoryButton("Blade Ball", BladeBallScripts, 36)
     createCategoryButton("Escape Tsunami For Brainrots", EscapeTsunamiForBrainrotsScripts, 37)
     createCategoryButton("Devil Hunter", DevilHunterScripts, 38)
+    createCategoryButton("Find The Button", FindTheButtonScripts, 38)
 
     if updatesButtonInstance then
         for _, otherBtn in pairs(categoryContainer:GetChildren()) do
